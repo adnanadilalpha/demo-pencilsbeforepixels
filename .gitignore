@@ -16,12 +16,16 @@
 # next.js
 /.next/
 /out/
+/build
+.turbo
 
 # production
-/build
+/dist
 
 # misc
 .DS_Store
+Thumbs.db
+Desktop.ini
 *.pem
 
 # debug
@@ -29,13 +33,39 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
+*.log
 
-# env files (can opt-in for committing if needed)
-.env*
+# env files & secrets (never commit)
+.env
+.env.*
+!.env.example
 
 # vercel
 .vercel
 
+# supabase local dev
+.supabase/
+/supabase/
+
+# local scripts (seed/admin tooling)
+/scripts/
+
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# editors / IDE
+.idea/
+*.swp
+*.swo
+*~
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+
+# cursor (local agent/editor state)
+.cursor/
+
+# local design reference (not part of the app)
+PBP.pdf
