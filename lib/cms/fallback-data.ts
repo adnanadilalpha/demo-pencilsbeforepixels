@@ -170,7 +170,6 @@ export const libraryContent: Record<LibraryCategory, LibraryItem[]> = {
       title: "Device Opt-Out Letter Template",
       subtitle: "PARENT TOOLKIT",
       kind: "resource",
-      image: LOCAL_ASSETS.optOut.letterPreview,
     },
     {
       title: "Questions to Ask Your School",

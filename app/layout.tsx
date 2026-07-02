@@ -21,10 +21,17 @@ const dmSans = DM_Sans({
 
 export async function generateMetadata(): Promise<Metadata> {
   const content = await getSiteContent();
+  const { settings } = content;
+  const favicon = settings.faviconUrl?.trim() ?? "";
 
   return {
-    title: content.settings.siteName,
-    description: content.settings.description,
+    title: settings.metaTitle?.trim() || settings.siteName,
+    description: settings.metaDescription?.trim() || settings.description,
+    icons: favicon
+      ? {
+          icon: [{ url: favicon }],
+        }
+      : undefined,
   };
 }
 
@@ -39,6 +46,7 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const siteContent = await getSiteContent();
+  const favicon = siteContent.settings.faviconUrl?.trim() ?? "";
 
   return (
     <html
@@ -46,12 +54,16 @@ export default async function RootLayout({
       className={`${anton.variable} ${dmSans.variable} h-full overflow-x-clip antialiased`}
     >
       <head>
-        <link
-          rel="icon"
-          href={LOCAL_FAVICONS.richWhite}
-          type="image/svg+xml"
-          media="(prefers-color-scheme: dark)"
-        />
+        {favicon ? (
+          <link rel="icon" href={favicon} />
+        ) : (
+          <link
+            rel="icon"
+            href={LOCAL_FAVICONS.richWhite}
+            type="image/svg+xml"
+            media="(prefers-color-scheme: dark)"
+          />
+        )}
       </head>
       <body className="flex min-h-full flex-col overflow-x-clip bg-paper-50">
         <AppProviders initialContent={siteContent}>

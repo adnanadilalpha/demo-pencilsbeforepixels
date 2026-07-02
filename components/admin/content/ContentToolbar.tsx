@@ -20,9 +20,9 @@ export function ContentToolbar({
   publishMessage,
 }: ContentToolbarProps) {
   return (
-    <div className="border-b border-navy-800/8 bg-white px-6 py-3">
+    <div className="border-b border-navy-800/8 bg-white px-4 py-3 md:px-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <PageTab
           active={page === "homepage"}
           onClick={() => onPageChange("homepage")}

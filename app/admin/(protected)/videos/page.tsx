@@ -1,13 +1,5 @@
-import type { Metadata } from "next";
-import { AdminPlaceholderPage } from "@/components/admin/AdminPlaceholderPage";
+import { redirect } from "next/navigation";
 
-export const metadata: Metadata = { title: "Videos" };
-
-export default function AdminVideosPage() {
-  return (
-    <AdminPlaceholderPage
-      title="Videos"
-      description="Manage video library and featured clips."
-    />
-  );
+export default function AdminVideosRedirectPage() {
+  redirect("/admin/resources?tab=videos");
 }

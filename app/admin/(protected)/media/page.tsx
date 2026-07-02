@@ -1,13 +1,5 @@
-import type { Metadata } from "next";
-import { AdminPlaceholderPage } from "@/components/admin/AdminPlaceholderPage";
+import { redirect } from "next/navigation";
 
-export const metadata: Metadata = { title: "Media" };
-
-export default function AdminMediaPage() {
-  return (
-    <AdminPlaceholderPage
-      title="Media"
-      description="Upload and organize images, videos, and documents."
-    />
-  );
+export default function AdminMediaRedirectPage() {
+  redirect("/admin/resources");
 }

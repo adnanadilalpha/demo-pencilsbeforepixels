@@ -7,6 +7,7 @@ export type FieldType =
   | "text"
   | "textarea"
   | "image"
+  | "pdf"
   | "toggle"
   | "cta"
   | "stringList";

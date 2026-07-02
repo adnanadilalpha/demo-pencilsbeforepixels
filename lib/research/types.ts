@@ -19,6 +19,7 @@ export type NaepYearZeroChart = {
   postSlope: number;
   yTicks: number[];
   slopes: NaepSlopePair;
+  pdfUrl?: string;
 };
 
 export type NaepGradeSection = {
@@ -36,6 +37,7 @@ export type BarChartData = {
   values: number[];
   yTicks: number[];
   colors?: string[];
+  pdfUrl?: string;
 };
 
 export type OecdScatterPoint = {
@@ -51,6 +53,7 @@ export type OecdScatterChart = {
   trendLine: { x: number; y: number }[];
   xLabel: string;
   yLabel: string;
+  pdfUrl?: string;
 };
 
 export type MentalHealthSeries = {
@@ -84,5 +87,6 @@ export type ResearchChartsData = {
     description: string;
     callout: string;
     series: MentalHealthSeries[];
+    pdfUrl?: string;
   };
 };

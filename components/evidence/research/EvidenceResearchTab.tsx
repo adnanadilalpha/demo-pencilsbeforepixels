@@ -5,6 +5,7 @@ import { NaepYearZeroChart } from "@/components/evidence/research/NaepYearZeroCh
 import { ResearchBarChart } from "@/components/evidence/research/ResearchBarChart";
 import { ResearchMentalHealthChart } from "@/components/evidence/research/ResearchMentalHealthChart";
 import { ResearchOecdScatter } from "@/components/evidence/research/ResearchOecdScatter";
+import { ResearchChartPdfFooter } from "@/components/evidence/research/ResearchPdfLink";
 import { useSiteContent, useSection } from "@/lib/cms/hooks";
 import type { ResearchChartsData } from "@/lib/research/types";
 
@@ -186,13 +187,25 @@ export function EvidenceResearchTab() {
           </div>
 
           <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
-            <EvidenceLineChart chart={data.pisa.math} compact hideTitle={false} showTooltip />
-            <EvidenceLineChart
-              chart={data.pisa.reading}
-              compact
-              hideTitle={false}
-              showTooltip
-            />
+            <div className="flex flex-col">
+              <EvidenceLineChart chart={data.pisa.math} compact hideTitle={false} showTooltip />
+              <ResearchChartPdfFooter
+                url={data.pisa.math.pdfUrl}
+                chartTitle={data.pisa.math.title}
+              />
+            </div>
+            <div className="flex flex-col">
+              <EvidenceLineChart
+                chart={data.pisa.reading}
+                compact
+                hideTitle={false}
+                showTooltip
+              />
+              <ResearchChartPdfFooter
+                url={data.pisa.reading.pdfUrl}
+                chartTitle={data.pisa.reading.title}
+              />
+            </div>
           </div>
 
           <div className="mt-4 rounded-lg border border-navy-50 bg-navy-50 px-4 py-3 text-center sm:mt-6">
@@ -208,6 +221,7 @@ export function EvidenceResearchTab() {
             <p className="text-xs text-[#6b7280] sm:text-sm">{data.oecd.subtitle}</p>
           </div>
           <ResearchOecdScatter chart={data.oecd} />
+          <ResearchChartPdfFooter url={data.oecd.pdfUrl} chartTitle={data.oecd.title} />
         </ResearchCard>
 
         <div className="grid gap-4 sm:gap-6 lg:grid-cols-[3fr_2fr]">
@@ -239,6 +253,10 @@ export function EvidenceResearchTab() {
             </p>
           </div>
           <ResearchMentalHealthChart series={data.mentalHealth.series} />
+          <ResearchChartPdfFooter
+            url={data.mentalHealth.pdfUrl}
+            chartTitle={data.mentalHealth.title}
+          />
           <div className="mt-4 rounded-lg border border-navy-50 bg-navy-50 px-4 py-3 text-center sm:mt-6">
             <p className="text-xs leading-relaxed text-[#6b7280] sm:text-sm">
               {data.mentalHealth.callout}

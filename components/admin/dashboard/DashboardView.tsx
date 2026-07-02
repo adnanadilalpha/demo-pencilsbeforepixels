@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { BookOpen, Mail, ScrollText, Video } from "lucide-react";
+import Link from "next/link";
+import { BookOpen, Mail, ScrollText, Upload, Video } from "lucide-react";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { AdminStatCard } from "@/components/admin/AdminStatCard";
 import { AnalyticsSection } from "@/components/admin/dashboard/AnalyticsSection";
@@ -70,6 +71,15 @@ export function DashboardView({ initialData }: DashboardViewProps) {
       <AdminPageHeader
         title="Dashboard"
         description={`${data.greeting}, ${data.user.name}. Here's what's happening.`}
+        actions={
+          <Link
+            href="/admin/scores?upload=1"
+            className="inline-flex items-center gap-2 rounded-[10px] border border-navy-800/10 bg-white px-4 py-2.5 text-sm font-medium text-navy-800 transition-colors hover:bg-paper-100"
+          >
+            <Upload className="size-4" />
+            Upload scores
+          </Link>
+        }
       />
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">

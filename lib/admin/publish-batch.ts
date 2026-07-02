@@ -1,13 +1,13 @@
 import "server-only";
 
+import { mergeStoredGeneral } from "@/lib/admin/settings/defaults";
 import { getEditorSection } from "@/lib/admin/content-config";
 import {
   type AcademicDatasetCopy,
 } from "@/lib/admin/academic-dataset-defaults";
 import type { ContentSavePayload, SectionDraft } from "@/lib/admin/content-editor-types";
-import { setResearchFieldValue } from "@/lib/admin/content-paths";
+import { applyResearchContentDraft } from "@/lib/admin/research-persistence";
 import { saveEvidenceScores } from "@/lib/admin/evidence-scores";
-import { researchFieldKeys } from "@/lib/admin/content-config";
 import {
   publicUrlToStoragePath,
   stripUrlCacheBuster,
@@ -185,12 +185,10 @@ async function saveResearchContent(content: SectionDraft): Promise<void> {
     .eq("key", "main")
     .maybeSingle();
 
-  let research = (data?.data as ResearchChartsData | undefined) ?? ({} as ResearchChartsData);
-
-  for (const key of researchFieldKeys) {
-    if (!(key in content)) continue;
-    research = setResearchFieldValue(research, key, content[key]);
-  }
+  const research = applyResearchContentDraft(
+    (data?.data as ResearchChartsData | undefined) ?? null,
+    content,
+  );
 
   const { error } = await supabase.from("research_datasets").upsert(
     { key: "main", data: research },
@@ -285,16 +283,27 @@ async function saveAcademicDatasetsBatch(
 
 async function saveSiteSettingsBatch(settings: SiteSettingsDraft): Promise<void> {
   const supabase = createAdminClient();
+  const { data: existingRow, error: loadError } = await supabase
+    .from("site_settings")
+    .select("value")
+    .eq("key", "general")
+    .maybeSingle();
+
+  assertNoError(loadError, "Failed to load site settings");
+
+  const existing = (existingRow?.value ?? {}) as Record<string, unknown>;
+  const value = mergeStoredGeneral(existing, {
+    siteName: settings.siteName,
+    description: settings.description,
+    privacyPolicyUrl: settings.privacyPolicyUrl,
+    termsOfServiceUrl: settings.termsOfServiceUrl,
+    copyright: settings.copyright,
+  });
+
   const { error } = await supabase.from("site_settings").upsert(
     {
       key: "general",
-      value: {
-        siteName: settings.siteName,
-        description: settings.description,
-        privacyPolicyUrl: settings.privacyPolicyUrl,
-        termsOfServiceUrl: settings.termsOfServiceUrl,
-        copyright: settings.copyright,
-      },
+      value,
     },
     { onConflict: "key" },
   );

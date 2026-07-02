@@ -1,13 +1,5 @@
-import type { Metadata } from "next";
-import { AdminPlaceholderPage } from "@/components/admin/AdminPlaceholderPage";
+import { redirect } from "next/navigation";
 
-export const metadata: Metadata = { title: "Research" };
-
-export default function AdminResearchPage() {
-  return (
-    <AdminPlaceholderPage
-      title="Research"
-      description="Manage research papers and datasets."
-    />
-  );
+export default function AdminResearchRedirectPage() {
+  redirect("/admin/resources?tab=research-papers");
 }

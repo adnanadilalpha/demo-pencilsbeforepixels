@@ -1,5 +1,6 @@
 import "server-only";
 
+import { mergeStoredGeneral } from "@/lib/admin/settings/defaults";
 import { getEditorSection } from "@/lib/admin/content-config";
 import {
   mergeAcademicDatasetCopies,
@@ -10,9 +11,11 @@ import type {
   ContentSavePayload,
   SectionDraft,
 } from "@/lib/admin/content-editor-types";
-import { setResearchFieldValue } from "@/lib/admin/content-paths";
+import {
+  applyResearchContentDraft,
+  mergeResearchWithFallback,
+} from "@/lib/admin/research-persistence";
 import { saveEvidenceScores } from "@/lib/admin/evidence-scores";
-import { researchFieldKeys } from "@/lib/admin/content-config";
 import { resolveMediaIdByUrl } from "@/lib/admin/media-storage";
 import { normalizeYouTubeUrl } from "@/lib/youtube";
 import type { SectionKey, SoftwareReview } from "@/lib/cms/types";
@@ -147,13 +150,7 @@ async function saveSoftwareReviews(
 
 async function saveResearchSectionContent(content: SectionDraft) {
   const current = await loadResearch();
-  let research = current ?? ({} as ResearchChartsData);
-
-  for (const key of researchFieldKeys) {
-    if (!(key in content)) continue;
-    research = setResearchFieldValue(research, key, content[key]);
-  }
-
+  const research = applyResearchContentDraft(current, content);
   await saveResearchDraft(research);
 }
 
@@ -438,13 +435,22 @@ async function loadOptOutSteps(): Promise<OptOutStep[]> {
 
 async function saveSiteSettings(settings: SiteSettingsDraft): Promise<void> {
   const supabase = createAdminClient();
-  const value = {
+  const { data: existingRow, error: loadError } = await supabase
+    .from("site_settings")
+    .select("value")
+    .eq("key", "general")
+    .maybeSingle();
+
+  assertNoError(loadError, "Failed to load site settings");
+
+  const existing = (existingRow?.value ?? {}) as Record<string, unknown>;
+  const value = mergeStoredGeneral(existing, {
     siteName: settings.siteName,
     description: settings.description,
     privacyPolicyUrl: settings.privacyPolicyUrl,
     termsOfServiceUrl: settings.termsOfServiceUrl,
     copyright: settings.copyright,
-  };
+  });
 
   const { error } = await supabase.from("site_settings").upsert(
     {
@@ -593,14 +599,13 @@ export async function fetchContentEditorState(): Promise<ContentEditorState> {
   ]);
 
   const sections = mergeEditorSections(published, drafts);
-  const emptyResearch = {} as ResearchChartsData;
 
   return {
     version: versionRes.data?.version ?? "0.0.0",
     publishedAt: versionRes.data?.published_at ?? new Date(0).toISOString(),
     hasDrafts,
     sections,
-    research: research ?? emptyResearch,
+    research: mergeResearchWithFallback(research),
     expertQuotes: expertQuotes ?? [],
     timeline: timeline ?? [],
     mentalHealthChartImage: chartMediaRes.data?.public_url ?? "",

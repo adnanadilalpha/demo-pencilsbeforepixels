@@ -2,6 +2,21 @@ export function formatCount(value: number): string {
   return new Intl.NumberFormat("en-US").format(value);
 }
 
+export function formatFileSize(bytes: number): string {
+  if (!Number.isFinite(bytes) || bytes <= 0) return "0 B";
+
+  const units = ["B", "KB", "MB", "GB"] as const;
+  const exponent = Math.min(
+    Math.floor(Math.log(bytes) / Math.log(1024)),
+    units.length - 1,
+  );
+  const value = bytes / 1024 ** exponent;
+
+  if (exponent === 0) return `${Math.round(value)} ${units[exponent]}`;
+  if (value >= 10) return `${Math.round(value)} ${units[exponent]}`;
+  return `${value.toFixed(1)} ${units[exponent]}`;
+}
+
 export function formatPercentChange(current: number, previous: number): string {
   if (previous === 0) {
     return current > 0 ? "+100%" : "0%";

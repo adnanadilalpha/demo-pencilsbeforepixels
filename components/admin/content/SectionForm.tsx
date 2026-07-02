@@ -5,6 +5,7 @@ import { adminInputClass, adminLabelClass } from "@/components/admin/admin-style
 import { MediaField } from "@/components/admin/content/MediaField";
 import { TagListField } from "@/components/admin/content/TagListField";
 import { ToggleField } from "@/components/admin/content/ToggleField";
+import { FileUploadField } from "@/components/admin/resources/FileUploadField";
 import { cn } from "@/lib/utils";
 
 type SectionFormProps = {
@@ -142,6 +143,21 @@ function renderField(
         filename={field.mediaFilename}
         altText={altKey ? ((values[altKey] as string) ?? undefined) : undefined}
         onChange={(url) => onChange(field.key, url)}
+      />
+    );
+  }
+
+  if (field.type === "pdf" && field.mediaFolder) {
+    const pdfUrl = (values[field.key] as string) ?? "";
+    return (
+      <FileUploadField
+        key={field.key}
+        label={field.label}
+        folder={field.mediaFolder}
+        accept="application/pdf"
+        valueUrl={pdfUrl || null}
+        compact
+        onUploaded={(result) => onChange(field.key, result?.publicUrl ?? "")}
       />
     );
   }

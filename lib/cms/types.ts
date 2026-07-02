@@ -1,5 +1,6 @@
 import type { AcademicDataset } from "@/lib/academic-data/types";
 import type { ResearchChartsData } from "@/lib/research/types";
+import type { LibraryFileKind } from "./library-file";
 
 export type NavLink = {
   label: string;
@@ -56,6 +57,12 @@ export type LibraryItem = {
   subtitle: string;
   kind: "book" | "paper" | "video" | "resource";
   image?: string;
+  youtubeUrl?: string;
+  videoUrl?: string;
+  fileUrl?: string;
+  fileName?: string;
+  fileKind?: LibraryFileKind;
+  fileMimeType?: string;
 };
 
 export type OptOutStep = {
@@ -83,6 +90,10 @@ export type SoftwareReview = {
 export type SiteSettings = {
   siteName: string;
   description: string;
+  metaTitle?: string;
+  metaDescription?: string;
+  footerTagline?: string;
+  faviconUrl?: string;
   privacyPolicyUrl: string;
   termsOfServiceUrl: string;
   copyright: string;

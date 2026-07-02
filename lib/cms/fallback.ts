@@ -28,6 +28,11 @@ export function buildFallbackSiteContent(): SiteContent {
       siteName: "Pencils Before Pixels",
       description:
         "Evidence-based resources helping parents understand learning in today's classrooms.",
+      metaTitle: "Pencils Before Pixels",
+      metaDescription:
+        "Evidence-based resources helping parents understand learning in today's classrooms.",
+      footerTagline: "",
+      faviconUrl: "",
       privacyPolicyUrl: resolvePrivacyPolicyUrl("/privacy"),
       termsOfServiceUrl: resolveTermsOfServiceUrl("/terms"),
       copyright:

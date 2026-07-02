@@ -5,6 +5,7 @@ import { ChartTooltip } from "@/components/charts/ChartTooltip";
 import type { ChartTooltipState } from "@/lib/charts/tooltip";
 import { formatScore } from "@/lib/charts/tooltip";
 import type { BarChartData } from "@/lib/research/types";
+import { ResearchChartPdfFooter } from "@/components/evidence/research/ResearchPdfLink";
 
 const PADDING = { top: 20, right: 16, bottom: 56, left: 48 };
 
@@ -262,6 +263,8 @@ export function ResearchBarChart({
           containerHeight={height}
         />
       </div>
+
+      <ResearchChartPdfFooter url={chart.pdfUrl} chartTitle={chart.title} />
     </div>
   );
 }

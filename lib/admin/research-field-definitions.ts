@@ -18,6 +18,13 @@ const area = (key: string, label: string): ContentField => ({
   type: "textarea",
 });
 
+const pdf = (key: string, label: string): ContentField => ({
+  key,
+  label,
+  type: "pdf",
+  mediaFolder: "research/pdfs",
+});
+
 export const researchEditorSections: ResearchEditorSection[] = [
   {
     id: "research_national",
@@ -40,6 +47,8 @@ export const researchEditorSections: ResearchEditorSection[] = [
       text("research.pisa.title", "Title"),
       area("research.pisa.description", "Description"),
       area("research.pisa.callout", "Callout"),
+      pdf("research.pisa.math.pdfUrl", "Math chart PDF"),
+      pdf("research.pisa.reading.pdfUrl", "Reading chart PDF"),
     ],
   },
   {
@@ -50,6 +59,7 @@ export const researchEditorSections: ResearchEditorSection[] = [
       area("research.oecd.subtitle", "Subtitle"),
       text("research.oecd.xLabel", "X-axis label"),
       text("research.oecd.yLabel", "Y-axis label"),
+      pdf("research.oecd.pdfUrl", "Chart PDF"),
     ],
   },
   {
@@ -59,7 +69,9 @@ export const researchEditorSections: ResearchEditorSection[] = [
       text("research.timss.title", "Title"),
       area("research.timss.description", "Description"),
       text("research.timss.grade4.title", "Grade 4 chart title"),
+      pdf("research.timss.grade4.pdfUrl", "Grade 4 chart PDF"),
       text("research.timss.grade8.title", "Grade 8 chart title"),
+      pdf("research.timss.grade8.pdfUrl", "Grade 8 chart PDF"),
     ],
   },
   {
@@ -70,6 +82,7 @@ export const researchEditorSections: ResearchEditorSection[] = [
       area("research.pirls.description", "Description"),
       text("research.pirls.xLabel", "X-axis label"),
       text("research.pirls.yLabel", "Y-axis label"),
+      pdf("research.pirls.pdfUrl", "Chart PDF"),
     ],
   },
   {
@@ -79,6 +92,7 @@ export const researchEditorSections: ResearchEditorSection[] = [
       text("research.mentalHealth.title", "Title"),
       area("research.mentalHealth.description", "Description"),
       area("research.mentalHealth.callout", "Callout"),
+      pdf("research.mentalHealth.pdfUrl", "Chart PDF"),
     ],
   },
   {
@@ -87,9 +101,11 @@ export const researchEditorSections: ResearchEditorSection[] = [
     fields: [
       text("research.grade4.heading", "Section heading"),
       text("research.grade4.math.title", "Math chart title"),
+      pdf("research.grade4.math.pdfUrl", "Math chart PDF"),
       text("research.grade4.math.slopes.pre.label", "Math pre-adoption label"),
       text("research.grade4.math.slopes.post.label", "Math post-adoption label"),
       text("research.grade4.reading.title", "Reading chart title"),
+      pdf("research.grade4.reading.pdfUrl", "Reading chart PDF"),
       text("research.grade4.reading.slopes.pre.label", "Reading pre-adoption label"),
       text("research.grade4.reading.slopes.post.label", "Reading post-adoption label"),
     ],
@@ -100,9 +116,11 @@ export const researchEditorSections: ResearchEditorSection[] = [
     fields: [
       text("research.grade8.heading", "Section heading"),
       text("research.grade8.math.title", "Math chart title"),
+      pdf("research.grade8.math.pdfUrl", "Math chart PDF"),
       text("research.grade8.math.slopes.pre.label", "Math pre-adoption label"),
       text("research.grade8.math.slopes.post.label", "Math post-adoption label"),
       text("research.grade8.reading.title", "Reading chart title"),
+      pdf("research.grade8.reading.pdfUrl", "Reading chart PDF"),
       text("research.grade8.reading.slopes.pre.label", "Reading pre-adoption label"),
       text("research.grade8.reading.slopes.post.label", "Reading post-adoption label"),
     ],

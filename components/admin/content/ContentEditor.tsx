@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { getEditorSection, getSectionsForPage, researchFieldKeys, type ContentPageId } from "@/lib/admin/content-config";
 import { buildPublishPayloads } from "@/lib/admin/build-save-payload";
 import type { ContentEditorState } from "@/lib/admin/content-editor-types";
@@ -14,7 +15,14 @@ import {
   writeLocalDraft,
   type SectionLocalDraft,
 } from "@/lib/admin/content-local-draft";
-import { getResearchFieldValue } from "@/lib/admin/content-paths";
+import {
+  getResearchFieldValue,
+  setResearchFieldValue,
+} from "@/lib/admin/content-paths";
+import {
+  buildResearchEditorContent,
+  isResearchPdfField,
+} from "@/lib/admin/research-persistence";
 import type { EditableScoreRow } from "@/lib/admin/evidence-scores";
 import { EvidenceScopeEditor } from "@/components/admin/content/EvidenceScopeEditor";
 import { ResearchPageEditor } from "@/components/admin/content/ResearchPageEditor";
@@ -70,7 +78,20 @@ function mergeSoftwareReviews(
 
 type ContentEditorProps = {
   initialState: ContentEditorState;
+  routePage?: ContentPageId;
+  routeSection?: string;
 };
+
+function resolveRouteSection(
+  page: ContentPageId,
+  sectionId?: string,
+): string | undefined {
+  const sections = getSectionsForPage(page);
+  if (sectionId && sections.some((section) => section.id === sectionId)) {
+    return sectionId;
+  }
+  return sections[0]?.id;
+}
 
 function buildFormValues(
   state: ContentEditorState,
@@ -173,11 +194,18 @@ function buildSectionLocalDraft(
   return draft;
 }
 
-export function ContentEditor({ initialState }: ContentEditorProps) {
+export function ContentEditor({
+  initialState,
+  routePage,
+  routeSection,
+}: ContentEditorProps) {
+  const searchParams = useSearchParams();
   const localDraft = readLocalDraft();
-  const initialPage = localDraft?.page ?? "homepage";
+  const initialPage = routePage ?? localDraft?.page ?? "homepage";
   const initialSectionId =
-    getSectionsForPage(initialPage)[0]?.id ?? "hero";
+    resolveRouteSection(initialPage, routeSection) ??
+    getSectionsForPage(initialPage)[0]?.id ??
+    "hero";
 
   const [state, setState] = useState(initialState);
   const [page, setPage] = useState<ContentPageId>(initialPage);
@@ -341,17 +369,51 @@ export function ContentEditor({ initialState }: ContentEditorProps) {
   );
 
   useEffect(() => {
-    const firstSection = getSectionsForPage(page)[0];
+    const sectionParam = searchParams.get("section");
+    const sections = getSectionsForPage(page);
+    const firstSection = sections[0];
     if (!firstSection) return;
 
+    const targetSection =
+      resolveRouteSection(page, sectionParam ?? undefined) ?? firstSection.id;
+
+    if (targetSection === activeSectionIdRef.current) {
+      const draft = readLocalDraft() ?? { sections: {} };
+      writeLocalDraft({ ...draft, page });
+      return;
+    }
+
     persistCurrentSection(activeSectionIdRef.current);
-    setActiveSectionId(firstSection.id);
-    loadSection(firstSection.id);
+    setActiveSectionId(targetSection);
+    loadSection(targetSection);
 
     const draft = readLocalDraft() ?? { sections: {} };
     writeLocalDraft({ ...draft, page });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page]);
+  }, [page, searchParams, loadSection, persistCurrentSection]);
+
+  useEffect(() => {
+    const pageParam = searchParams.get("page");
+    if (
+      pageParam !== "homepage" &&
+      pageParam !== "evidence" &&
+      pageParam !== "site"
+    ) {
+      return;
+    }
+
+    if (pageParam !== page) {
+      setPage(pageParam);
+    }
+  }, [searchParams, page]);
+
+  const selectSection = useCallback(
+    (sectionId: string) => {
+      persistCurrentSection(activeSectionId);
+      setActiveSectionId(sectionId);
+      loadSection(sectionId);
+    },
+    [activeSectionId, loadSection, persistCurrentSection],
+  );
 
   useEffect(() => {
     if (hydratedSectionRef.current !== activeSectionId) {
@@ -369,18 +431,57 @@ export function ContentEditor({ initialState }: ContentEditorProps) {
     return () => window.clearTimeout(timeout);
   }, [formValues, expertQuotes, timeline, softwareReviews, academicDatasets, evidenceScores, siteSettings, navigation, libraryItems, optOutSteps, activeSectionId, page, persistCurrentSection]);
 
-  const selectSection = useCallback(
-    (sectionId: string) => {
-      persistCurrentSection(activeSectionId);
-      setActiveSectionId(sectionId);
-      loadSection(sectionId);
-    },
-    [activeSectionId, loadSection, persistCurrentSection],
-  );
-
   const handleFieldChange = useCallback((key: string, value: unknown) => {
-    markSectionDirty(activeSectionIdRef.current);
-    setFormValues((current) => ({ ...current, [key]: value }));
+    const sectionId = activeSectionIdRef.current;
+    markSectionDirty(sectionId);
+
+    setFormValues((current) => {
+      const next = { ...current, [key]: value };
+
+      if (isResearchPdfField(key)) {
+        upsertSectionInLocalDraft(
+          sectionId,
+          buildSectionLocalDraft(sectionId, next, draftExtras()),
+        );
+      }
+
+      return next;
+    });
+
+    if (key.startsWith("research.")) {
+      setState((current) => {
+        const research = setResearchFieldValue(current.research, key, value);
+
+        if (
+          isResearchPdfField(key) &&
+          sectionId === "evidence_research" &&
+          typeof value === "string" &&
+          value.trim()
+        ) {
+          const content = buildResearchEditorContent(research, {
+            ...formValuesRef.current,
+            [key]: value,
+          });
+
+          void fetch("/api/admin/content", {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              sectionId: "evidence_research",
+              content,
+            }),
+          })
+            .then(async (response) => {
+              if (!response.ok) return;
+              const nextState = (await response.json()) as ContentEditorState;
+              setState(nextState);
+            })
+            .catch(() => undefined);
+        }
+
+        return { ...current, research };
+      });
+    }
   }, []);
 
   const handlePublish = useCallback(async () => {
@@ -388,9 +489,14 @@ export function ContentEditor({ initialState }: ContentEditorProps) {
     setPublishMessage(null);
 
     try {
+      const publishFormValues =
+        activeSectionId === "evidence_research"
+          ? buildResearchEditorContent(state.research, formValuesRef.current)
+          : formValuesRef.current;
+
       const currentDraft = buildSectionLocalDraft(
         activeSectionId,
-        formValuesRef.current,
+        publishFormValues,
         draftExtras(),
       );
       upsertSectionInLocalDraft(activeSectionId, currentDraft);
@@ -454,7 +560,7 @@ export function ContentEditor({ initialState }: ContentEditorProps) {
         publishMessage={publishMessage}
       />
 
-      <div className="flex min-h-0 flex-1">
+      <div className="flex min-h-0 flex-1 flex-col md:flex-row">
         <SectionNav
           sections={sections}
           activeId={activeSectionId}
@@ -462,8 +568,8 @@ export function ContentEditor({ initialState }: ContentEditorProps) {
         />
 
         <div className="min-w-0 flex-1 overflow-y-auto bg-paper-50">
-          <div className="flex min-h-full w-full justify-center px-6 py-8 lg:px-10">
-            <div className="w-full max-w-6xl rounded-[14px] border border-navy-800/8 bg-white p-6 shadow-sm sm:p-8">
+          <div className="flex min-h-full w-full justify-center px-4 py-4 md:px-6 md:py-8 lg:px-10">
+            <div className="w-full max-w-6xl rounded-[14px] border border-navy-800/8 bg-white p-4 shadow-sm sm:p-6 md:p-8">
               {activeSection.id === "site_settings" ? (
                 <div className="space-y-6">
                   <h2 className="text-base font-semibold text-navy-800">

@@ -17,6 +17,7 @@ export type AcademicChart = {
   categories: string[];
   yTicks: number[];
   series: ChartSeries[];
+  pdfUrl?: string;
 };
 
 export type InsightSegment = {

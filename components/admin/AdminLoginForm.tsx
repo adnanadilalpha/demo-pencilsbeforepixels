@@ -38,6 +38,8 @@ export function AdminLoginForm() {
 
     router.push("/admin/dashboard");
     router.refresh();
+
+    void fetch("/api/admin/me", { method: "POST" });
   }
 
   return (

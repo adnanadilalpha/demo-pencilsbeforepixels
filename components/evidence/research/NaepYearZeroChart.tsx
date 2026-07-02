@@ -5,6 +5,7 @@ import { ChartCrosshair, ChartTooltip } from "@/components/charts/ChartTooltip";
 import type { ChartTooltipState } from "@/lib/charts/tooltip";
 import { formatScore } from "@/lib/charts/tooltip";
 import type { NaepYearZeroChart as NaepChartData } from "@/lib/research/types";
+import { ResearchChartPdfFooter } from "@/components/evidence/research/ResearchPdfLink";
 
 const PADDING = { top: 16, right: 24, bottom: 40, left: 48 };
 
@@ -294,6 +295,8 @@ export function NaepYearZeroChart({ chart }: NaepYearZeroChartProps) {
           />
         </div>
       </div>
+
+      <ResearchChartPdfFooter url={chart.pdfUrl} chartTitle={chart.title} />
     </div>
   );
 }

@@ -2,9 +2,16 @@ import "server-only";
 
 import { LOCAL_FAVICONS } from "@/lib/brand/favicon";
 import type { AcademicDataset } from "@/lib/academic-data/types";
+import { mergeResearchWithFallback } from "@/lib/admin/research-persistence";
+import { hydrateSettingsBrand, resolveBrandForSiteContent } from "@/lib/admin/settings/brand-media";
+import { mergeStoredGeneral } from "@/lib/admin/settings/defaults";
 import type { ResearchChartsData } from "@/lib/research/types";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { normalizeYouTubeUrl } from "@/lib/youtube";
+import {
+  inferLibraryFileKind,
+  fileNameFromUrl,
+} from "@/lib/cms/library-file";
 import { buildFallbackSiteContent } from "./fallback";
 import { resolvePrivacyPolicyUrl, resolveTermsOfServiceUrl } from "./settings-urls";
 import type {
@@ -22,6 +29,8 @@ type MediaRow = {
   id: string;
   storage_path: string;
   public_url: string;
+  mime_type: string | null;
+  title: string | null;
 };
 
 function mediaUrl(
@@ -33,17 +42,24 @@ function mediaUrl(
   return map.get(id) ?? fallback;
 }
 
-function buildMediaAssets(map: Map<string, string>) {
-  const url = (path: string) => map.get(path) ?? `/images/${path.replace(/^site-media\//, "")}`;
+function buildMediaAssets(
+  map: Map<string, string>,
+  brand?: {
+    logoMark?: string;
+    logoWordmark?: string;
+    logoMarkFooter?: string;
+    logoWordmarkFooter?: string;
+    divider?: string;
+  },
+) {
+  const brandAssets = resolveBrandForSiteContent(map, brand);
+  const url = (path: string) =>
+    map.get(path) ?? `/images/${path.replace(/^site-media\//, "")}`;
 
   return {
     hero: { background: url("site-media/hero/child-writing.jpg") },
     brand: {
-      logoMark: url("site-media/brand/logo-mark.svg"),
-      logoWordmark: url("site-media/brand/logo-wordmark.svg"),
-      logoMarkFooter: url("site-media/brand/logo-mark-footer.svg"),
-      logoWordmarkFooter: url("site-media/brand/logo-wordmark-footer.svg"),
-      divider: url("site-media/brand/divider.svg"),
+      ...brandAssets,
       faviconRichBlack: LOCAL_FAVICONS.richBlack,
       faviconRichWhite: LOCAL_FAVICONS.richWhite,
     },
@@ -89,7 +105,7 @@ async function fetchSiteContentFromDb(): Promise<SiteContent | null> {
       .from("content_sections")
       .select("section_key, content")
       .eq("status", "published"),
-    supabase.from("media_assets").select("id, storage_path, public_url"),
+    supabase.from("media_assets").select("id, storage_path, public_url, mime_type, title"),
     supabase
       .from("navigation_links")
       .select("location, label, href, sort_order")
@@ -109,7 +125,9 @@ async function fetchSiteContentFromDb(): Promise<SiteContent | null> {
       .order("sort_order"),
     supabase
       .from("library_items")
-      .select("category, title, subtitle, kind, image_media_id, sort_order")
+      .select(
+        "category, title, subtitle, kind, image_media_id, file_media_id, external_url, video_media_id, sort_order",
+      )
       .eq("visible", true)
       .order("sort_order"),
     supabase
@@ -140,9 +158,17 @@ async function fetchSiteContentFromDb(): Promise<SiteContent | null> {
   }
 
   const mediaById = new Map<string, string>();
+  const mediaMetaById = new Map<
+    string,
+    { mimeType: string | null; title: string | null }
+  >();
   const mediaByPath = new Map<string, string>();
   for (const row of (mediaRes.data ?? []) as MediaRow[]) {
     mediaById.set(row.id, row.public_url);
+    mediaMetaById.set(row.id, {
+      mimeType: row.mime_type,
+      title: row.title,
+    });
     mediaByPath.set(row.storage_path, row.public_url);
   }
 
@@ -205,13 +231,42 @@ async function fetchSiteContentFromDb(): Promise<SiteContent | null> {
   for (const item of libraryRes.data ?? []) {
     const cat = item.category as LibraryCategory;
     if (!libraryContent[cat]) continue;
+
+    const kind = item.kind as LibraryItem["kind"];
+    const fileMediaId = item.file_media_id ?? item.image_media_id;
+    const fileMeta = fileMediaId ? mediaMetaById.get(fileMediaId) : null;
+    const fileUrl = fileMediaId ? mediaUrl(mediaById, fileMediaId) : undefined;
+    const resolvedFileUrl = fileUrl || undefined;
+
     libraryContent[cat].push({
       title: item.title,
       subtitle: item.subtitle,
-      kind: item.kind as LibraryItem["kind"],
-      image: item.image_media_id
-        ? mediaUrl(mediaById, item.image_media_id)
+      kind,
+      image:
+        kind === "book" && item.image_media_id
+          ? mediaUrl(mediaById, item.image_media_id)
+          : undefined,
+      youtubeUrl: item.external_url
+        ? normalizeYouTubeUrl(item.external_url)
         : undefined,
+      videoUrl: item.video_media_id
+        ? mediaUrl(mediaById, item.video_media_id)
+        : undefined,
+      fileUrl: kind === "paper" || kind === "resource" ? resolvedFileUrl : undefined,
+      fileName:
+        kind === "paper" || kind === "resource"
+          ? (fileMeta?.title ??
+            fileNameFromUrl(resolvedFileUrl) ??
+            undefined)
+          : undefined,
+      fileKind:
+        kind === "paper" || kind === "resource"
+          ? inferLibraryFileKind(fileMeta?.mimeType, resolvedFileUrl)
+          : undefined,
+      fileMimeType:
+        kind === "paper" || kind === "resource"
+          ? (fileMeta?.mimeType ?? undefined)
+          : undefined,
     });
   }
 
@@ -269,24 +324,40 @@ async function fetchSiteContentFromDb(): Promise<SiteContent | null> {
     }),
   );
 
-  const settingsValue = (settingsMap.get("general") ?? {}) as Record<
+  const settingsRecord = (settingsMap.get("general") ?? {}) as Record<
     string,
-    string
+    unknown
   >;
-  const media = buildMediaAssets(mediaByPath);
+  const mergedSettings = mergeStoredGeneral(settingsRecord);
+  const hydratedSettings = hydrateSettingsBrand(mergedSettings, mediaByPath);
+  const media = buildMediaAssets(mediaByPath, hydratedSettings.brand);
 
   return {
     version: versionRes.data.version,
     publishedAt: versionRes.data.published_at,
     settings: {
-      siteName: settingsValue.siteName ?? "Pencils Before Pixels",
+      siteName: hydratedSettings.siteName ?? "Pencils Before Pixels",
       description:
-        settingsValue.description ??
+        hydratedSettings.description ??
         "Evidence-based resources helping parents understand learning in today's classrooms.",
-      privacyPolicyUrl: resolvePrivacyPolicyUrl(settingsValue.privacyPolicyUrl),
-      termsOfServiceUrl: resolveTermsOfServiceUrl(settingsValue.termsOfServiceUrl),
+      metaTitle:
+        hydratedSettings.metaTitle ??
+        hydratedSettings.siteName ??
+        "Pencils Before Pixels",
+      metaDescription:
+        hydratedSettings.metaDescription ??
+        hydratedSettings.description ??
+        "Evidence-based resources helping parents understand learning in today's classrooms.",
+      footerTagline: hydratedSettings.footerTagline ?? "",
+      faviconUrl: hydratedSettings.faviconUrl ?? "",
+      privacyPolicyUrl: resolvePrivacyPolicyUrl(
+        hydratedSettings.privacyPolicyUrl,
+      ),
+      termsOfServiceUrl: resolveTermsOfServiceUrl(
+        hydratedSettings.termsOfServiceUrl,
+      ),
       copyright:
-        settingsValue.copyright ??
+        hydratedSettings.copyright ??
         "© 2026 Pencils Before Pixels. A Research-Driven Editorial for District 66 Parents.",
     },
     media,
@@ -313,7 +384,7 @@ async function fetchSiteContentFromDb(): Promise<SiteContent | null> {
       ],
     optOutSteps,
     softwareReviews,
-    research: research ?? buildFallbackSiteContent().research,
+    research: mergeResearchWithFallback(research),
     academicStatic:
       academicStatic.length > 0
         ? academicStatic

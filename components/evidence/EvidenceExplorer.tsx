@@ -7,7 +7,6 @@ import {
   ArrowUp,
   BarChart3,
   BookOpen,
-  Download,
   LineChart,
   Map,
   Minus,
@@ -671,22 +670,13 @@ export function EvidenceExplorer({ bootstrap }: { bootstrap: EvidenceBootstrap }
           )}
         >
           <div className="flex min-w-0 flex-1 flex-col rounded-lg bg-slate-50 p-4 shadow-[0_1px_3px_rgba(10,22,40,0.10),0_1px_2px_rgba(10,22,40,0.06)] sm:p-6">
-            <div className="mb-5 flex flex-col gap-4 sm:mb-7 sm:flex-row sm:items-end sm:justify-between">
-              <div className="flex min-w-0 flex-col gap-3 sm:gap-4">
-                <h2 className="text-lg leading-display text-[#18263a] lg:text-2xl">
-                  {linePanel?.chart.title}
-                </h2>
-                <p className="text-sm leading-snug text-navy-800 lg:text-base lg:leading-4">
-                  {linePanel?.subtitle}
-                </p>
-              </div>
-              <button
-                type="button"
-                className="inline-flex shrink-0 items-center gap-1.5 self-start whitespace-nowrap text-sm font-medium leading-single text-navy-800 transition-opacity hover:opacity-70 sm:self-auto lg:text-lg"
-              >
-                <Download className="size-4" strokeWidth={1} />
-                Download PDF
-              </button>
+            <div className="mb-5 flex flex-col gap-3 sm:mb-7 sm:gap-4">
+              <h2 className="text-lg leading-display text-[#18263a] lg:text-2xl">
+                {linePanel?.chart.title}
+              </h2>
+              <p className="text-sm leading-snug text-navy-800 lg:text-base lg:leading-4">
+                {linePanel?.subtitle}
+              </p>
             </div>
             {linePanel && <EvidenceLineChart chart={linePanel.chart} />}
           </div>

@@ -29,7 +29,14 @@ export function Footer({ paddingX = sectionPaddingX }: FooterProps) {
           <div className="flex w-full flex-col gap-12 max-lg:gap-8">
             <div className="flex w-full flex-col gap-10 max-lg:gap-12 lg:flex-row lg:items-start lg:justify-between">
               <div className="order-2 flex flex-col gap-8 max-lg:gap-8 lg:order-1">
-                <Logo variant="dark" />
+                <div className="flex flex-col gap-3">
+                  <Logo variant="dark" />
+                  {settings.footerTagline ? (
+                    <p className="max-w-sm text-sm text-black/70">
+                      {settings.footerTagline}
+                    </p>
+                  ) : null}
+                </div>
                 <nav
                   className="flex flex-wrap gap-8 text-base font-semibold leading-none text-black max-lg:gap-8"
                   aria-label="Footer navigation"

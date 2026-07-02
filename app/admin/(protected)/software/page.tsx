@@ -1,13 +1,5 @@
-import type { Metadata } from "next";
-import { AdminPlaceholderPage } from "@/components/admin/AdminPlaceholderPage";
-
-export const metadata: Metadata = { title: "Software" };
+import { redirect } from "next/navigation";
 
 export default function AdminSoftwarePage() {
-  return (
-    <AdminPlaceholderPage
-      title="Software"
-      description="Manage software reviews and learning app profiles."
-    />
-  );
+  redirect("/admin/content");
 }

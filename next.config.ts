@@ -5,6 +5,12 @@ const supabaseHostname = process.env.NEXT_PUBLIC_SUPABASE_URL
   : null;
 
 const nextConfig: NextConfig = {
+  experimental: {
+    serverActions: {
+      bodySizeLimit: "64mb",
+    },
+    proxyClientMaxBodySize: "64mb",
+  },
   images: {
     remotePatterns: [
       {

@@ -2,12 +2,21 @@
 
 import { useRef, useState } from "react";
 import Image from "next/image";
-import { ImagePlus, Loader2, RefreshCw } from "lucide-react";
+import { ImagePlus, RefreshCw } from "lucide-react";
+import { UploadProgressPanel } from "@/components/admin/UploadProgressPanel";
 import { adminLabelClass } from "@/components/admin/admin-styles";
+import {
+  brandLogoFieldPreviewClass,
+  brandLogoMarkClass,
+  brandLogoMarkDimensions,
+  brandLogoWordmarkClass,
+  brandLogoWordmarkDimensions,
+} from "@/lib/brand/logo-layout";
 import {
   canonicalStoragePath,
   publicUrlToStoragePath,
 } from "@/lib/admin/media-paths";
+import { uploadMediaWithProgress } from "@/lib/admin/upload-media-client";
 import { cn } from "@/lib/utils";
 
 type MediaFieldProps = {
@@ -17,6 +26,17 @@ type MediaFieldProps = {
   folder: string;
   filename?: string;
   altText?: string;
+  variant?: "default" | "logo" | "icon" | "mark";
+  previewTheme?: "light" | "dark";
+};
+
+type UploadState = {
+  fileName: string;
+  fileSize: number;
+  loaded: number;
+  total: number;
+  percent: number;
+  processing: boolean;
 };
 
 export function MediaField({
@@ -26,17 +46,27 @@ export function MediaField({
   folder,
   filename,
   altText,
+  variant = "default",
+  previewTheme = "dark",
 }: MediaFieldProps) {
   const inputRef = useRef<HTMLInputElement>(null);
-  const [uploading, setUploading] = useState(false);
+  const [uploadState, setUploadState] = useState<UploadState | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const uploading = uploadState !== null;
 
   const openPicker = () => {
     inputRef.current?.click();
   };
 
   const handleUpload = async (file: File) => {
-    setUploading(true);
+    setUploadState({
+      fileName: file.name,
+      fileSize: file.size,
+      loaded: 0,
+      total: file.size,
+      percent: 0,
+      processing: false,
+    });
     setError(null);
 
     try {
@@ -53,70 +83,168 @@ export function MediaField({
         formData.append("replaceStoragePath", replacePath);
       }
 
-      const response = await fetch("/api/admin/media", {
-        method: "POST",
-        body: formData,
+      const media = await uploadMediaWithProgress(formData, (progress) => {
+        setUploadState((current) =>
+          current
+            ? {
+                ...current,
+                loaded: progress.loaded,
+                total: progress.total,
+                percent: progress.percent,
+                processing: progress.percent >= 100,
+              }
+            : current,
+        );
       });
 
-      if (!response.ok) {
-        const body = (await response.json()) as { error?: string };
-        throw new Error(body.error ?? "Upload failed.");
-      }
-
-      const media = (await response.json()) as { publicUrl: string };
       onChange(media.publicUrl);
+      setUploadState(null);
     } catch (uploadError) {
       setError(
         uploadError instanceof Error
           ? uploadError.message
           : "Upload failed.",
       );
+      setUploadState(null);
     } finally {
-      setUploading(false);
       if (inputRef.current) inputRef.current.value = "";
     }
   };
+
+  const previewSurface =
+    variant === "logo" || variant === "icon" || variant === "mark"
+      ? previewTheme === "light"
+        ? "bg-paper-300"
+        : "bg-navy-800"
+      : "bg-paper-50";
+  const emptyLabelClass =
+    previewTheme === "light" ? "text-body-muted" : "text-white/60";
+
+  const brandPreviewContainer =
+    variant === "mark" || variant === "logo"
+      ? brandLogoFieldPreviewClass
+      : variant === "icon"
+        ? "flex aspect-square max-w-[10rem] min-h-28 items-center justify-center px-4"
+        : "";
+
+  const brandMarkImage = (
+    <Image
+      key={value}
+      src={value}
+      alt={altText ?? label}
+      width={brandLogoMarkDimensions.width}
+      height={brandLogoMarkDimensions.height}
+      className={brandLogoMarkClass}
+      unoptimized
+    />
+  );
+
+  const brandWordmarkImage = (
+    <Image
+      key={value}
+      src={value}
+      alt={altText ?? label}
+      width={brandLogoWordmarkDimensions.width}
+      height={brandLogoWordmarkDimensions.height}
+      className={brandLogoWordmarkClass}
+      unoptimized
+    />
+  );
 
   return (
     <div className="flex flex-col gap-2">
       <label className={adminLabelClass}>{label}</label>
 
       <div className="overflow-hidden rounded-[10px] border border-navy-800/10">
-        {value ? (
-          <div className="relative aspect-16/7 w-full bg-paper-50">
-            <Image
-              key={value}
-              src={value}
-              alt={altText ?? label}
-              fill
-              className="object-cover"
-              unoptimized
+        {uploadState ? (
+          <div
+            className={cn(
+              "flex items-center justify-center px-4 py-6",
+              previewSurface,
+              variant === "default" && "aspect-16/7",
+              variant === "logo" && brandPreviewContainer,
+              variant === "icon" && brandPreviewContainer,
+              variant === "mark" && brandPreviewContainer,
+            )}
+          >
+            <UploadProgressPanel
+              fileName={uploadState.fileName}
+              fileSize={uploadState.fileSize}
+              loaded={uploadState.loaded}
+              total={uploadState.total}
+              percent={uploadState.percent}
+              processing={uploadState.processing}
+              className="max-w-md"
             />
           </div>
+        ) : value ? (
+          <div
+            className={cn(
+              "relative flex w-full items-center justify-center",
+              previewSurface,
+              variant === "default" && "aspect-16/7 bg-paper-50",
+              variant === "logo" && brandPreviewContainer,
+              variant === "icon" && brandPreviewContainer,
+              variant === "mark" && brandPreviewContainer,
+            )}
+          >
+            {variant === "default" ? (
+              <Image
+                key={value}
+                src={value}
+                alt={altText ?? label}
+                fill
+                className="object-cover"
+                unoptimized
+              />
+            ) : variant === "mark" ? (
+              brandMarkImage
+            ) : variant === "logo" ? (
+              brandWordmarkImage
+            ) : (
+              <Image
+                key={value}
+                src={value}
+                alt={altText ?? label}
+                width={48}
+                height={48}
+                className="size-12 rounded-lg object-contain"
+                unoptimized
+              />
+            )}
+          </div>
         ) : (
-          <div className="flex aspect-16/7 items-center justify-center bg-paper-50 text-sm text-body-muted">
+          <div
+            className={cn(
+              "flex items-center justify-center text-sm",
+              previewSurface,
+              variant === "default" && "aspect-16/7 bg-paper-50 text-body-muted",
+              (variant === "logo" || variant === "mark") && brandPreviewContainer,
+              variant === "icon" && brandPreviewContainer,
+              emptyLabelClass,
+            )}
+          >
             No image uploaded
           </div>
         )}
 
         <div className="flex flex-wrap gap-2 border-t border-navy-800/8 bg-white p-3">
-          <button
-            type="button"
-            onClick={openPicker}
-            disabled={uploading}
-            className={cn(
-              "inline-flex items-center gap-2 rounded-full border border-navy-800/12 px-3 py-1.5 text-xs font-medium text-navy-800 transition-colors hover:bg-paper-50 disabled:opacity-60",
-            )}
-          >
-            {uploading ? (
-              <Loader2 className="size-3.5 animate-spin" />
-            ) : value ? (
-              <RefreshCw className="size-3.5" />
-            ) : (
-              <ImagePlus className="size-3.5" />
-            )}
-            {value ? "Replace" : "Upload"}
-          </button>
+          {!uploading ? (
+            <button
+              type="button"
+              onClick={openPicker}
+              className={cn(
+                "inline-flex items-center gap-2 rounded-full border border-navy-800/12 px-3 py-1.5 text-xs font-medium text-navy-800 transition-colors hover:bg-paper-50",
+              )}
+            >
+              {value ? (
+                <RefreshCw className="size-3.5" />
+              ) : (
+                <ImagePlus className="size-3.5" />
+              )}
+              {value ? "Replace" : "Upload"}
+            </button>
+          ) : null}
         </div>
       </div>
 

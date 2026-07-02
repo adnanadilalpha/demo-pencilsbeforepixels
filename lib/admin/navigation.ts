@@ -1,16 +1,13 @@
 import type { LucideIcon } from "lucide-react";
 import {
-  BookOpen,
+  BarChart3,
   ClipboardList,
   FileText,
   FolderOpen,
   LayoutDashboard,
   Mail,
-  Monitor,
-  ScrollText,
   Settings,
   Users,
-  Video,
 } from "lucide-react";
 
 export type AdminNavItem = {
@@ -22,13 +19,10 @@ export type AdminNavItem = {
 export const adminNavItems: AdminNavItem[] = [
   { label: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
   { label: "Content", href: "/admin/content", icon: FileText },
-  { label: "Media", href: "/admin/media", icon: FolderOpen },
-  { label: "Research", href: "/admin/research", icon: ScrollText },
-  { label: "Books", href: "/admin/books", icon: BookOpen },
-  { label: "Videos", href: "/admin/videos", icon: Video },
-  { label: "Software", href: "/admin/software", icon: Monitor },
+  { label: "Scores", href: "/admin/scores", icon: BarChart3 },
+  { label: "Resources", href: "/admin/resources", icon: FolderOpen },
   { label: "Newsletter", href: "/admin/newsletter", icon: Mail },
-  { label: "Opt Out", href: "/admin/opt-out", icon: ClipboardList },
-  { label: "Users", href: "/admin/users", icon: Users },
+  { label: "Device Opt Out", href: "/admin/opt-out", icon: ClipboardList },
+  { label: "Admins", href: "/admin/admins", icon: Users },
   { label: "Settings", href: "/admin/settings", icon: Settings },
 ];
