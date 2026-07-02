@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
-import { getContentVersion } from "@/lib/cms/cached";
+import { getContentVersionUncached } from "@/lib/cms/fetch-server";
 
 export async function GET() {
-  const version = await getContentVersion();
+  const version = await getContentVersionUncached();
   return NextResponse.json(version, {
     headers: {
-      "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300",
+      "Cache-Control": "private, no-store, max-age=0",
     },
   });
 }

@@ -5,7 +5,7 @@ import { NaepYearZeroChart } from "@/components/evidence/research/NaepYearZeroCh
 import { ResearchBarChart } from "@/components/evidence/research/ResearchBarChart";
 import { ResearchMentalHealthChart } from "@/components/evidence/research/ResearchMentalHealthChart";
 import { ResearchOecdScatter } from "@/components/evidence/research/ResearchOecdScatter";
-import { useSiteContent } from "@/lib/cms/hooks";
+import { useSiteContent, useSection } from "@/lib/cms/hooks";
 import type { ResearchChartsData } from "@/lib/research/types";
 
 function ResearchCard({
@@ -64,17 +64,22 @@ function NaepGradePanel({
 
 export function EvidenceResearchTab() {
   const { research: data } = useSiteContent();
+  const intro = useSection("evidence.intro");
+  const introLabel =
+    (intro.label as string) ?? "Nebraska in a National Context";
+  const introBody =
+    (intro.body as string) ??
+    "How does Nebraska's trend compare to the broader national pattern?";
 
   return (
     <div className="flex flex-col gap-8 lg:gap-12">
       <section className="flex flex-col gap-6 sm:gap-8">
         <div className="flex flex-col gap-4">
           <p className="text-[10px] font-medium uppercase tracking-[0.12em] text-gold-500 sm:text-xs">
-            Nebraska in a National Context
+            {introLabel}
           </p>
           <p className="max-w-3xl text-base leading-[1.4] text-[#6b7280] sm:text-lg">
-            How does Nebraska&apos;s trend compare to the broader national
-            pattern?
+            {introBody}
           </p>
         </div>
 

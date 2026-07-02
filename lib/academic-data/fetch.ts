@@ -3,6 +3,10 @@ import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getSiteContent } from "@/lib/cms/cached";
 import {
+  applyAcademicCopyOverride,
+  loadAcademicCopyOverrides,
+} from "./copy-overrides";
+import {
   buildNebraskaEnglishDataset,
   buildNebraskaMathDataset,
   buildNebraskaMathGenderDataset,
@@ -19,6 +23,7 @@ export async function getAcademicDatasets(): Promise<AcademicDataset[]> {
   const staticAcademicDatasets = siteContent.academicStatic;
 
   const [
+    copyOverrides,
     nebraskaMathByGrade,
     nebraskaMathGender,
     westsideMathGender,
@@ -26,6 +31,7 @@ export async function getAcademicDatasets(): Promise<AcademicDataset[]> {
     mathProficiency,
     englishProficiency,
   ] = await Promise.all([
+    loadAcademicCopyOverrides(),
     supabase
       .from("math_scores")
       .select("school_year, grade, avg_scale_score")
@@ -85,16 +91,31 @@ export async function getAcademicDatasets(): Promise<AcademicDataset[]> {
   }
 
   return [
-    staticAcademicDatasets[0],
-    staticAcademicDatasets[1],
-    staticAcademicDatasets[2],
-    buildNebraskaMathDataset(nebraskaMathByGrade.data ?? []),
-    buildNebraskaMathGenderDataset(nebraskaMathGender.data ?? []),
-    buildWestsideMathGenderDataset(westsideMathGender.data ?? []),
-    buildNebraskaEnglishDataset(nebraskaEnglish.data ?? []),
-    buildStateFederalDataset(
-      mathProficiency.data ?? [],
-      englishProficiency.data ?? [],
+    applyAcademicCopyOverride(staticAcademicDatasets[0], copyOverrides),
+    applyAcademicCopyOverride(staticAcademicDatasets[1], copyOverrides),
+    applyAcademicCopyOverride(staticAcademicDatasets[2], copyOverrides),
+    applyAcademicCopyOverride(
+      buildNebraskaMathDataset(nebraskaMathByGrade.data ?? []),
+      copyOverrides,
+    ),
+    applyAcademicCopyOverride(
+      buildNebraskaMathGenderDataset(nebraskaMathGender.data ?? []),
+      copyOverrides,
+    ),
+    applyAcademicCopyOverride(
+      buildWestsideMathGenderDataset(westsideMathGender.data ?? []),
+      copyOverrides,
+    ),
+    applyAcademicCopyOverride(
+      buildNebraskaEnglishDataset(nebraskaEnglish.data ?? []),
+      copyOverrides,
+    ),
+    applyAcademicCopyOverride(
+      buildStateFederalDataset(
+        mathProficiency.data ?? [],
+        englishProficiency.data ?? [],
+      ),
+      copyOverrides,
     ),
   ];
 }

@@ -110,6 +110,24 @@ export function buildFallbackSiteContent(): SiteContent {
         label: "Nebraska in a National Context",
         body: "How does Nebraska's trend compare to the broader national pattern?",
       },
+      "evidence.nebraska": {
+        title: "Nebraska",
+        subtitle:
+          "Average scale score trends by district, grade, and student group",
+      },
+      "evidence.district_66": {
+        title: "District 66",
+        tagline: "WESTSIDE COMMUNITY SCHOOLS",
+        subtitle:
+          "Westside Community Schools performance trends by grade and student group",
+        viewDescription:
+          "Compare individual school trends against district and state averages over time.",
+      },
+      "evidence.research_tab": {
+        title: "Research Charts",
+        subtitle:
+          "Findings from NAEP, PISA, TIMSS, PIRLS and peer-reviewed research — documenting the relationship between digital device use and academic performance across the United States and internationally.",
+      },
     },
     expertQuotes: expertQuotes.map((q) => ({ ...q })),
     timeline: timelineSlides.map((s) => ({ ...s })),
@@ -131,7 +149,7 @@ export function buildFallbackSiteContent(): SiteContent {
         slug: "epic",
         title: epicReviewContent.title,
         summary: epicReviewContent.summary,
-        youtubeId: "iybQw1jlPEs",
+        youtubeId: "https://www.youtube.com/watch?v=iybQw1jlPEs",
       },
       ixl: {
         slug: "ixl",

@@ -1,9 +1,12 @@
 import type { Metadata, Viewport } from "next";
 import { Anton, DM_Sans } from "next/font/google";
+import { PageViewTracker } from "@/components/analytics/PageViewTracker";
 import { AppProviders } from "@/components/providers/AppProviders";
 import { LOCAL_FAVICONS } from "@/lib/brand/favicon";
 import { getSiteContent } from "@/lib/cms/cached";
 import "./globals.css";
+
+export const dynamic = "force-dynamic";
 
 const anton = Anton({
   weight: "400",
@@ -51,7 +54,10 @@ export default async function RootLayout({
         />
       </head>
       <body className="flex min-h-full flex-col overflow-x-clip bg-paper-50">
-        <AppProviders initialContent={siteContent}>{children}</AppProviders>
+        <AppProviders initialContent={siteContent}>
+          <PageViewTracker />
+          {children}
+        </AppProviders>
       </body>
     </html>
   );

@@ -1,12 +1,13 @@
+"use client";
+
 import { Container } from "@/components/ui/Container";
 import { DisplayHeading } from "@/components/ui/DisplayHeading";
 import { SectionLabel } from "@/components/ui/SectionLabel";
 import { ScrollReveal } from "@/components/motion/ScrollReveal";
-import { getSiteContent } from "@/lib/cms/cached";
+import { useSection } from "@/lib/cms/hooks";
 
-export async function GoalSection() {
-  const content = await getSiteContent();
-  const section = content.sections["homepage.goal"] ?? {};
+export function GoalSection() {
+  const section = useSection("homepage.goal");
 
   const label = (section.label as string) ?? "What to do";
   const tagline =

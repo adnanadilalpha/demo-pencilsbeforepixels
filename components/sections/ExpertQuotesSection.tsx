@@ -1,11 +1,15 @@
+"use client";
+
 import Image from "next/image";
 import { Container } from "@/components/ui/Container";
 import { DisplayHeading } from "@/components/ui/DisplayHeading";
 import { ScrollReveal } from "@/components/motion/ScrollReveal";
-import { getSiteContent } from "@/lib/cms/cached";
+import { useSection, useSiteContent } from "@/lib/cms/hooks";
 
-export async function ExpertQuotesSection() {
-  const { expertQuotes } = await getSiteContent();
+export function ExpertQuotesSection() {
+  const section = useSection("homepage.expert_voices");
+  const { expertQuotes } = useSiteContent();
+  const headline = (section.headline as string) ?? "What the Expert says";
 
   return (
     <section className="w-full bg-paper-50 py-24 max-lg:py-16">
@@ -16,7 +20,7 @@ export async function ExpertQuotesSection() {
               as="h2"
               className="uppercase text-navy-800"
             >
-              What the Expert says
+              {headline}
             </DisplayHeading>
           </ScrollReveal>
 
@@ -53,15 +57,18 @@ export async function ExpertQuotesSection() {
                     </div>
                   </div>
 
-                  <div className="relative mt-6 h-28 w-24 shrink-0 overflow-hidden rounded-sm md:absolute md:right-0 md:top-6 md:mt-0 md:h-[96px] md:w-[82px] xl:relative xl:mt-0 xl:h-[164px] xl:w-[140px] xl:justify-self-end">
-                    <Image
-                      src={expert.image}
-                      alt={expert.name}
-                      fill
-                      className="object-cover"
-                      sizes="(max-width: 767px) 96px, (max-width: 1279px) 82px, 140px"
-                    />
-                  </div>
+                  {expert.image ? (
+                    <div className="relative mt-6 h-28 w-24 shrink-0 overflow-hidden rounded-sm md:absolute md:right-0 md:top-6 md:mt-0 md:h-[96px] md:w-[82px] xl:relative xl:mt-0 xl:h-[164px] xl:w-[140px] xl:justify-self-end">
+                      <Image
+                        src={expert.image}
+                        alt={expert.name}
+                        fill
+                        className="object-cover"
+                        sizes="(max-width: 767px) 96px, (max-width: 1279px) 82px, 140px"
+                        unoptimized
+                      />
+                    </div>
+                  ) : null}
                 </div>
               </ScrollReveal>
             ))}

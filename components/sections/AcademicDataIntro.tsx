@@ -1,10 +1,11 @@
+"use client";
+
 import { DisplayHeading } from "@/components/ui/DisplayHeading";
 import { ScrollReveal } from "@/components/motion/ScrollReveal";
-import { getSiteContent } from "@/lib/cms/cached";
+import { useSection } from "@/lib/cms/hooks";
 
-export async function AcademicDataIntro() {
-  const content = await getSiteContent();
-  const section = content.sections["homepage.academic_data"] ?? {};
+export function AcademicDataIntro() {
+  const section = useSection("homepage.academic_data");
 
   const label = (section.label as string) ?? "Academic Data";
   const headline = (section.headline as string) ?? label;

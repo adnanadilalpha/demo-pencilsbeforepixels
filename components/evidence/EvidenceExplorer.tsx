@@ -53,6 +53,7 @@ import {
   fetchCachedSchools,
   getClientEvidenceBootstrap,
 } from "@/lib/evidence/fetch-client";
+import { useSection } from "@/lib/cms/hooks";
 import { cn } from "@/lib/utils";
 
 const TABS: {
@@ -70,7 +71,7 @@ const SUBJECTS: { id: EvidenceSubject; label: string }[] = [
   { id: "english", label: "English Language Arts" },
 ];
 
-const TAB_COPY: Record<
+function useEvidenceTabCopy(): Record<
   EvidenceTab,
   {
     title: string;
@@ -78,26 +79,36 @@ const TAB_COPY: Record<
     tagline?: string;
     viewDescription?: string;
   }
-> = {
-  nebraska: {
-    title: "Nebraska",
-    subtitle:
-      "Average scale score trends by district, grade, and student group",
-  },
-  "district-66": {
-    title: "District 66",
-    tagline: "WESTSIDE COMMUNITY SCHOOLS",
-    subtitle:
-      "Westside Community Schools performance trends by grade and student group",
-    viewDescription:
-      "Compare individual school trends against district and state averages over time.",
-  },
-  research: {
-    title: "Research Charts",
-    subtitle:
-      "Findings from NAEP, PISA, TIMSS, PIRLS and peer-reviewed research — documenting the relationship between digital device use and academic performance across the United States and internationally.",
-  },
-};
+> {
+  const nebraska = useSection("evidence.nebraska");
+  const district66 = useSection("evidence.district_66");
+  const research = useSection("evidence.research_tab");
+
+  return {
+    nebraska: {
+      title: (nebraska.title as string) ?? "Nebraska",
+      subtitle:
+        (nebraska.subtitle as string) ??
+        "Average scale score trends by district, grade, and student group",
+    },
+    "district-66": {
+      title: (district66.title as string) ?? "District 66",
+      tagline: (district66.tagline as string) ?? "WESTSIDE COMMUNITY SCHOOLS",
+      subtitle:
+        (district66.subtitle as string) ??
+        "Westside Community Schools performance trends by grade and student group",
+      viewDescription:
+        (district66.viewDescription as string) ??
+        "Compare individual school trends against district and state averages over time.",
+    },
+    research: {
+      title: (research.title as string) ?? "Research Charts",
+      subtitle:
+        (research.subtitle as string) ??
+        "Findings from NAEP, PISA, TIMSS, PIRLS and peer-reviewed research — documenting the relationship between digital device use and academic performance across the United States and internationally.",
+    },
+  };
+}
 
 
 function isLinePanel(
@@ -107,6 +118,7 @@ function isLinePanel(
 }
 
 export function EvidenceExplorer({ bootstrap }: { bootstrap: EvidenceBootstrap }) {
+  const tabCopy = useEvidenceTabCopy();
   const defaults = useMemo(
     () => ({
       tab: "nebraska" as EvidenceTab,
@@ -321,7 +333,7 @@ export function EvidenceExplorer({ bootstrap }: { bootstrap: EvidenceBootstrap }
     [selectedDistrictIds],
   );
 
-  const copy = TAB_COPY[tab];
+  const copy = tabCopy[tab];
   const linePanel = isLinePanel(panel) ? panel : null;
   const selectedSchools = useMemo(
     () =>

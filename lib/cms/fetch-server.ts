@@ -4,6 +4,7 @@ import { LOCAL_FAVICONS } from "@/lib/brand/favicon";
 import type { AcademicDataset } from "@/lib/academic-data/types";
 import type { ResearchChartsData } from "@/lib/research/types";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { normalizeYouTubeUrl } from "@/lib/youtube";
 import { buildFallbackSiteContent } from "./fallback";
 import { resolvePrivacyPolicyUrl, resolveTermsOfServiceUrl } from "./settings-urls";
 import type {
@@ -153,6 +154,10 @@ async function fetchSiteContentFromDb(): Promise<SiteContent | null> {
     >;
   }
 
+  const mentalHealthSection = sections["homepage.mental_health"] ?? {};
+  const academicDataSection = sections["homepage.academic_data"] ?? {};
+  const researchLibrarySection = sections["homepage.research_library"] ?? {};
+
   const settingsMap = new Map<string, unknown>();
   for (const row of settingsRes.data ?? []) {
     settingsMap.set(row.key, row.value);
@@ -187,12 +192,10 @@ async function fetchSiteContentFromDb(): Promise<SiteContent | null> {
     indentContent: s.indent_content,
   }));
 
-  const libraryCategories: LibraryCategory[] = [
-    "Books",
-    "Research Papers",
-    "Videos",
-    "Parent Resources",
-  ];
+  const libraryCategories: LibraryCategory[] =
+    (researchLibrarySection.categories as LibraryCategory[] | undefined)?.length
+      ? (researchLibrarySection.categories as LibraryCategory[])
+      : ["Books", "Research Papers", "Videos", "Parent Resources"];
   const libraryContent: Record<LibraryCategory, LibraryItem[]> = {
     Books: [],
     "Research Papers": [],
@@ -227,7 +230,9 @@ async function fetchSiteContentFromDb(): Promise<SiteContent | null> {
       slug: review.slug as "epic" | "ixl",
       title: review.title,
       summary: review.summary ?? undefined,
-      youtubeId: review.youtube_id ?? undefined,
+      youtubeId: review.youtube_id
+        ? normalizeYouTubeUrl(review.youtube_id)
+        : undefined,
       vendorResearch: review.vendor_research as SoftwareReview["vendorResearch"],
       independentResearch:
         review.independent_research as SoftwareReview["independentResearch"],
@@ -269,9 +274,6 @@ async function fetchSiteContentFromDb(): Promise<SiteContent | null> {
     string
   >;
   const media = buildMediaAssets(mediaByPath);
-
-  const mentalHealthSection = sections["homepage.mental_health"] ?? {};
-  const academicDataSection = sections["homepage.academic_data"] ?? {};
 
   return {
     version: versionRes.data.version,

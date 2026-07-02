@@ -7,15 +7,22 @@ import {
   newsletterCopy,
   subscribeToNewsletter,
 } from "@/lib/newsletter";
+import { useSection } from "@/lib/cms/hooks";
 import { cn } from "@/lib/utils";
 
 type Phase = "idle" | "submitting" | "success";
 
 export function NewsletterFooterForm() {
+  const footerSection = useSection("homepage.footer");
   const [email, setEmail] = useState("");
   const [error, setError] = useState("");
   const [info, setInfo] = useState("");
   const [phase, setPhase] = useState<Phase>("idle");
+
+  const placeholder =
+    (footerSection.newsletterPlaceholder as string) || "Enter your email";
+  const ctaLabel =
+    (footerSection.newsletterCta as string) || "Join Newsletter";
 
   useEffect(() => {
     if (hasNewsletterSubscription()) {
@@ -73,7 +80,7 @@ export function NewsletterFooterForm() {
             setEmail(event.target.value);
             if (info) setInfo("");
           }}
-          placeholder="Enter your email"
+          placeholder={placeholder}
           disabled={phase === "submitting"}
           className={cn(
             "newsletter-input h-11 min-h-11 min-w-0 flex-1 rounded-full border border-navy-400/80 bg-white px-4 text-base leading-normal text-navy-800 outline-none placeholder:text-navy-800/50 disabled:opacity-60",
@@ -88,7 +95,7 @@ export function NewsletterFooterForm() {
         >
           <span className="btn-animated-shimmer pointer-events-none" aria-hidden />
           <span className="btn-animated-label relative z-1">
-            {phase === "submitting" ? "Subscribing…" : "Join Newsletter"}
+            {phase === "submitting" ? "Subscribing…" : ctaLabel}
           </span>
         </button>
       </div>

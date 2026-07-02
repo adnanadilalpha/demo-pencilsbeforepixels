@@ -18,7 +18,10 @@ export type SectionKey =
   | "homepage.research_library"
   | "homepage.device_opt_out"
   | "homepage.footer"
-  | "evidence.intro";
+  | "evidence.intro"
+  | "evidence.nebraska"
+  | "evidence.district_66"
+  | "evidence.research_tab";
 
 export type SectionContent = Record<string, unknown>;
 

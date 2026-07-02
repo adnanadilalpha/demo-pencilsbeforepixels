@@ -1,0 +1,50 @@
+export function formatCount(value: number): string {
+  return new Intl.NumberFormat("en-US").format(value);
+}
+
+export function formatPercentChange(current: number, previous: number): string {
+  if (previous === 0) {
+    return current > 0 ? "+100%" : "0%";
+  }
+
+  const change = ((current - previous) / previous) * 100;
+  const rounded = Math.round(change);
+  return `${rounded >= 0 ? "+" : ""}${rounded}%`;
+}
+
+export function formatDuration(seconds: number): string {
+  if (!Number.isFinite(seconds) || seconds <= 0) {
+    return "0s";
+  }
+
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = Math.round(seconds % 60);
+
+  if (minutes === 0) {
+    return `${remainingSeconds}s`;
+  }
+
+  return `${minutes}m ${remainingSeconds}s`;
+}
+
+export function getTimeGreeting(date = new Date()): string {
+  const hour = date.getHours();
+
+  if (hour < 12) return "Good morning";
+  if (hour < 17) return "Good afternoon";
+  return "Good evening";
+}
+
+export function getTodayStartIso(): string {
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+  return now.toISOString();
+}
+
+export function getMonthStartIso(monthsAgo: number): string {
+  const date = new Date();
+  date.setDate(1);
+  date.setHours(0, 0, 0, 0);
+  date.setMonth(date.getMonth() - monthsAgo);
+  return date.toISOString();
+}

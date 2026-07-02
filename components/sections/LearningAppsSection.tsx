@@ -1,9 +1,12 @@
+"use client";
+
 import { DisplayHeading } from "@/components/ui/DisplayHeading";
 import { sectionPaddingX } from "@/components/ui/Container";
 import { YouTubeEmbed } from "@/components/ui/YouTubeEmbed";
 import { ScrollReveal } from "@/components/motion/ScrollReveal";
-import { getSiteContent } from "@/lib/cms/cached";
+import { useSection, useSiteContent } from "@/lib/cms/hooks";
 import type { ResearchNote } from "@/lib/cms/types";
+import { youTubeUrlToId } from "@/lib/youtube";
 
 function ResearchNoteBlock({ label, summary, note }: ResearchNote) {
   return (
@@ -17,15 +20,16 @@ function ResearchNoteBlock({ label, summary, note }: ResearchNote) {
   );
 }
 
-export async function LearningAppsSection() {
-  const content = await getSiteContent();
-  const section = content.sections["homepage.learning_apps"] ?? {};
-  const { epic, ixl } = content.softwareReviews;
+export function LearningAppsSection() {
+  const section = useSection("homepage.learning_apps");
+  const { softwareReviews } = useSiteContent();
+  const { epic, ixl } = softwareReviews;
 
   const headline = (section.headline as string) ?? "IXL & Epic";
   const body =
     (section.body as string) ??
     "We reviewed two classroom platforms commonly used in schools.";
+  const epicVideoId = youTubeUrlToId(epic.youtubeId);
 
   return (
     <section className="w-full bg-paper-300">
@@ -70,12 +74,12 @@ export async function LearningAppsSection() {
           <DisplayHeading as="h3" size="md" className="text-navy-800">
             {epic.title}
           </DisplayHeading>
-          {epic.youtubeId && (
+          {epicVideoId ? (
             <YouTubeEmbed
-              videoId={epic.youtubeId}
+              videoId={epicVideoId}
               title="Epic reading platform review"
             />
-          )}
+          ) : null}
           {epic.summary && (
             <p className="text-base leading-[1.4] text-navy-800">{epic.summary}</p>
           )}

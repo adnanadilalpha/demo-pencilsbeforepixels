@@ -1,14 +1,15 @@
+"use client";
+
 import Image from "next/image";
 import { Container } from "@/components/ui/Container";
 import { DisplayHeading } from "@/components/ui/DisplayHeading";
 import { TextLink } from "@/components/ui/TextLink";
 import { ScrollReveal } from "@/components/motion/ScrollReveal";
-import { getSiteContent } from "@/lib/cms/cached";
+import { useSection, useSiteContent } from "@/lib/cms/hooks";
 
-export async function MentalHealthSection() {
-  const content = await getSiteContent();
-  const section = content.sections["homepage.mental_health"] ?? {};
-  const { mentalHealthPoints, mentalHealthLegend, media } = content;
+export function MentalHealthSection() {
+  const section = useSection("homepage.mental_health");
+  const { mentalHealthPoints, mentalHealthLegend, media } = useSiteContent();
 
   const label = (section.label as string) ?? "Behaviour & Mental Health";
   const headline = (section.headline as string) ?? label;
@@ -59,6 +60,7 @@ export async function MentalHealthSection() {
                 width={2000}
                 height={800}
                 className="h-auto w-full"
+                unoptimized
               />
             </div>
           </div>

@@ -1,12 +1,13 @@
+"use client";
+
 import { Container } from "@/components/ui/Container";
 import { DisplayHeading } from "@/components/ui/DisplayHeading";
 import { SectionLabel } from "@/components/ui/SectionLabel";
 import { ScrollReveal } from "@/components/motion/ScrollReveal";
-import { getSiteContent } from "@/lib/cms/cached";
+import { useSection } from "@/lib/cms/hooks";
 
-export async function StatementSection() {
-  const content = await getSiteContent();
-  const section = content.sections["homepage.problem"] ?? {};
+export function StatementSection() {
+  const section = useSection("homepage.problem");
 
   const label = (section.label as string) ?? "The Problem";
   const headline = (section.headline as string) ?? "The Classroom Has Changed.";

@@ -22,19 +22,29 @@ export async function fetchSiteContentBundle(): Promise<SiteContent> {
 export async function getClientSiteContent(
   initial: SiteContent,
 ): Promise<SiteContent> {
-  const remoteVersion = await fetchContentVersion();
-  const cachedVersion = readCachedVersion();
+  try {
+    const remoteVersion = await fetchContentVersion();
 
-  if (cachedVersion === remoteVersion.version) {
-    const cached = readCachedSiteContent();
-    if (cached) return cached;
+    // SSR payload is already up to date for the current publish version.
+    if (remoteVersion.version === initial.version) {
+      writeCachedSiteContent(initial, remoteVersion);
+      return initial;
+    }
+
+    // Publish bumped the version but this document still has older SSR data.
+    const cachedVersion = readCachedVersion();
+    if (
+      cachedVersion === remoteVersion.version &&
+      readCachedSiteContent()?.version === remoteVersion.version
+    ) {
+      const cached = readCachedSiteContent();
+      if (cached) return cached;
+    }
+
+    const bundle = await fetchSiteContentBundle();
+    writeCachedSiteContent(bundle, remoteVersion);
+    return bundle;
+  } catch {
+    return initial;
   }
-
-  const bundle =
-    initial.version === remoteVersion.version
-      ? initial
-      : await fetchSiteContentBundle();
-
-  writeCachedSiteContent(bundle, remoteVersion);
-  return bundle;
 }
