@@ -5,6 +5,10 @@ import {
   getChartLayout,
   scaleToPlotY,
 } from "@/components/charts/chart-layout";
+import {
+  chartAxisLabelDark,
+  chartTickDark,
+} from "@/components/charts/chart-theme";
 import type { EquityDistrictPoint, EquityScatterPanelData } from "@/lib/evidence/types";
 
 type EvidenceScatterChartProps = {
@@ -98,7 +102,7 @@ export function EvidenceScatterChart({ panel }: EvidenceScatterChartProps) {
                     x={layout.plotLeft - 8}
                     y={y + 3}
                     textAnchor="end"
-                    className="fill-navy-800 font-sans text-[10px]"
+                    className={chartTickDark}
                   >
                     {tick}
                   </text>
@@ -123,7 +127,7 @@ export function EvidenceScatterChart({ panel }: EvidenceScatterChartProps) {
                   x={x}
                   y={layout.tickY}
                   textAnchor="middle"
-                  className="fill-navy-800 font-sans text-[10px]"
+                  className={chartTickDark}
                 >
                   {tick}%
                 </text>
@@ -135,7 +139,7 @@ export function EvidenceScatterChart({ panel }: EvidenceScatterChartProps) {
               y={layout.yAxisLabelY}
               transform={`rotate(-90 12 ${layout.yAxisLabelY})`}
               textAnchor="middle"
-              className="fill-navy-800 text-[9px]"
+              className={chartAxisLabelDark}
             >
               {panel.yLabel}
             </text>
@@ -144,7 +148,7 @@ export function EvidenceScatterChart({ panel }: EvidenceScatterChartProps) {
               x={width / 2}
               y={layout.xLabelY}
               textAnchor="middle"
-              className="fill-navy-800 text-[9px]"
+              className={chartAxisLabelDark}
             >
               {panel.xLabel}
             </text>

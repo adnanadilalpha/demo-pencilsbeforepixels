@@ -3,8 +3,10 @@ import {
   fetchOptOutPageData,
   fetchOptOutSubmissionPayload,
 } from "@/lib/admin/opt-out/fetch";
-import { buildOptOutDocx, docxFilename } from "@/lib/opt-out/build-docx";
-import { buildOptOutPdf, pdfFilename } from "@/lib/opt-out/build-pdf";
+import { packageFilename } from "@/lib/opt-out/filenames";
+import { buildOptOutPackageDocx } from "@/lib/opt-out/build-package-docx";
+import { buildOptOutPackagePdf } from "@/lib/opt-out/build-package-pdf";
+import { loadOptOutFormConfig } from "@/lib/opt-out/config";
 import type { OptOutLetterForm, OptOutSubmissionPayload } from "@/lib/opt-out/types";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -85,28 +87,32 @@ export async function POST(request: Request) {
     const letter = payload.letter as OptOutLetterForm | undefined;
 
     if (!letter) {
-      return NextResponse.json({ error: "Letter data missing." }, { status: 404 });
+      return NextResponse.json({ error: "Form data missing." }, { status: 404 });
+    }
+
+    const config = await loadOptOutFormConfig();
+    if (payload.defaultAnswers) {
+      config.defaultAnswers = payload.defaultAnswers;
     }
 
     if (body.format === "pdf") {
-      const blob = buildOptOutPdf(letter);
-      const buffer = Buffer.from(await blob.arrayBuffer());
+      const buffer = await buildOptOutPackagePdf(letter, config);
 
-      return new NextResponse(buffer, {
+      return new NextResponse(new Uint8Array(buffer), {
         headers: {
           "Content-Type": "application/pdf",
-          "Content-Disposition": `attachment; filename="${pdfFilename(letter.studentName)}"`,
+          "Content-Disposition": `attachment; filename="${packageFilename(letter.studentName, "pdf")}"`,
         },
       });
     }
 
-    const buffer = await buildOptOutDocx(letter);
+    const buffer = await buildOptOutPackageDocx(letter, config);
 
     return new NextResponse(new Uint8Array(buffer), {
       headers: {
         "Content-Type":
           "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        "Content-Disposition": `attachment; filename="${docxFilename(letter.studentName)}"`,
+        "Content-Disposition": `attachment; filename="${packageFilename(letter.studentName, "docx")}"`,
       },
     });
   } catch (error) {

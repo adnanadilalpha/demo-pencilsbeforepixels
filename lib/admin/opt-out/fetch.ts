@@ -2,6 +2,7 @@ import "server-only";
 
 import { computeOptOutStats } from "@/lib/admin/opt-out/format";
 import { createAdminClient } from "@/lib/supabase/admin";
+import type { OptOutSubmissionPayload } from "@/lib/opt-out/types";
 import type {
   AdminOptOutSubmission,
   OptOutPageData,
@@ -12,10 +13,10 @@ type SubmissionRow = {
   id: string;
   parent_name: string;
   school: string | null;
-  district: string | null;
   status: string | null;
   generated_at: string | null;
   downloaded_at: string | null;
+  payload: OptOutSubmissionPayload | null;
 };
 
 function normalizeStatus(status: string | null): OptOutSubmissionStatus {
@@ -23,11 +24,13 @@ function normalizeStatus(status: string | null): OptOutSubmissionStatus {
 }
 
 function mapSubmission(row: SubmissionRow): AdminOptOutSubmission {
+  const studentName = row.payload?.letter?.studentName?.trim() || null;
+
   return {
     id: row.id,
     parentName: row.parent_name,
+    studentName,
     school: row.school,
-    district: row.district,
     status: normalizeStatus(row.status),
     generatedAt: row.generated_at ?? new Date(0).toISOString(),
     downloadedAt: row.downloaded_at,
@@ -40,7 +43,7 @@ export async function fetchOptOutPageData(): Promise<OptOutPageData> {
   const { data, error } = await supabase
     .from("opt_out_submissions")
     .select(
-      "id, parent_name, school, district, status, generated_at, downloaded_at",
+      "id, parent_name, school, status, generated_at, downloaded_at, payload",
     )
     .order("generated_at", { ascending: false });
 

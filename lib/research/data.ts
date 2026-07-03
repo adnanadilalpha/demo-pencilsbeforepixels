@@ -1,164 +1,39 @@
-import type { AcademicChart } from "@/lib/academic-data/types";
+import {
+  buildPisaResearchCharts,
+  PISA_CHART_LABELS,
+} from "@/lib/charts/pisa-data";
+import {
+  buildParccElaChart,
+  buildParccMathChart,
+  PARCC_STUDY_DESCRIPTION_FULL,
+  PARCC_STUDY_TITLE,
+} from "@/lib/charts/parcc-data";
+import {
+  NAEP_GRADE_4,
+  NAEP_GRADE_8,
+  NAEP_NATIONAL_SLOPES,
+} from "@/lib/charts/naep-data";
 import type {
-  NaepYearZeroChart,
   ResearchChartsData,
+  ScreenTimeTabData,
 } from "@/lib/research/types";
 
-const PISA_CATEGORIES = ["0", "1–60", "61–120", "121–240", "241–360", ">360"];
+const { math: pisaMath, reading: pisaReading } = buildPisaResearchCharts();
 
-const RELATIVE_YEARS = [
-  -20, -18, -16, -14, -12, -10, -8, -6, -4, -2, 0, 2, 4, 6, 8, 10,
-];
-
-function buildNaepSeries(
-  baseAtZero: number,
-  preSlope: number,
-  postSlope: number,
-): number[] {
-  return RELATIVE_YEARS.map((year) => {
-    const value =
-      year <= 0 ? baseAtZero + preSlope * year : baseAtZero + postSlope * year;
-    return Math.round(value * 10) / 10;
-  });
-}
-
-function buildNaepChart(
-  title: string,
-  baseAtZero: number,
-  preSlope: number,
-  postSlope: number,
-  preLabel: string,
-  postLabel: string,
-  yTicks: number[],
-): NaepYearZeroChart {
-  return {
-    title,
-    years: RELATIVE_YEARS,
-    scores: buildNaepSeries(baseAtZero, preSlope, postSlope),
-    yearZero: 0,
-    preSlope,
-    postSlope,
-    yTicks,
-    slopes: {
-      pre: {
-        label: preLabel,
-        value: `${preSlope >= 0 ? "+" : ""}${preSlope.toFixed(2)} pts/yr`,
-      },
-      post: {
-        label: postLabel,
-        value: `${postSlope >= 0 ? "+" : ""}${postSlope.toFixed(2)} pts/yr`,
-      },
-    },
-  };
-}
-
-function pisaChart(
-  title: string,
-  series: AcademicChart["series"],
-): AcademicChart {
-  return {
-    title,
-    yLabel: "Total Score",
-    xLabel: "In-School CPU Use (min/day)",
-    categories: PISA_CATEGORIES,
-    yTicks: [400, 435, 470, 505],
-    series,
-  };
-}
+const screenTimeRows = (
+  rows: ScreenTimeTabData["rows"],
+): ScreenTimeTabData["rows"] => rows;
 
 export const researchChartsData: ResearchChartsData = {
-  nationalSlopes: [
-    { label: "Grade 4 Math", slope: "−1.45 pts/yr" },
-    { label: "Grade 4 Reading", slope: "−1.07 pts/yr" },
-    { label: "Grade 8 Math", slope: "−1.81 pts/yr" },
-    { label: "Grade 8 Reading", slope: "−1.16 pts/yr" },
-  ],
-  grade4: {
-    heading: "Grade 4 — Math & Reading (2022 excluded)",
-    math: buildNaepChart(
-      "Grade 4 Math (2022 Excluded)",
-      242,
-      1.07,
-      -0.38,
-      "Math — Pre-adoption",
-      "Math — Post-adoption",
-      [215, 225, 235, 245],
-    ),
-    reading: buildNaepChart(
-      "Grade 4 Reading (2022 Excluded)",
-      222,
-      0.27,
-      -0.8,
-      "Reading — Pre-adoption",
-      "Reading — Post-adoption",
-      [210, 215, 220, 225],
-    ),
-  },
-  grade8: {
-    heading: "Grade 8 — Math & Reading (2022 excluded)",
-    math: buildNaepChart(
-      "Grade 8 Math (2022 Excluded)",
-      286,
-      0.67,
-      -1.14,
-      "Math — Pre-adoption",
-      "Math — Post-adoption",
-      [265, 275, 285, 295],
-    ),
-    reading: buildNaepChart(
-      "Grade 8 Reading (2022 Excluded)",
-      268,
-      0.17,
-      -0.99,
-      "Reading — Pre-adoption",
-      "Reading — Post-adoption",
-      [255, 262, 269, 276],
-    ),
-  },
+  nationalSlopes: [...NAEP_NATIONAL_SLOPES],
+  grade4: NAEP_GRADE_4,
+  grade8: NAEP_GRADE_8,
   pisa: {
-    title: "PISA: All Countries — In-School Computer Use vs. Score",
-    description:
-      "PISA longitudinal data (2012–2018) reveals that students exceeding six hours of daily in-school computer use score an average of 66 points lower than non-users, a decline equivalent to two full letter grades.",
-    callout:
-      "Students using screens >6 hours/day scored an average of 66 points lower than non-users — equivalent to a two letter-grade drop (50th → 24th percentile).",
-    math: pisaChart("MATH", [
-      {
-        label: "2012",
-        color: "#0f1f3d",
-        values: [512, 502, 466, 456, 449, 431],
-      },
-      {
-        label: "2015",
-        color: "#3a5a9b",
-        values: [483, 492, 461, 458, 450, 425],
-        dashArray: "4 4",
-      },
-      {
-        label: "2018",
-        color: "#8aafd4",
-        values: [470, 492, 456, 454, 450, 420],
-        dashArray: "8 4",
-      },
-    ]),
-    reading: pisaChart("READING", [
-      {
-        label: "2012",
-        color: "#0f1f3d",
-        values: [517, 495, 463, 458, 458, 427],
-      },
-      {
-        label: "2015",
-        color: "#3a5a9b",
-        values: [483, 492, 461, 458, 448, 420],
-        dashArray: "4 4",
-      },
-      {
-        label: "2018",
-        color: "#8aafd4",
-        values: [470, 480, 456, 454, 445, 417],
-        dashArray: "8 4",
-      },
-    ]),
+    title: PISA_CHART_LABELS.title,
+    description: PISA_CHART_LABELS.description,
+    callout: PISA_CHART_LABELS.callout,
+    math: pisaMath,
+    reading: pisaReading,
   },
   oecd: {
     title: "OECD Countries — EdTech Access vs. Math Performance Change",
@@ -210,51 +85,134 @@ export const researchChartsData: ResearchChartsData = {
       title: "4th Grade Math",
       xLabel: "In-School CPU Use",
       yLabel: "Total Score",
-      categories: [
-        "Almost Never",
-        "1–2x per Month",
-        "1–2x per Week",
-        "Almost Daily",
-      ],
+      categories: ["Almost Never", "1–2x per Month", "1–2x per Week", "Almost Daily"],
       values: [550, 535, 508, 499],
       yTicks: [480, 510, 540, 560],
-      colors: ["#0f1f3d", "#2d5282", "#4a6fa5", "#7fa3cc"],
+      colors: ["#1a3353", "#2d5282", "#4a6fa5", "#7fa3cc"],
     },
     grade8: {
       title: "8th Grade Math",
       xLabel: "In-School CPU Use",
       yLabel: "Total Score",
-      categories: [
-        "Almost Never",
-        "1–2x per Month",
-        "1–2x per Week",
-        "Almost Daily",
-      ],
+      categories: ["Almost Never", "1–2x per Month", "1–2x per Week", "Almost Daily"],
       values: [528, 518, 497, 484],
-      yTicks: [460, 490, 520, 540],
-      colors: ["#0f1f3d", "#2d5282", "#4a6fa5", "#7fa3cc"],
+      yTicks: [460, 490, 520, 545],
+      colors: ["#1a3353", "#2d5282", "#4a6fa5", "#7fa3cc"],
     },
   },
   pirls: {
     title: "PIRLS: In-School Computer Use vs. Reading Score",
     description:
-      "PIRLS assesses 4th grade reading across dozens of countries every 5 years. Pattern mirrors PISA and TIMSS findings.",
+      "PIRLS (Progress in International Reading Literacy Study) assesses 4th grade reading across dozens of countries every 5 years. Pattern mirrors PISA and TIMSS findings.",
+    subtitle: "OECD Countries Only",
     xLabel: "Total Score",
     yLabel: "In-School CPU Use",
-    categories: [
-      "Almost Never",
-      "1–2x per Month",
-      "1–2x per Week",
-      "Almost Daily",
-    ],
+    categories: ["Almost Never", "1–2x per Month", "1–2x per Week", "Almost Daily"],
     values: [532, 537, 520, 484],
     yTicks: [480, 510, 540, 560],
-    colors: ["#0f1f3d", "#2d5282", "#4a6fa5", "#7fa3cc"],
+    colors: ["#1a3353", "#2d5282", "#4a6fa5", "#7fa3cc"],
+  },
+  deviceTime: {
+    title: "Time on Digital Devices at School & Mathematics Performance",
+    description:
+      "Based on students' self-reports · OECD average. Learning use declines steadily; leisure use drops sharply after 3 hours.",
+    chart: {
+      title: "",
+      yLabel: "Mean Score in Mathematics",
+      xLabel: "Time Spent on Digital Devices at School",
+      categories: ["None", "Up to 1 hr", "1–2 hrs", "2–3 hrs", "3–5 hrs", "5–7 hrs", ">7 hrs"],
+      yTicks: [360, 410, 460, 510],
+      series: [
+        {
+          label: "Learning",
+          color: "#000000",
+          values: [455, 481, 478, 479, 477, 465, 459],
+          markerShape: "diamond",
+        },
+        {
+          label: "Leisure",
+          color: "#ff0404",
+          values: [471, 491, 483, 469, 450, 430, 435],
+          markerShape: "circle",
+        },
+      ],
+    },
+  },
+  parcc: {
+    title: PARCC_STUDY_TITLE,
+    description: PARCC_STUDY_DESCRIPTION_FULL,
+    math: buildParccMathChart(),
+    ela: buildParccElaChart(),
+  },
+  screenTime: {
+    title: "Early Screen Time & Children's Academic Achievement",
+    description:
+      "A 15-year prospective study of 5,400+ Canadian children linked daily screen habits in early childhood to official reading, writing, and math test results in Grades 3 and 6.",
+    statPills: [
+      {
+        value: "~9% lower",
+        label: "chance of meeting grade level per extra hour/day — Gr.3 Reading & Math",
+      },
+      {
+        value: "~10% lower",
+        label: "chance of meeting grade level per extra hour/day — Gr.6 Math",
+      },
+      {
+        value: "~23% lower",
+        label: "chance of meeting Gr.3 reading standard — children who play any video games vs. none",
+      },
+      {
+        value: "5,400+",
+        label: "children tracked from toddlerhood to elementary school, 2008–2023",
+      },
+    ],
+    howToRead:
+      "Each bar shows how much a child's chance of meeting their grade-level standard drops for each extra hour of that screen type per day. A longer bar = a bigger drop. Faded bars mean the result could be due to chance (not a confirmed finding).",
+    statisticalNote:
+      "Percentage estimates are derived from proportional odds ratios reported in Table 3 of Li et al. (JAMA Network Open, 2025). For interpretive clarity, each odds ratio has been converted to an approximate percentage-point change in the likelihood of meeting grade-level standards (e.g., OR = 0.91 ≈ 9% reduction). This conversion is an approximation; readers are encouraged to consult the original odds ratios, 95% confidence intervals, and p values — available on hover — for precise statistical inference.",
+    tabs: {
+      total: {
+        unit: "per extra hour/day",
+        note: "Each extra hour of daily screen time is linked to roughly a 9–10% drop in the chances of children meeting their grade level in Reading and Math (Grade 3) and Math (Grade 6). Writing showed no confirmed effect in either grade. These are confirmed findings — the study ruled out chance as the cause.",
+        rows: screenTimeRows([
+          { label: "Reading — Grade 3", or: 0.91, pct: 9, ci: "0.86–0.96", p: ".001", sig: true, grade: 3 },
+          { label: "Writing — Grade 3", or: 0.94, pct: 6, ci: "0.88–1.01", p: ".08", sig: false, grade: 3 },
+          { label: "Math — Grade 3", or: 0.91, pct: 9, ci: "0.86–0.96", p: "<.001", sig: true, grade: 3 },
+          { label: "Reading — Grade 6", or: 0.97, pct: 3, ci: "0.90–1.05", p: ".45", sig: false, grade: 6 },
+          { label: "Writing — Grade 6", or: 0.96, pct: 4, ci: "0.89–1.03", p: ".21", sig: false, grade: 6 },
+          { label: "Math — Grade 6", or: 0.9, pct: 10, ci: "0.84–0.96", p: ".002", sig: true, grade: 6 },
+        ]),
+      },
+      tv: {
+        unit: "per extra hour/day",
+        note: "TV and digital media time (TV, DVDs, computers, handheld devices — not including video games) shows a similar pattern. Each extra hour per day is linked to a ~9–11% drop in chances of meeting grade level for Grade 3 Reading & Math and Grade 6 Math. No confirmed effect on writing.",
+        rows: screenTimeRows([
+          { label: "Reading — Grade 3", or: 0.91, pct: 9, ci: "0.85–0.97", p: ".004", sig: true, grade: 3 },
+          { label: "Writing — Grade 3", or: 0.93, pct: 7, ci: "0.87–1.01", p: ".08", sig: false, grade: 3 },
+          { label: "Math — Grade 3", or: 0.9, pct: 10, ci: "0.85–0.96", p: "<.001", sig: true, grade: 3 },
+          { label: "Reading — Grade 6", or: 0.93, pct: 7, ci: "0.86–1.02", p: ".11", sig: false, grade: 6 },
+          { label: "Writing — Grade 6", or: 0.94, pct: 6, ci: "0.87–1.02", p: ".12", sig: false, grade: 6 },
+          { label: "Math — Grade 6", or: 0.89, pct: 11, ci: "0.82–0.96", p: ".002", sig: true, grade: 6 },
+        ]),
+      },
+      video: {
+        unit: "any use vs. none",
+        note: "Children who played any video games had a 23% lower chance of meeting the Grade 3 reading standard compared to non-users. This was the only confirmed finding for video games. No confirmed links were found for math or writing in Grade 3, or any subject in Grade 6.",
+        rows: screenTimeRows([
+          { label: "Reading — Grade 3", or: 0.77, pct: 23, ci: "0.62–0.94", p: ".01", sig: true, grade: 3 },
+          { label: "Writing — Grade 3", or: 0.9, pct: 10, ci: "0.67–1.21", p: ".50", sig: false, grade: 3 },
+          { label: "Math — Grade 3", or: 0.85, pct: 15, ci: "0.71–1.01", p: ".07", sig: false, grade: 3 },
+          { label: "Reading — Grade 6", or: 1.09, pct: -9, ci: "0.86–1.38", p: ".47", sig: false, grade: 6 },
+          { label: "Writing — Grade 6", or: 0.95, pct: 5, ci: "0.76–1.18", p: ".64", sig: false, grade: 6 },
+          { label: "Math — Grade 6", or: 0.99, pct: 1, ci: "0.81–1.22", p: ".96", sig: false, grade: 6 },
+        ]),
+      },
+    },
   },
   mentalHealth: {
     title: "Adolescent Mental Health Indicators, 2001–2018",
     description:
-      "Four independent measures of adolescent mental health tracked from 2001 to 2018. All four indicators held below the historical average for over a decade, then turned sharply upward around 2012.",
+      "This chart tracks four independent measures of adolescent mental health, suicide, self-poisoning, major depressive episodes, and depressive symptoms, from 2001 to 2018. All four indicators held below the historical average for over a decade, then turned sharply upward around 2012, the same period smartphones became ubiquitous among teenagers and social media platforms like Facebook and Instagram moved from desktop curiosities to pocket-sized constants that followed kids everywhere, including into their bedrooms at night. The synchronized rise across four completely separate data sources is, as the chart notes, the kind of pattern rarely seen outside of major societal change, and the timing points directly at the phone-based, social media-saturated childhood that took hold in the early 2010s and has yet to reverse.",
     callout:
       "All four indicators move from below the historical average pre-2012 to well above it by 2017–2018 — a synchronized shift across independent data sources rarely seen outside of major societal change.",
     series: [
@@ -272,7 +230,7 @@ export const researchChartsData: ResearchChartsData = {
       },
       {
         label: "Major Depressive Episode",
-        color: "#0f1f3d",
+        color: "#1a3353",
         years: [2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017],
         values: [-0.5, -0.92, -0.85, -0.62, -1.02, -0.4, -1.07, -0.35, 0.72, 0.65, 1.62, 1.12, 1.62],
       },

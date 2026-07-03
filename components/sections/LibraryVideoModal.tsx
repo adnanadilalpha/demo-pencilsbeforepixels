@@ -126,7 +126,7 @@ export function LibraryVideoModal({
               {item.title}
             </h2>
             {item.subtitle ? (
-              <p className="truncate text-xs uppercase tracking-wide text-white/60 sm:text-sm">
+              <p className="truncate text-xs uppercase tracking-wide text-white/60 sm:text-sm lg:text-base">
                 {item.subtitle}
               </p>
             ) : null}

@@ -1,6 +1,6 @@
 "use client";
 
-import Image from "next/image";
+import { ContentImage } from "@/components/ui/ContentImage";
 import Link from "next/link";
 import { useLenis } from "lenis/react";
 import { usePathname } from "next/navigation";
@@ -55,7 +55,7 @@ export function Logo({ variant = "light" }: LogoProps) {
       className="flex h-[58px] items-center gap-6 max-lg:h-[clamp(2.25rem,3vw+1.5rem,3.625rem)] max-lg:gap-[clamp(0.75rem,2vw,1.5rem)]"
       aria-label="Pencils Before Pixels home"
     >
-      <Image
+      <ContentImage
         src={mark}
         alt=""
         width={47}
@@ -64,7 +64,7 @@ export function Logo({ variant = "light" }: LogoProps) {
         priority
       />
       <span className="flex h-[58px] items-center max-lg:h-full" aria-hidden>
-        <Image
+        <ContentImage
           src={media.brand.divider}
           alt=""
           width={1}
@@ -72,7 +72,7 @@ export function Logo({ variant = "light" }: LogoProps) {
           className="h-[58px] w-px max-lg:h-full"
         />
       </span>
-      <Image
+      <ContentImage
         src={wordmark}
         alt={settings.siteName}
         width={67}

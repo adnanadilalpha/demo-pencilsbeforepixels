@@ -1,6 +1,6 @@
 "use client";
 
-import Image from "next/image";
+import { ContentImage } from "@/components/ui/ContentImage";
 import { Button } from "@/components/ui/Button";
 import { useOptOut } from "@/components/opt-out/OptOutProvider";
 import { Container } from "@/components/ui/Container";
@@ -20,7 +20,7 @@ export function DeviceOptOutSection() {
     "Parents should have access to clear information and the ability to make informed decisions regarding classroom technology.";
   const primaryCta = (section.primaryCta as string) ?? "Sign Opt Out Letter";
   const secondaryCta = (section.secondaryCta as { label: string; href: string }) ?? {
-    label: "Explore Evidence",
+    label: "Explore Nebraska Data",
     href: "/evidence",
   };
 
@@ -56,7 +56,7 @@ export function DeviceOptOutSection() {
                     <p className="text-lg font-semibold leading-display">
                       {step.title}
                     </p>
-                    <p className="text-sm leading-snug">{step.description}</p>
+                    <p className="text-sm leading-snug lg:text-base">{step.description}</p>
                   </div>
                 </ScrollReveal>
               ))}
@@ -72,7 +72,7 @@ export function DeviceOptOutSection() {
 
           <ScrollReveal delay={0.15} offset={40} className="w-full max-lg:order-last lg:w-[42%]">
             <div className="relative aspect-4/5 w-full shrink-0 overflow-hidden rounded-lg">
-              <Image
+              <ContentImage
                 src={media.optOut.letterPreview}
                 alt="Sample opt-out letter preview"
                 fill

@@ -2,12 +2,24 @@
 
 import { useEffect, useRef, useState } from "react";
 import { ChartCrosshair, ChartTooltip } from "@/components/charts/ChartTooltip";
+import {
+  CHART_NAEP_PADDING,
+  RESEARCH_CHART_PLOT_HEIGHT,
+  chartAxisLabelMutedDark,
+  chartCaptionDark,
+  chartCaptionMutedDark,
+  chartTickMutedDark,
+} from "@/components/charts/chart-theme";
 import type { ChartTooltipState } from "@/lib/charts/tooltip";
-import { formatScore } from "@/lib/charts/tooltip";
+import {
+  bindChartHitTarget,
+  formatScore,
+  useDismissChartTooltip,
+} from "@/lib/charts/tooltip";
 import type { NaepYearZeroChart as NaepChartData } from "@/lib/research/types";
 import { ResearchChartPdfFooter } from "@/components/evidence/research/ResearchPdfLink";
 
-const PADDING = { top: 16, right: 24, bottom: 40, left: 48 };
+const PADDING = CHART_NAEP_PADDING;
 
 function scaleValue(
   value: number,
@@ -88,16 +100,19 @@ export function NaepYearZeroChart({ chart }: NaepYearZeroChartProps) {
     setActiveYear(null);
   };
 
+  useDismissChartTooltip(plotRef, !!tooltip, clearTooltip);
+
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-5">
       <h3 className="text-center text-lg leading-6 text-[#18263a]">
         {chart.title}
       </h3>
 
       <div
         ref={plotRef}
-        className="relative h-[224px] w-full"
+        className={`relative w-full ${RESEARCH_CHART_PLOT_HEIGHT}`}
         onMouseLeave={clearTooltip}
+        onClick={clearTooltip}
       >
         {width > 0 && height > 0 && (
           <svg
@@ -123,7 +138,7 @@ export function NaepYearZeroChart({ chart }: NaepYearZeroChartProps) {
                     x={PADDING.left - 8}
                     y={y + 3}
                     textAnchor="end"
-                    className="fill-navy-800/60 text-[10px]"
+                    className={chartTickMutedDark}
                   >
                     {tick}
                   </text>
@@ -136,7 +151,7 @@ export function NaepYearZeroChart({ chart }: NaepYearZeroChartProps) {
               y={height / 2}
               transform={`rotate(-90 12 ${height / 2})`}
               textAnchor="middle"
-              className="fill-navy-800/70 text-[9px]"
+              className={chartAxisLabelMutedDark}
             >
               Mean Score
             </text>
@@ -191,21 +206,25 @@ export function NaepYearZeroChart({ chart }: NaepYearZeroChartProps) {
                     r={14}
                     fill="transparent"
                     className="cursor-pointer"
-                    onMouseEnter={() => {
-                      setActiveYear(year);
-                      setTooltip({
-                        x,
-                        y,
-                        title: `Year ${formatRelativeYear(year)}`,
-                        accent: "#0f1f3d",
-                        lines: [
-                          {
-                            label: "Mean Score",
-                            value: formatScore(score),
-                          },
-                        ],
-                      });
-                    }}
+                    {...bindChartHitTarget({
+                      isActive,
+                      onActivate: () => {
+                        setActiveYear(year);
+                        setTooltip({
+                          x,
+                          y,
+                          title: `Year ${formatRelativeYear(year)}`,
+                          accent: "#0f1f3d",
+                          lines: [
+                            {
+                              label: "Mean Score",
+                              value: formatScore(score),
+                            },
+                          ],
+                        });
+                      },
+                      onClear: clearTooltip,
+                    })}
                   />
                   {isActive ? (
                     <circle
@@ -252,9 +271,9 @@ export function NaepYearZeroChart({ chart }: NaepYearZeroChartProps) {
               <text
                 key={year}
                 x={toX(year)}
-                y={height - 16}
+                y={height - 18}
                 textAnchor="middle"
-                className="fill-navy-800/60 text-[10px]"
+                className={chartTickMutedDark}
               >
                 {year > 0 ? `+${year}` : year}
               </text>
@@ -264,7 +283,7 @@ export function NaepYearZeroChart({ chart }: NaepYearZeroChartProps) {
               x={width / 2}
               y={height - 2}
               textAnchor="middle"
-              className="fill-navy-800/60 text-[9px]"
+              className={chartAxisLabelMutedDark}
             >
               Years Relative to digital lock-in
             </text>
@@ -275,11 +294,12 @@ export function NaepYearZeroChart({ chart }: NaepYearZeroChartProps) {
           tooltip={tooltip}
           containerWidth={width}
           containerHeight={height}
+          onDismiss={clearTooltip}
         />
       </div>
 
       <div className="flex flex-col gap-2">
-        <p className="text-[10px] uppercase tracking-[0.12em] text-navy-800/50">
+        <p className={chartCaptionMutedDark}>
           Years Relative to digital lock-in
         </p>
         <div className="grid grid-cols-2 gap-4">
@@ -318,7 +338,7 @@ function SlopeCard({
           : "border-red-100 bg-red-50"
       }`}
     >
-      <p className="text-[10px] font-medium uppercase tracking-[0.08em] text-navy-800/60">
+      <p className={chartCaptionDark}>
         {label}
       </p>
       <p

@@ -1,4 +1,9 @@
 import { NextResponse } from "next/server";
+import {
+  findOptOutSchool,
+  loadOptOutFormConfig,
+  loadOptOutSchools,
+} from "@/lib/opt-out/config";
 import { createOptOutDownloadToken } from "@/lib/opt-out/access-token";
 import type { OptOutLetterForm, OptOutSubmissionPayload } from "@/lib/opt-out/types";
 import { getClientIp } from "@/lib/security/client-ip";
@@ -16,22 +21,45 @@ export async function POST(request: Request) {
     }
 
     const body = (await request.json()) as { letter?: OptOutLetterForm };
-
     if (!body.letter) {
-      return NextResponse.json({ error: "Letter data is required" }, { status: 400 });
+      return NextResponse.json({ error: "Form data is required" }, { status: 400 });
+    }
+
+    const schools = await loadOptOutSchools();
+    const config = await loadOptOutFormConfig();
+    const school = findOptOutSchool(schools, body.letter.schoolId);
+
+    if (!school) {
+      return NextResponse.json({ error: "Please select a school" }, { status: 400 });
     }
 
     const letter: OptOutLetterForm = {
-      ...body.letter,
-      childName: body.letter.childName.trim() || body.letter.studentName.trim(),
+      date: body.letter.date.trim(),
+      studentName: body.letter.studentName.trim(),
+      parentName: body.letter.parentName.trim(),
+      address: body.letter.address?.trim() ?? "",
+      homePhone: body.letter.homePhone?.trim() ?? "",
+      workPhone: body.letter.workPhone?.trim() ?? "",
+      signatureMode:
+        body.letter.signatureMode === "draw" || body.letter.signatureMode === "name"
+          ? body.letter.signatureMode
+          : body.letter.signatureImage?.trim()
+            ? "draw"
+            : "name",
+      signatureName: body.letter.signatureName?.trim() ?? "",
+      signatureImage: body.letter.signatureImage?.trim() ?? "",
+      schoolId: school.id,
+      schoolName: school.schoolName,
+      principalName: school.principalName,
+      principalEmail: school.email,
     };
 
     const required: (keyof OptOutLetterForm)[] = [
       "date",
       "studentName",
-      "recipientName",
       "parentName",
-      "stateTestName",
+      "address",
+      "schoolId",
     ];
 
     for (const field of required) {
@@ -43,9 +71,18 @@ export async function POST(request: Request) {
       }
     }
 
+    if (letter.signatureMode === "draw" && !letter.signatureImage) {
+      return NextResponse.json({ error: "Please draw your signature." }, { status: 400 });
+    }
+
+    if (letter.signatureMode === "name" && !letter.signatureName) {
+      return NextResponse.json({ error: "Please type your signature." }, { status: 400 });
+    }
+
     const downloadToken = createOptOutDownloadToken();
     const payload: OptOutSubmissionPayload = {
       letter,
+      defaultAnswers: config.defaultAnswers,
       metrics: {
         pdfDownloads: 0,
         docxDownloads: 0,
@@ -58,8 +95,8 @@ export async function POST(request: Request) {
       .from("opt_out_submissions")
       .insert({
         parent_name: letter.parentName,
-        school: letter.school || null,
-        district: letter.district || null,
+        school: letter.schoolName,
+        district: "Westside Community Schools",
         status: "generated",
         generated_at: new Date().toISOString(),
         payload,

@@ -126,6 +126,7 @@ function mapBookItem(
     coverUrl: cover?.publicUrl ?? null,
     amazonUrl: null,
     publisherUrl: null,
+    viewUrl: row.external_url ?? null,
     featured: false,
     visible: row.visible,
     sortOrder: row.sort_order,

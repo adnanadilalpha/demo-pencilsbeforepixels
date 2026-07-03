@@ -1,6 +1,6 @@
 "use client";
 
-import Image from "next/image";
+import { ContentImage } from "@/components/ui/ContentImage";
 import { UploadedVideoPoster } from "@/components/sections/UploadedVideoPoster";
 import type { LibraryItem } from "@/lib/cms/types";
 import { youTubeUrlToId } from "@/lib/youtube";
@@ -12,7 +12,7 @@ type VideoThumbnailProps = {
 export function VideoThumbnail({ item }: VideoThumbnailProps) {
   if (item.image) {
     return (
-      <Image
+      <ContentImage
         src={item.image}
         alt={item.title}
         fill
@@ -26,7 +26,7 @@ export function VideoThumbnail({ item }: VideoThumbnailProps) {
     const videoId = youTubeUrlToId(item.youtubeUrl);
     if (videoId) {
       return (
-        <Image
+        <ContentImage
           src={`https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`}
           alt={item.title}
           fill

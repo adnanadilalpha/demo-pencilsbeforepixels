@@ -245,7 +245,7 @@ export function ScoresView({ initialData }: ScoresViewProps) {
     <div className="flex w-full flex-col gap-8">
       <AdminPageHeader
         title="Scores"
-        description="Upload and review Nebraska assessment CSV data for evidence charts."
+        description="Upload and review Nebraska assessment CSV data for Nebraska Data charts."
         actions={
           <button
             type="button"

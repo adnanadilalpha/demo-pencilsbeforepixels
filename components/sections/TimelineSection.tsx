@@ -1,6 +1,6 @@
 "use client";
 
-import Image from "next/image";
+import { ContentImage } from "@/components/ui/ContentImage";
 import { useLenis } from "lenis/react";
 import type Lenis from "lenis";
 import {
@@ -10,6 +10,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { normalizeMissionTimeline } from "@/lib/cms/mission-slides";
 import { useSiteContent } from "@/lib/cms/hooks";
 import type { TimelineSlide } from "@/lib/cms/types";
 import { sectionPaddingX } from "@/components/ui/Container";
@@ -86,7 +87,8 @@ function setMediaVars(
 }
 
 export function TimelineSection() {
-  const { timeline: timelineSlides } = useSiteContent();
+  const { timeline: rawTimelineSlides } = useSiteContent();
+  const timelineSlides = normalizeMissionTimeline(rawTimelineSlides);
   const slideCount = timelineSlides.length;
   const maxIndex = Math.max(0, slideCount - 1);
   const slideShare = slideCount > 0 ? 100 / slideCount : 100;
@@ -374,10 +376,11 @@ export function TimelineSection() {
 
   return (
     <section
+      id="mission"
       ref={wrapperRef}
       className="relative isolate w-full max-w-full overflow-x-clip"
       style={wrapperHeight > 0 ? { height: wrapperHeight } : undefined}
-      aria-label="Classroom technology timeline"
+      aria-label="Our mission"
     >
       <div
         ref={pinRef}
@@ -414,10 +417,10 @@ export function TimelineSection() {
                   <p
                     className={
                       slide.eraStyle === "large"
-                        ? `font-sans text-sm font-medium uppercase leading-none sm:text-base ${
+                        ? `font-sans text-sm font-medium uppercase leading-none sm:text-base lg:text-base ${
                             isLight ? "text-slate-50" : "text-navy-800"
                           }`
-                        : `font-sans text-xs font-medium uppercase tracking-[0.15em] leading-none sm:text-sm ${
+                        : `font-sans text-xs font-medium uppercase tracking-[0.15em] leading-none sm:text-sm lg:text-base ${
                             isLight ? "text-slate-50" : "text-navy-800"
                           }`
                     }
@@ -455,7 +458,7 @@ export function TimelineSection() {
                     isLight ? "ring-1 ring-white/15" : "ring-1 ring-navy-800/10"
                   }`}
                 >
-                  <Image
+                  <ContentImage
                     src={slide.image}
                     alt={slide.title}
                     fill
@@ -475,13 +478,13 @@ export function TimelineSection() {
         >
           <div className="flex items-end justify-between gap-8">
             <p
-              className={`font-sans text-[10px] font-medium uppercase tracking-[0.24em] ${paginationColors.muted}`}
+              className={`font-sans text-[10px] font-medium uppercase tracking-[0.24em] lg:text-base ${paginationColors.muted}`}
             >
-              Our Journey
+              Our Mission
             </p>
             <span
               ref={eraLabelRef}
-              className={`font-sans text-[10px] font-medium uppercase tracking-[0.24em] transition-colors duration-500 ${paginationColors.label}`}
+              className={`font-sans text-[10px] font-medium uppercase tracking-[0.24em] transition-colors duration-500 lg:text-base ${paginationColors.label}`}
             >
               {timelineSlides[0].era}
             </span>

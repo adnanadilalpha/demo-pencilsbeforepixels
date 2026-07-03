@@ -1,6 +1,10 @@
 import type { InsightSegment } from "@/lib/academic-data/types";
 import { staticAcademicDatasets } from "@/lib/academic-data/static";
 
+export const STATIC_ACADEMIC_DATASET_KEYS = staticAcademicDatasets.map(
+  (dataset) => dataset.id,
+);
+
 export type AcademicDatasetCopy = {
   key: string;
   label: string;
@@ -15,10 +19,10 @@ const DYNAMIC_DEFAULTS: AcademicDatasetCopy[] = [
     label: "Nebraska Mathematics",
     title: "Nebraska Mathematics",
     description:
-      "State of Nebraska mathematics results for all students, weighted across grades 3–8. Source: Nebraska Department of Education assessment data.",
+      "State of Nebraska mathematics results for all students, weighted across grades 3–6 (same view as Nebraska Data → Nebraska with State benchmark on). Source: Nebraska Department of Education assessment data.",
     insight: [
       { text: "Nebraska mathematics scale scores remain below pre-2020 levels across " },
-      { text: "grades 3–8", emphasis: "gold" },
+      { text: "grades 3–6", emphasis: "gold" },
       { text: ", with limited recovery through 2024–25." },
     ],
   },
@@ -27,11 +31,11 @@ const DYNAMIC_DEFAULTS: AcademicDatasetCopy[] = [
     label: "Nebraska Mathematics by Gender",
     title: "Nebraska Mathematics by Gender",
     description:
-      "Nebraska statewide mathematics performance split by gender. Source: Nebraska Department of Education.",
+      "Nebraska statewide mathematics performance by gender, weighted across grades 3–6 (same view as Nebraska Data → Nebraska → By Gender with State on). Source: Nebraska Department of Education.",
     insight: [
-      { text: "Gender gaps in Nebraska mathematics have " },
-      { text: "persisted or widened", emphasis: "gold" },
-      { text: " in several recent school years." },
+      { text: "Male students consistently score higher than female students, with the gap widening to " },
+      { text: "7.5 points", emphasis: "gold" },
+      { text: " by 2024–25." },
     ],
   },
   {
@@ -39,11 +43,13 @@ const DYNAMIC_DEFAULTS: AcademicDatasetCopy[] = [
     label: "Westside Mathematics by Gender",
     title: "Westside Mathematics by Gender",
     description:
-      "Westside Community Schools (District 66) mathematics performance by gender. Source: Nebraska Department of Education.",
+      "Westside Community Schools (District 66) mathematics performance by gender, weighted across grades 3–6. Source: Nebraska Department of Education.",
     insight: [
-      { text: "District 66 trends mirror statewide patterns with " },
-      { text: "local variation by gender", emphasis: "gold" },
-      { text: " across recent years." },
+      {
+        text: "Westside Community Schools shows a widening gender gap in grades 3–6, reaching ",
+      },
+      { text: "10.2 points", emphasis: "gold" },
+      { text: " by 2024–25." },
     ],
   },
   {
@@ -51,23 +57,11 @@ const DYNAMIC_DEFAULTS: AcademicDatasetCopy[] = [
     label: "Nebraska English",
     title: "Nebraska English",
     description:
-      "State of Nebraska English Language Arts results for all students across grades 3–8. Source: Nebraska Department of Education.",
+      "State of Nebraska English Language Arts results for all students, weighted across grades 3–6 (same view as Nebraska Data → Nebraska → English with State on). Source: Nebraska Department of Education.",
     insight: [
-      { text: "English Language Arts scores show " },
-      { text: "sustained pressure post-2020", emphasis: "gold" },
-      { text: " with uneven recovery across grade bands." },
-    ],
-  },
-  {
-    key: "state-federal",
-    label: "State & Federal Testing",
-    title: "State & Federal Testing",
-    description:
-      "Grade 8 proficiency trends from Nebraska state assessments and federal NAEP benchmarks.",
-    insight: [
-      { text: "On-track proficiency rates remain " },
-      { text: "below pre-pandemic peaks", emphasis: "gold" },
-      { text: " in both mathematics and English." },
+      { text: "Nebraska English Language Arts scores have declined " },
+      { text: "9.2 points", emphasis: "gold" },
+      { text: " since 2020–21 with no sign of recovery." },
     ],
   },
 ];

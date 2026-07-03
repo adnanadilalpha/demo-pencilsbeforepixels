@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
-import { buildOptOutDocx, docxFilename } from "@/lib/opt-out/build-docx";
-import type { OptOutLetterForm } from "@/lib/opt-out/types";
+import { buildOptOutPackageDocx } from "@/lib/opt-out/build-package-docx";
+import { packageFilename } from "@/lib/opt-out/filenames";
+import { loadOptOutFormConfig } from "@/lib/opt-out/config";
+import type { OptOutLetterForm, OptOutSubmissionPayload } from "@/lib/opt-out/types";
 import { getVerifiedOptOutPayload } from "@/lib/opt-out/verify-access";
 import { getClientIp } from "@/lib/security/client-ip";
 import { checkRateLimit, rateLimitResponse } from "@/lib/security/rate-limit";
@@ -27,11 +29,14 @@ export async function GET(request: Request, context: RouteContext) {
 
     const letter = payload.letter as OptOutLetterForm | undefined;
     if (!letter) {
-      return NextResponse.json({ error: "Letter data missing" }, { status: 400 });
+      return NextResponse.json({ error: "Form data missing" }, { status: 400 });
     }
 
-    const buffer = await buildOptOutDocx(letter);
-    const filename = docxFilename(letter.studentName);
+    const config = await loadOptOutFormConfig();
+    config.defaultAnswers = payload.defaultAnswers ?? config.defaultAnswers;
+
+    const buffer = await buildOptOutPackageDocx(letter, config);
+    const filename = packageFilename(letter.studentName, "docx");
 
     return new NextResponse(new Uint8Array(buffer), {
       headers: {

@@ -1,10 +1,23 @@
+import {
+  buildSchoolYearMap,
+  sortedSchoolYears,
+  weightedAvg,
+  type EvidenceScoreRow,
+} from "@/lib/evidence/chart-utils";
+import { buildGenderPerformanceChart, buildPerformanceChart, colorForDistrictIndex } from "@/lib/evidence/builders";
 import type { AcademicChart, AcademicDataset } from "./types";
+
+const WESTSIDE_MATH_GENDER_GRADES = ["03", "04", "05", "06"] as const;
+/** Matches Evidence → Nebraska → Performance defaults for the homepage chart. */
+const NEBRASKA_MATH_EVIDENCE_GRADES = ["03", "04", "05", "06"] as const;
 
 type ScoreRow = {
   school_year: string;
   avg_scale_score: number | null;
   subgroup_desc?: string;
   grade?: string;
+  count_tested?: number | string | null;
+  agency_name?: string;
 };
 
 type ProficiencyRow = {
@@ -58,6 +71,68 @@ function singleSeriesChart(
     yTicks: buildTicks(values),
     series: [{ label: title, color: "#ffffff", values }],
   };
+}
+
+function toEvidenceScoreRows(rows: ScoreRow[]): EvidenceScoreRow[] {
+  return rows.map((row) => ({
+    school_year: row.school_year,
+    grade: row.grade ?? "",
+    subgroup_desc: row.subgroup_desc,
+    avg_scale_score: row.avg_scale_score,
+    count_tested: row.count_tested,
+  }));
+}
+
+function aggregateWeightedGenderRows(rows: ScoreRow[]): ScoreRow[] {
+  const aggregated: ScoreRow[] = [];
+
+  for (const gender of ["Male", "Female"] as const) {
+    const genderRows = toEvidenceScoreRows(
+      rows.filter((row) => row.subgroup_desc === gender),
+    );
+    const yearMap = buildSchoolYearMap(genderRows);
+
+    for (const year of sortedSchoolYears(genderRows)) {
+      const bucket = yearMap[year];
+      if (!bucket) continue;
+
+      const average = weightedAvg(bucket.scores, bucket.counts);
+      if (!Number.isFinite(average)) continue;
+
+      aggregated.push({
+        school_year: year,
+        subgroup_desc: gender,
+        avg_scale_score: Math.round(average * 10) / 10,
+      });
+    }
+  }
+
+  return aggregated;
+}
+
+function computeLatestGenderGap(rows: ScoreRow[]): number | null {
+  const years = uniqueYears(rows);
+
+  for (let index = years.length - 1; index >= 0; index -= 1) {
+    const year = years[index];
+    const male = rows.find(
+      (row) => row.school_year === year && row.subgroup_desc === "Male",
+    );
+    const female = rows.find(
+      (row) => row.school_year === year && row.subgroup_desc === "Female",
+    );
+
+    if (
+      male?.avg_scale_score !== null &&
+      male?.avg_scale_score !== undefined &&
+      female?.avg_scale_score !== null &&
+      female?.avg_scale_score !== undefined
+    ) {
+      return Math.abs(male.avg_scale_score - female.avg_scale_score);
+    }
+  }
+
+  return null;
 }
 
 function splitGenderCharts(
@@ -175,135 +250,204 @@ function proficiencyChart(
     xLabel: "School Year",
     categories: years.map(formatSchoolYear),
     yTicks: buildTicks(allValues),
-    series: [{ label: "On Track", color: "#ffffff", values: onTrack }],
+    series: [{ label: title, color: "#ffffff", values: onTrack }],
   };
 }
 
 export function buildNebraskaMathDataset(rows: ScoreRow[]): AcademicDataset {
-  const gradeRows = rows.filter((row) =>
-    ["03", "04", "05", "06", "07", "08"].includes(row.grade ?? ""),
-  );
+  const stateRows: EvidenceScoreRow[] = rows
+    .filter(
+      (row) =>
+        row.grade !== undefined &&
+        (NEBRASKA_MATH_EVIDENCE_GRADES as readonly string[]).includes(row.grade),
+    )
+    .map((row) => ({
+      school_year: row.school_year,
+      grade: row.grade ?? "",
+      avg_scale_score: row.avg_scale_score,
+      count_tested: row.count_tested,
+      level: "ST",
+    }));
 
-  const [leftChart, rightChart] = splitGradeBandCharts(
-    gradeRows,
-    ["03", "04", "05"],
-    ["06", "07", "08"],
-    "GRADES 3–5",
-    "GRADES 6–8",
-    "Avg Scale Score",
-    "School Year",
+  const { chart, subtitle } = buildPerformanceChart(
+    "math",
+    [...NEBRASKA_MATH_EVIDENCE_GRADES],
+    "All Students",
+    stateRows,
+    [],
+    [],
+    true,
   );
 
   return {
     id: "nebraska-math",
     label: "Nebraska Mathematics",
     title: "Nebraska Mathematics",
-    charts: [leftChart, rightChart],
+    charts: [chart],
+    evidenceChartLayout: true,
+    evidenceStudentGroup: "all",
+    performanceSubtitle: subtitle,
     insight: [
       { text: "Nebraska mathematics scale scores remain below pre-2020 levels across " },
-      { text: "grades 3–8", emphasis: "gold" },
+      { text: "grades 3–6", emphasis: "gold" },
       { text: ", with limited recovery through 2024–25." },
     ],
     description:
-      "State of Nebraska mathematics results for all students, weighted across grades 3–8. Source: Nebraska Department of Education assessment data.",
+      "State of Nebraska mathematics results for all students, weighted across grades 3–6 (same view as Evidence → Nebraska with State benchmark on). Source: Nebraska Department of Education assessment data.",
   };
 }
 
 export function buildNebraskaMathGenderDataset(
   rows: ScoreRow[],
 ): AcademicDataset {
-  const [femaleChart, maleChart] = splitGenderCharts(
-    "FEMALE",
-    "MALE",
-    rows,
-    "Avg Scale Score",
-    "School Year",
+  const gradeRows = rows.filter(
+    (row) =>
+      row.grade !== undefined &&
+      (NEBRASKA_MATH_EVIDENCE_GRADES as readonly string[]).includes(row.grade),
   );
+
+  const stateRows: EvidenceScoreRow[] = gradeRows.map((row) => ({
+    school_year: row.school_year,
+    grade: row.grade ?? "",
+    subgroup_desc: row.subgroup_desc,
+    avg_scale_score: row.avg_scale_score,
+    count_tested: row.count_tested,
+    level: "ST",
+    agency_name: row.agency_name,
+  }));
+
+  const { chart, subtitle } = buildGenderPerformanceChart(
+    "math",
+    [...NEBRASKA_MATH_EVIDENCE_GRADES],
+    stateRows,
+    [],
+    true,
+  );
+
+  const aggregated = aggregateWeightedGenderRows(gradeRows);
+  const latestGap = computeLatestGenderGap(aggregated);
+  const gapLabel =
+    latestGap !== null ? `${latestGap.toFixed(1)} points` : "7.5 points";
 
   return {
     id: "nebraska-math-gender",
     label: "Nebraska Mathematics by Gender",
     title: "Nebraska Mathematics by Gender",
-    charts: [femaleChart, maleChart],
+    charts: [chart],
+    evidenceChartLayout: true,
+    evidenceStudentGroup: "gender",
+    performanceSubtitle: subtitle,
     insight: [
       { text: "Male students consistently score higher than female students, with the gap widening to " },
-      { text: "7.5 points", emphasis: "gold" },
+      { text: gapLabel, emphasis: "gold" },
       { text: " by 2024–25." },
     ],
     description:
-      "Nebraska statewide mathematics performance split by gender. All grades combined, all students.",
+      "Nebraska statewide mathematics performance by gender, weighted across grades 3–6 (same view as Evidence → Nebraska → By Gender with State on). Source: Nebraska Department of Education.",
   };
 }
+
+const WESTSIDE_AGENCY_NAME = "WESTSIDE COMMUNITY SCHOOLS";
 
 export function buildWestsideMathGenderDataset(
   rows: ScoreRow[],
 ): AcademicDataset {
-  const [femaleChart, maleChart] = splitGenderCharts(
-    "FEMALE",
-    "MALE",
-    rows,
-    "Avg Scale Score",
-    "School Year",
+  const gradeRows = rows.filter((row) =>
+    WESTSIDE_MATH_GENDER_GRADES.includes(
+      (row.grade ?? "") as (typeof WESTSIDE_MATH_GENDER_GRADES)[number],
+    ),
   );
+
+  const districtRows: EvidenceScoreRow[] = gradeRows.map((row) => ({
+    school_year: row.school_year,
+    grade: row.grade ?? "",
+    subgroup_desc: row.subgroup_desc,
+    avg_scale_score: row.avg_scale_score,
+    count_tested: row.count_tested,
+    level: "DI",
+    agency_name: row.agency_name ?? WESTSIDE_AGENCY_NAME,
+  }));
+
+  const district = {
+    id: WESTSIDE_AGENCY_NAME,
+    name: WESTSIDE_AGENCY_NAME,
+    color: colorForDistrictIndex(0),
+  };
+
+  const { chart, subtitle } = buildGenderPerformanceChart(
+    "math",
+    [...WESTSIDE_MATH_GENDER_GRADES],
+    districtRows,
+    [district],
+    false,
+  );
+
+  const aggregated = aggregateWeightedGenderRows(gradeRows);
+  const latestGap = computeLatestGenderGap(aggregated);
+  const gapLabel =
+    latestGap !== null ? `${latestGap.toFixed(1)} points` : "a widening gap";
 
   return {
     id: "westside-math-gender",
     label: "Westside Mathematics by Gender",
     title: "Westside Mathematics by Gender",
-    charts: [femaleChart, maleChart],
+    charts: [chart],
+    evidenceChartLayout: true,
+    evidenceStudentGroup: "gender",
+    evidenceSelectedDistricts: [district],
+    performanceSubtitle: subtitle,
     insight: [
-      { text: "Westside Community Schools shows a similar gender gap, reaching " },
-      { text: "9.2 points", emphasis: "gold" },
-      { text: " in 2024–25 while overall scores remain above state averages." },
+      {
+        text: "Westside Community Schools shows a widening gender gap in grades 3–6, reaching ",
+      },
+      { text: gapLabel, emphasis: "gold" },
+      { text: " between male and female students in the most recent school year." },
     ],
     description:
-      "Westside Community Schools district mathematics performance by gender. All grades combined.",
+      "Westside Community Schools (District 66) mathematics performance by gender, weighted across grades 3–6. Source: Nebraska Department of Education.",
   };
 }
 
 export function buildNebraskaEnglishDataset(rows: ScoreRow[]): AcademicDataset {
-  const gradeRows = rows.filter((row) =>
-    ["03", "04", "05", "06", "07", "08"].includes(row.grade ?? ""),
-  );
+  const stateRows: EvidenceScoreRow[] = rows
+    .filter(
+      (row) =>
+        row.grade !== undefined &&
+        (NEBRASKA_MATH_EVIDENCE_GRADES as readonly string[]).includes(row.grade),
+    )
+    .map((row) => ({
+      school_year: row.school_year,
+      grade: row.grade ?? "",
+      avg_scale_score: row.avg_scale_score,
+      count_tested: row.count_tested,
+      level: "ST",
+    }));
 
-  const [leftChart, rightChart] =
-    gradeRows.length > 0
-      ? splitGradeBandCharts(
-          gradeRows,
-          ["03", "04", "05"],
-          ["06", "07", "08"],
-          "GRADES 3–5",
-          "GRADES 6–8",
-          "Avg Scale Score",
-          "School Year",
-        )
-      : ([
-          singleSeriesChart(
-            "GRADES 3–5",
-            rows,
-            "Avg Scale Score",
-            "School Year",
-          ),
-          singleSeriesChart(
-            "GRADES 6–8",
-            rows,
-            "Avg Scale Score",
-            "School Year",
-          ),
-        ] as [AcademicChart, AcademicChart]);
+  const { chart, subtitle } = buildPerformanceChart(
+    "english",
+    [...NEBRASKA_MATH_EVIDENCE_GRADES],
+    "All Students",
+    stateRows,
+    [],
+    [],
+    true,
+  );
 
   return {
     id: "nebraska-english",
     label: "Nebraska English",
     title: "Nebraska English",
-    charts: [leftChart, rightChart],
+    charts: [chart],
+    evidenceChartLayout: true,
+    evidenceStudentGroup: "all",
+    performanceSubtitle: subtitle,
     insight: [
       { text: "Nebraska English Language Arts scores have declined " },
       { text: "9.2 points", emphasis: "gold" },
       { text: " since 2020–21 with no sign of recovery." },
     ],
     description:
-      "State of Nebraska English Language Arts results for all students across all grades.",
+      "State of Nebraska English Language Arts results for all students, weighted across grades 3–6 (same view as Evidence → Nebraska → English with State benchmark on). Source: Nebraska Department of Education.",
   };
 }
 

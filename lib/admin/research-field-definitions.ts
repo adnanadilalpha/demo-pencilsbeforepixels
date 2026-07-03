@@ -86,6 +86,35 @@ export const researchEditorSections: ResearchEditorSection[] = [
     ],
   },
   {
+    id: "research_device_time",
+    label: "Device Time at School",
+    fields: [
+      text("research.deviceTime.title", "Title"),
+      area("research.deviceTime.description", "Description"),
+      pdf("research.deviceTime.pdfUrl", "Chart PDF"),
+    ],
+  },
+  {
+    id: "research_parcc",
+    label: "PARCC Testing Mode",
+    fields: [
+      text("research.parcc.title", "Title"),
+      area("research.parcc.description", "Description"),
+      pdf("research.parcc.pdfUrl", "Chart PDF"),
+    ],
+  },
+  {
+    id: "research_screen_time",
+    label: "Early Screen Time (JAMA)",
+    fields: [
+      text("research.screenTime.title", "Title"),
+      area("research.screenTime.description", "Description"),
+      area("research.screenTime.howToRead", "How to read"),
+      area("research.screenTime.statisticalNote", "Statistical note"),
+      pdf("research.screenTime.pdfUrl", "Chart PDF"),
+    ],
+  },
+  {
     id: "research_mental_health",
     label: "Mental Health Research",
     fields: [

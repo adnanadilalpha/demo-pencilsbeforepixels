@@ -50,6 +50,19 @@ function valuesForYears(
     return weightedAvg(bucket.scores, bucket.counts);
   });
 }
+
+function entityKeyForRow(row: EvidenceScoreRow): string {
+  const level = row.level ?? "";
+  const name =
+    row.agency_name?.trim() ||
+    (level === "ST" ? "State" : row.agency_name ?? "Unknown");
+  return `${name}|||${level}`;
+}
+
+function rowsForEntityKey(rows: EvidenceScoreRow[], key: string) {
+  return rows.filter((row) => entityKeyForRow(row) === key);
+}
+
 export function colorForDistrictIndex(index: number) {
   return DISTRICT_COLORS[index % DISTRICT_COLORS.length];
 }
@@ -127,9 +140,7 @@ export function buildGenderPerformanceChart(
     subject === "math" ? "Mathematics" : "English Language Arts";
   const series: ChartSeries[] = [];
 
-  const entityKeys = [
-    ...new Set(rows.map((row) => `${row.agency_name}|||${row.level}`)),
-  ];
+  const entityKeys = [...new Set(rows.map(entityKeyForRow))];
 
   entityKeys.forEach((key) => {
     const [name, level] = key.split("|||");
@@ -141,9 +152,7 @@ export function buildGenderPerformanceChart(
       ? STATE_COLOR
       : districts.find((district) => district.name === name)?.color ?? "#64748B";
 
-    const entityRows = rows.filter(
-      (row) => row.agency_name === name && row.level === level,
-    );
+    const entityRows = rowsForEntityKey(rows, key);
     const maleRows = entityRows.filter((row) => row.subgroup_desc === "Male");
     const femaleRows = entityRows.filter(
       (row) => row.subgroup_desc === "Female",

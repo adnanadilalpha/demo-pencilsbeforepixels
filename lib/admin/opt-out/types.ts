@@ -3,8 +3,8 @@ export type OptOutSubmissionStatus = "generated" | "downloaded";
 export type AdminOptOutSubmission = {
   id: string;
   parentName: string;
+  studentName: string | null;
   school: string | null;
-  district: string | null;
   status: OptOutSubmissionStatus;
   generatedAt: string;
   downloadedAt: string | null;

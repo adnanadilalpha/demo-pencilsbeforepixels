@@ -15,7 +15,7 @@ export function AcademicDataIntro() {
 
   return (
     <ScrollReveal className="flex flex-col gap-6">
-      <p className="font-sans text-[10px] font-medium uppercase tracking-[0.24em] text-gold-accent">
+      <p className="font-sans text-[10px] font-medium uppercase tracking-[0.24em] text-gold-accent lg:text-base">
         {label}
       </p>
       <DisplayHeading as="h2" className="text-white">

@@ -1,6 +1,6 @@
 "use client";
 
-import Image from "next/image";
+import { ContentImage } from "@/components/ui/ContentImage";
 import Link from "next/link";
 import { useSiteContent } from "@/lib/cms/hooks";
 import { cn } from "@/lib/utils";
@@ -44,7 +44,7 @@ export function TextLink({
         />
       </span>
       <span className="text-link-arrow inline-flex transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:translate-x-1">
-        <Image src={icon} alt="" width={16} height={16} aria-hidden />
+        <ContentImage src={icon} alt="" width={16} height={16} aria-hidden />
       </span>
     </Link>
   );

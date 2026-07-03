@@ -272,35 +272,36 @@ export async function getEquityScatterPanelData(options: {
   }
 
   const { createAdminClient } = await import("@/lib/supabase/admin");
+  const { fetchAllRows } = await import("@/lib/supabase/fetch-all");
   const supabase = createAdminClient();
   const table = options.subject === "math" ? "math_scores" : "english_scores";
   const grades = normalizeGrades(options.grades);
 
-  let scoreQuery = supabase
-    .from(table)
-    .select("agency_name, school_year, grade, avg_scale_score, count_tested")
-    .eq("level", "DI")
-    .eq("subgroup_type", "ALL")
-    .in("grade", grades)
-    .not("avg_scale_score", "is", null);
-
-  let frlQuery = supabase
-    .from("frl_scores")
-    .select("agency_name, school_year, pct_frl, count_frl")
-    .eq("level", "DI")
-    .not("pct_frl", "is", null);
-
-  const [{ data: scoreRows }, { data: frlRows }] = await Promise.all([
-    scoreQuery,
-    frlQuery,
+  const [scoreRows, frlRows] = await Promise.all([
+    fetchAllRows<ScoreRow>((from, to) =>
+      supabase
+        .from(table)
+        .select("agency_name, school_year, grade, avg_scale_score, count_tested")
+        .eq("level", "DI")
+        .eq("subgroup_type", "ALL")
+        .in("grade", grades)
+        .not("avg_scale_score", "is", null)
+        .order("agency_name")
+        .range(from, to),
+    ),
+    fetchAllRows<FrlRow>((from, to) =>
+      supabase
+        .from("frl_scores")
+        .select("agency_name, school_year, pct_frl, count_frl")
+        .eq("level", "DI")
+        .not("pct_frl", "is", null)
+        .order("agency_name")
+        .range(from, to),
+    ),
   ]);
 
-  const districtScores = buildDistrictScores(
-    (scoreRows as ScoreRow[]) ?? [],
-    grades,
-    options.schoolYear,
-  );
-  const districtFrl = buildDistrictFrl((frlRows as FrlRow[]) ?? [], options.schoolYear);
+  const districtScores = buildDistrictScores(scoreRows, grades, options.schoolYear);
+  const districtFrl = buildDistrictFrl(frlRows, options.schoolYear);
 
   return buildEquityScatterPanel(
     options.subject,

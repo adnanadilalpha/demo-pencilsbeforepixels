@@ -54,16 +54,21 @@ function mapSchoolOptions(names: string[]): DistrictOption[] {
 
   names.forEach((name) => {
     const normalized = normalizeSchoolName(name);
-    if (normalized && !seen.has(normalized)) {
-      seen.set(normalized, normalized);
+    if (!normalized) return;
+
+    const existing = seen.get(normalized);
+    if (!existing || name.length > existing.length) {
+      seen.set(normalized, name);
     }
   });
 
-  return [...seen.keys()].sort().map((name, index) => ({
-    id: name,
-    name,
-    color: colorForDistrictIndex(index),
-  }));
+  return [...seen.entries()]
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(([id, label], index) => ({
+      id,
+      name: label,
+      color: colorForDistrictIndex(index),
+    }));
 }
 
 function remapDistrictAverageRows(rows: EvidenceScoreRow[]) {
@@ -97,43 +102,40 @@ async function fetchDistrict66ScoreRows(options: {
   subgroupType: "ALL" | "GENDER";
 }) {
   const { createAdminClient } = await import("@/lib/supabase/admin");
+  const { fetchAllRows } = await import("@/lib/supabase/fetch-all");
   const supabase = createAdminClient();
   const table = subjectTable(options.subject);
   const grades = normalizeGrades(options.grades);
   const select =
     "school_year, district_id, agency_name, avg_scale_score, count_tested, subgroup_desc, grade, level";
 
-  const [stateResult, districtResult, schoolResult] = await Promise.all([
-    supabase
-      .from(table)
-      .select(select)
-      .eq("level", "ST")
-      .eq("subgroup_type", options.subgroupType)
-      .in("grade", grades)
-      .order("school_year"),
-    supabase
-      .from(table)
-      .select(select)
-      .eq("level", "DI")
-      .eq("subgroup_type", options.subgroupType)
-      .eq("agency_name", WESTSIDE_AGENCY_NAME)
-      .in("grade", grades)
-      .order("school_year"),
-    supabase
-      .from(table)
-      .select(select)
-      .eq("level", "SC")
-      .eq("subgroup_type", options.subgroupType)
-      .eq("district_id", WESTSIDE_DISTRICT_ID)
-      .in("grade", grades)
-      .order("school_year"),
+  const fetchLevelRows = (level: "ST" | "DI" | "SC") =>
+    fetchAllRows<EvidenceScoreRow>((from, to) => {
+      let query = supabase
+        .from(table)
+        .select(select)
+        .eq("level", level)
+        .eq("subgroup_type", options.subgroupType)
+        .in("grade", grades)
+        .order("school_year")
+        .range(from, to);
+
+      if (level === "DI") {
+        query = query.eq("agency_name", WESTSIDE_AGENCY_NAME);
+      } else if (level === "SC") {
+        query = query.eq("district_id", WESTSIDE_DISTRICT_ID);
+      }
+
+      return query;
+    });
+
+  const [stateRows, districtRows, schoolRows] = await Promise.all([
+    fetchLevelRows("ST"),
+    fetchLevelRows("DI"),
+    fetchLevelRows("SC"),
   ]);
 
-  return {
-    stateRows: (stateResult.data as EvidenceScoreRow[]) ?? [],
-    districtRows: (districtResult.data as EvidenceScoreRow[]) ?? [],
-    schoolRows: (schoolResult.data as EvidenceScoreRow[]) ?? [],
-  };
+  return { stateRows, districtRows, schoolRows };
 }
 
 function buildDistrict66ChartInputs(options: {
@@ -298,21 +300,24 @@ function buildDistrict66SchoolScores(
 
 export async function getDistrict66SchoolOptions(
   subject: EvidenceSubject,
+  subgroupType: "ALL" | "GENDER" = "ALL",
 ): Promise<DistrictOption[]> {
   const { createAdminClient } = await import("@/lib/supabase/admin");
+  const { fetchAllRows } = await import("@/lib/supabase/fetch-all");
   const supabase = createAdminClient();
-  const { data } = await supabase
-    .from(subjectTable(subject))
-    .select("agency_name")
-    .eq("level", "SC")
-    .eq("district_id", WESTSIDE_DISTRICT_ID)
-    .eq("subgroup_type", "ALL")
-    .not("agency_name", "is", null)
-    .order("agency_name");
-
-  const names = ((data as { agency_name: string }[]) ?? []).map(
-    (row) => row.agency_name,
+  const rows = await fetchAllRows<{ agency_name: string }>((from, to) =>
+    supabase
+      .from(subjectTable(subject))
+      .select("agency_name")
+      .eq("level", "SC")
+      .eq("district_id", WESTSIDE_DISTRICT_ID)
+      .eq("subgroup_type", subgroupType)
+      .not("agency_name", "is", null)
+      .order("agency_name")
+      .range(from, to),
   );
+
+  const names = rows.map((row) => row.agency_name);
 
   return mapSchoolOptions(names);
 }
@@ -426,36 +431,42 @@ export async function getDistrict66EquityPanelData(options: {
   schoolYear: string;
 }): Promise<EquityScatterPanelData> {
   const { createAdminClient } = await import("@/lib/supabase/admin");
+  const { fetchAllRows } = await import("@/lib/supabase/fetch-all");
   const supabase = createAdminClient();
   const table = subjectTable(options.subject);
   const grades = normalizeGrades(options.grades);
 
-  const [{ data: scoreRows }, { data: frlRows }] = await Promise.all([
-    supabase
-      .from(table)
-      .select("agency_name, school_year, grade, avg_scale_score, count_tested")
-      .eq("level", "SC")
-      .eq("subgroup_type", "ALL")
-      .eq("district_id", WESTSIDE_DISTRICT_ID)
-      .in("grade", grades)
-      .not("avg_scale_score", "is", null),
-    supabase
-      .from("frl_scores")
-      .select("agency_name, school_year, pct_frl, count_frl")
-      .eq("level", "SC")
-      .eq("district_id", WESTSIDE_DISTRICT_ID)
-      .not("pct_frl", "is", null),
+  const [scoreRows, frlRows] = await Promise.all([
+    fetchAllRows<SchoolScoreRow>((from, to) =>
+      supabase
+        .from(table)
+        .select("agency_name, school_year, grade, avg_scale_score, count_tested")
+        .eq("level", "SC")
+        .eq("subgroup_type", "ALL")
+        .eq("district_id", WESTSIDE_DISTRICT_ID)
+        .in("grade", grades)
+        .not("avg_scale_score", "is", null)
+        .order("agency_name")
+        .range(from, to),
+    ),
+    fetchAllRows<FrlRow>((from, to) =>
+      supabase
+        .from("frl_scores")
+        .select("agency_name, school_year, pct_frl, count_frl")
+        .eq("level", "SC")
+        .eq("district_id", WESTSIDE_DISTRICT_ID)
+        .not("pct_frl", "is", null)
+        .order("agency_name")
+        .range(from, to),
+    ),
   ]);
 
   const schoolScores = buildDistrict66SchoolScores(
-    (scoreRows as SchoolScoreRow[]) ?? [],
+    scoreRows,
     grades,
     options.schoolYear,
   );
-  const schoolFrl = buildDistrict66SchoolFrl(
-    (frlRows as FrlRow[]) ?? [],
-    options.schoolYear,
-  );
+  const schoolFrl = buildDistrict66SchoolFrl(frlRows, options.schoolYear);
 
   const districtScores = Object.fromEntries(
     Object.keys(schoolScores)

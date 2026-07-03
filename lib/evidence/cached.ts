@@ -18,6 +18,6 @@ export const getEvidenceBootstrap = unstable_cache(
 
     return { ...bootstrap, version: version.version };
   },
-  ["evidence-bootstrap"],
+  ["evidence-bootstrap-v3"],
   { tags: ["evidence-data"], revalidate: 3600 },
 );

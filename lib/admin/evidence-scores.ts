@@ -60,7 +60,7 @@ const DISTRICT_66_QUERIES: ScoreQuery[] = [
       district_id: "66",
       level: "DI",
       subgroup_type: "GENDER",
-      grade: "ALL",
+      grade: ["03", "04", "05", "06"],
     },
   },
   {

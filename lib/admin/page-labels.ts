@@ -1,6 +1,7 @@
 const PAGE_LABELS: Record<string, string> = {
   "/": "Landing Page",
-  "/evidence": "Evidence Dashboard",
+  "/evidence": "Nebraska Data",
+  "/research": "Research",
   "/privacy": "Privacy Policy",
   "/terms": "Terms of Service",
 };

@@ -12,7 +12,7 @@ export type AdminSearchEntry = {
 const SCORES_ENTRY: AdminSearchEntry = {
   id: "scores-page",
   label: "Scores",
-  description: "Evidence data uploads",
+  description: "Nebraska assessment data uploads",
   href: "/admin/scores",
   keywords: ["scores", "csv", "upload", "math", "english", "frl", "evidence", "assessment"],
 };
@@ -50,8 +50,10 @@ const RESOURCE_TABS: AdminSearchEntry[] = [
 
 const PAGE_LABELS: Record<string, string> = {
   homepage: "Homepage",
-  evidence: "Evidence",
+  nebraska: "Nebraska Data",
+  research: "Research",
   site: "Site",
+  evidence: "Nebraska Data",
 };
 
 export function buildAdminSearchIndex(): AdminSearchEntry[] {

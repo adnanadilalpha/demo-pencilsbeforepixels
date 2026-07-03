@@ -1,6 +1,6 @@
 "use client";
 
-import Image from "next/image";
+import { ContentImage } from "@/components/ui/ContentImage";
 import { useState, type ReactNode } from "react";
 import { ScrollReveal } from "@/components/motion/ScrollReveal";
 import { Container } from "@/components/ui/Container";
@@ -55,7 +55,7 @@ function VideoPlaceholder({ playIcon }: { playIcon: string }) {
   return (
     <div className="relative flex h-full w-full items-center justify-center rounded-sm bg-white/4">
       <span className="flex size-[60px] items-center justify-center rounded-full border-[1.5px] border-gold-accent/40 bg-gold-accent/8">
-        <Image
+        <ContentImage
           src={playIcon}
           alt=""
           width={22}
@@ -118,7 +118,7 @@ function PlayOverlay({ playIcon }: { playIcon: string }) {
   return (
     <span className="pointer-events-none absolute inset-0 flex items-center justify-center bg-navy-800/20">
       <span className="flex size-12 items-center justify-center rounded-full border border-white/30 bg-white/10 backdrop-blur-sm">
-        <Image
+        <ContentImage
           src={playIcon}
           alt=""
           width={18}
@@ -184,7 +184,7 @@ function LibraryMedia({
     return (
       <div className={cardFrameClassName}>
         <div className="relative h-full w-full overflow-hidden rounded-sm">
-          <Image
+          <ContentImage
             src={item.image}
             alt={item.title}
             fill
@@ -271,13 +271,23 @@ function LibraryCard({
         onPlay={onVideoPlay}
         onDocumentOpen={onDocumentOpen}
       />
-      <div className="flex min-h-17 flex-col gap-1.5">
+      <div className="flex min-h-17 flex-col gap-2">
         <h3 className="line-clamp-2 font-display text-lg leading-snug text-[#18263a] sm:text-xl sm:leading-display">
           {item.title}
         </h3>
-        <p className="line-clamp-1 text-xs uppercase leading-ui-label text-body-muted sm:text-sm">
+        <p className="line-clamp-1 text-xs uppercase leading-ui-label text-body-muted sm:text-sm lg:text-base">
           {item.subtitle}
         </p>
+        {item.kind === "book" && item.viewUrl ? (
+          <a
+            href={item.viewUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-1 inline-flex w-fit items-center justify-center rounded-full border border-navy-800/20 px-4 py-2 text-sm font-medium text-navy-800 transition-colors hover:bg-navy-800/5 focus-visible:outline focus-visible:outline-offset-2 focus-visible:outline-gold-accent lg:text-base"
+          >
+            View
+          </a>
+        ) : null}
       </div>
     </article>
   );
@@ -314,7 +324,7 @@ function CategoryNavButton({
       <span className="flex min-w-0 items-center gap-2">
         <span
           className={cn(
-            "shrink-0 font-sans text-xs font-medium leading-none tabular-nums",
+            "shrink-0 font-sans text-xs font-medium leading-none tabular-nums lg:text-base",
             isActive ? "text-navy-800" : "text-body-muted",
           )}
         >
@@ -322,7 +332,7 @@ function CategoryNavButton({
         </span>
         <span
           className={cn(
-            "truncate text-sm leading-single",
+            "truncate text-sm leading-single lg:text-base",
             isActive ? "font-semibold" : "font-normal",
           )}
         >
@@ -331,7 +341,7 @@ function CategoryNavButton({
       </span>
       <span
         className={cn(
-          "hidden shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium tabular-nums lg:inline",
+          "hidden shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium tabular-nums lg:inline lg:text-base",
           isActive ? "bg-navy-800/8 text-navy-800" : "bg-white/50 text-body-muted",
         )}
       >
@@ -431,7 +441,7 @@ export function ResearchLibrarySection() {
             aria-label={`${activeCategory} resources`}
           >
             {activeItems.length === 0 ? (
-              <p className="rounded-xl border border-navy-800/8 bg-white/40 px-6 py-10 text-center text-sm text-body-muted">
+              <p className="rounded-xl border border-navy-800/8 bg-white/40 px-6 py-10 text-center text-sm text-body-muted lg:text-base">
                 No {activeCategory.toLowerCase()} yet.
               </p>
             ) : (

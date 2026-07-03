@@ -1,16 +1,13 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
 import { ContentEditor } from "@/components/admin/content/ContentEditor";
-import type { ContentPageId } from "@/lib/admin/content-config";
+import { normalizeContentPageId } from "@/lib/admin/content-config";
 import { fetchContentEditorState } from "@/lib/admin/fetch-content-editor";
 
 export const metadata: Metadata = { title: "Content" };
 
-function parseRoutePage(value: string | undefined): ContentPageId | undefined {
-  if (value === "homepage" || value === "evidence" || value === "site") {
-    return value;
-  }
-  return undefined;
+function parseRoutePage(value: string | undefined) {
+  return normalizeContentPageId(value);
 }
 
 export default async function AdminContentPage({

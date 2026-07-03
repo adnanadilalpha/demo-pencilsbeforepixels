@@ -16,7 +16,7 @@ export async function createOptOutSubmission(
 
   if (!response.ok) {
     const body = (await response.json().catch(() => ({}))) as { error?: string };
-    throw new Error(body.error ?? "Failed to generate letter");
+    throw new Error(body.error ?? "Failed to generate form package");
   }
 
   return (await response.json()) as OptOutSubmissionResult;
@@ -38,15 +38,16 @@ export async function trackOptOutDownload(
   }
 }
 
-export async function downloadOptOutDocx(
+async function downloadFromApi(
   id: string,
+  format: "pdf" | "docx",
   filename: string,
   downloadToken: string,
 ) {
   const params = new URLSearchParams({ token: downloadToken });
-  const response = await fetch(`/api/opt-out/${id}/docx?${params.toString()}`);
+  const response = await fetch(`/api/opt-out/${id}/${format}?${params.toString()}`);
   if (!response.ok) {
-    throw new Error("Failed to download DOCX");
+    throw new Error(`Failed to download ${format.toUpperCase()}`);
   }
 
   const blob = await response.blob();
@@ -56,4 +57,20 @@ export async function downloadOptOutDocx(
   anchor.download = filename;
   anchor.click();
   URL.revokeObjectURL(url);
+}
+
+export async function downloadOptOutDocx(
+  id: string,
+  filename: string,
+  downloadToken: string,
+) {
+  await downloadFromApi(id, "docx", filename, downloadToken);
+}
+
+export async function downloadOptOutPdf(
+  id: string,
+  filename: string,
+  downloadToken: string,
+) {
+  await downloadFromApi(id, "pdf", filename, downloadToken);
 }

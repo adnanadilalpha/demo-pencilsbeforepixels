@@ -1,6 +1,6 @@
 "use client";
 
-import Image from "next/image";
+import { ContentImage } from "@/components/ui/ContentImage";
 import { useEffect, useRef, useState } from "react";
 import { useLenis } from "lenis/react";
 import { NewsletterTrigger } from "@/components/newsletter/NewsletterTrigger";
@@ -26,7 +26,7 @@ export function HeroSection() {
     "Learning is built through reading, writing, conversation, curiosity and hands on experiences.";
   const primaryCta = (section.primaryCta as string) ?? "Join Newsletter";
   const secondaryCta = (section.secondaryCta as { label: string; href: string }) ?? {
-    label: "Explore Evidence",
+    label: "Explore Nebraska Data",
     href: "/evidence",
   };
   const backgroundImage =
@@ -66,7 +66,7 @@ export function HeroSection() {
     <section ref={sectionRef} className="relative w-full overflow-x-clip">
       <div className="relative flex h-dvh min-h-dvh w-full max-w-full flex-col overflow-hidden">
         <div ref={imageRef} className="absolute inset-0 overflow-hidden will-change-transform">
-          <Image
+          <ContentImage
             src={backgroundImage}
             alt={backgroundAlt}
             fill
@@ -94,7 +94,7 @@ export function HeroSection() {
             style={{ animationDelay: "0.05s" }}
           >
             <span className="h-0.5 w-8 shrink-0 bg-gold-500" aria-hidden />
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-gold-500">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-gold-500 lg:text-base">
               {eyebrow}
             </p>
           </div>

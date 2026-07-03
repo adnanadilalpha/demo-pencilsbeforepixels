@@ -57,6 +57,7 @@ export type LibraryItem = {
   subtitle: string;
   kind: "book" | "paper" | "video" | "resource";
   image?: string;
+  viewUrl?: string;
   youtubeUrl?: string;
   videoUrl?: string;
   fileUrl?: string;
@@ -82,6 +83,7 @@ export type SoftwareReview = {
   title: string;
   summary?: string;
   youtubeId?: string;
+  audioSrc?: string;
   vendorResearch?: ResearchNote;
   independentResearch?: ResearchNote;
   referencesNote?: string;

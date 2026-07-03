@@ -1,6 +1,6 @@
 "use client";
 
-import Image from "next/image";
+import { ContentImage } from "@/components/ui/ContentImage";
 import { Container } from "@/components/ui/Container";
 import { DisplayHeading } from "@/components/ui/DisplayHeading";
 import { ScrollReveal } from "@/components/motion/ScrollReveal";
@@ -51,7 +51,7 @@ export function ExpertQuotesSection() {
                       <cite className="text-lg font-semibold not-italic leading-display text-navy-800/90">
                         {expert.name}
                       </cite>
-                      <p className="text-sm leading-snug text-navy-800/70">
+                      <p className="text-sm leading-snug text-navy-800/70 lg:text-base">
                         {expert.title}
                       </p>
                     </div>
@@ -59,7 +59,7 @@ export function ExpertQuotesSection() {
 
                   {expert.image ? (
                     <div className="relative mt-6 h-28 w-24 shrink-0 overflow-hidden rounded-sm md:absolute md:right-0 md:top-6 md:mt-0 md:h-[96px] md:w-[82px] xl:relative xl:mt-0 xl:h-[164px] xl:w-[140px] xl:justify-self-end">
-                      <Image
+                      <ContentImage
                         src={expert.image}
                         alt={expert.name}
                         fill

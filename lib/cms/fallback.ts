@@ -15,7 +15,9 @@ import {
   navLinks,
   optOutSteps,
   timelineSlides,
+  whatToDoPoints,
 } from "./fallback-data";
+import { normalizeMissionTimeline } from "./mission-slides";
 import type { SiteContent } from "./types";
 
 const FALLBACK_VERSION = "local-fallback";
@@ -55,7 +57,7 @@ export function buildFallbackSiteContent(): SiteContent {
         headline: "Every Child Deserves More Than a Screen.",
         body: "Learning is built through reading, writing, conversation, curiosity and hands on experiences. Explore research, local education data and practical resources that help parents better understand learning in today's classrooms.",
         primaryCta: "Join Newsletter",
-        secondaryCta: { label: "Explore Evidence", href: "/evidence" },
+        secondaryCta: { label: "Explore Nebraska Data", href: "/evidence" },
         backgroundImage: LOCAL_ASSETS.hero.background,
         backgroundAlt: "Children writing in a classroom",
       },
@@ -65,14 +67,10 @@ export function buildFallbackSiteContent(): SiteContent {
         body: "Instinctively, many parents and teachers feel something has changed. Children struggle to focus, teachers are increasingly overwhelmed and academic performance continues to decline. Over the past fifteen years, classrooms have rapidly transitioned to one to one digital devices while researchers have continued studying their impact on learning.",
       },
       "homepage.goal": {
-        label: "What to do",
-        tagline: "Focus over distraction and cognitive friction over swiping.",
-        goalTitle: "The Goal",
-        goalBody:
-          "Give our children the best possible chance of developing the cognitive and social skills they need to thrive, by creating a classroom environment that champions focus over distraction and cognitive friction over swiping.",
-        solutionTitle: "The Solution",
-        solutionBody:
-          "As parents, model the desired behaviour at home and create a coalition, representing a majority of the student population, that advocates for a tech intentional school that champions focus and cognitive friction by eliminating 1:1 digital devices.",
+        label: "The Evidence",
+        tagline:
+          "From NAEP to PISA, the pattern is consistent — more classroom screen time, weaker outcomes.",
+        points: [...whatToDoPoints],
       },
       "homepage.academic_data": {
         label: "Academic Data",
@@ -81,8 +79,8 @@ export function buildFallbackSiteContent(): SiteContent {
         datasets: academicDatasets,
       },
       "homepage.learning_apps": {
-        headline: "IXL & Epic",
-        body: "We reviewed two classroom platforms commonly used in schools and compared their learning experience with current educational research.",
+        headline: "Epic Reading Platform",
+        body: "A closer look at how Epic works, what behaviours it encourages, and how it compares with current research on reading comprehension and screen-based learning.",
       },
       "homepage.expert_voices": {
         headline: "What the Expert says",
@@ -93,7 +91,7 @@ export function buildFallbackSiteContent(): SiteContent {
         body: "Researchers continue to study how increased screen exposure may influence attention, behaviour and emotional wellbeing.",
         points: mentalHealthPoints,
         legend: mentalHealthLegend,
-        cta: { label: "Explore Evidence", href: "/evidence" },
+        cta: { label: "Explore Nebraska Data", href: "/evidence" },
       },
       "homepage.research_library": {
         headline: "Research Library",
@@ -104,7 +102,7 @@ export function buildFallbackSiteContent(): SiteContent {
         headline: "1 to 1 Device Opt Out",
         body: "Parents should have access to clear information and the ability to make informed decisions regarding classroom technology.",
         primaryCta: "Sign Opt Out Letter",
-        secondaryCta: { label: "Explore Evidence", href: "/evidence" },
+        secondaryCta: { label: "Explore Nebraska Data", href: "/evidence" },
       },
       "homepage.footer": {
         newsletterLabel: "Newsletter",
@@ -135,7 +133,7 @@ export function buildFallbackSiteContent(): SiteContent {
       },
     },
     expertQuotes: expertQuotes.map((q) => ({ ...q })),
-    timeline: timelineSlides.map((s) => ({ ...s })),
+    timeline: normalizeMissionTimeline(timelineSlides.map((s) => ({ ...s }))),
     libraryCategories: [...libraryCategories],
     libraryContent: {
       Books: libraryContent.Books.map((i) => ({ ...i })),
@@ -155,6 +153,7 @@ export function buildFallbackSiteContent(): SiteContent {
         title: epicReviewContent.title,
         summary: epicReviewContent.summary,
         youtubeId: "https://www.youtube.com/watch?v=iybQw1jlPEs",
+        audioSrc: epicReviewContent.audioSrc,
       },
       ixl: {
         slug: "ixl",

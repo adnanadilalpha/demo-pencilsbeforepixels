@@ -1,12 +1,41 @@
+export type OptOutDefaultAnswers = {
+  q1: string;
+  q2: string;
+  q3: string;
+  q4: string;
+};
+
+export type OptOutSchool = {
+  id: string;
+  schoolName: string;
+  principalName: string;
+  email: string;
+  sortOrder: number;
+};
+
+export type OptOutFormConfig = {
+  defaultAnswers: OptOutDefaultAnswers;
+  formBTemplatePath: string;
+  coverTemplatePath: string;
+  essayTemplatePath: string;
+};
+
+export type OptOutSignatureMode = "draw" | "name";
+
 export type OptOutLetterForm = {
   date: string;
   studentName: string;
-  recipientName: string;
-  childName: string;
   parentName: string;
-  school: string;
-  district: string;
-  stateTestName: string;
+  address: string;
+  homePhone: string;
+  workPhone: string;
+  signatureMode: OptOutSignatureMode;
+  signatureName: string;
+  signatureImage: string;
+  schoolId: string;
+  schoolName: string;
+  principalName: string;
+  principalEmail: string;
 };
 
 export type OptOutLetterMetrics = {
@@ -20,17 +49,7 @@ export type OptOutSubmissionPayload = {
   letter: OptOutLetterForm;
   metrics: OptOutLetterMetrics;
   downloadToken?: string;
-};
-
-export const DEFAULT_OPT_OUT_FORM: OptOutLetterForm = {
-  date: "",
-  studentName: "",
-  recipientName: "",
-  childName: "",
-  parentName: "",
-  school: "",
-  district: "",
-  stateTestName: "Nebraska NSCAS",
+  defaultAnswers?: OptOutDefaultAnswers;
 };
 
 export function createDefaultForm(): OptOutLetterForm {
@@ -42,7 +61,18 @@ export function createDefaultForm(): OptOutLetterForm {
   });
 
   return {
-    ...DEFAULT_OPT_OUT_FORM,
     date: formatted,
+    studentName: "",
+    parentName: "",
+    address: "",
+    homePhone: "",
+    workPhone: "",
+    signatureMode: "name",
+    signatureName: "",
+    signatureImage: "",
+    schoolId: "",
+    schoolName: "",
+    principalName: "",
+    principalEmail: "",
   };
 }

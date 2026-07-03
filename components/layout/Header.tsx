@@ -51,6 +51,10 @@ function isNavLinkActive(
     return pathname === "/evidence" || pathname.startsWith("/evidence/");
   }
 
+  if (href === "/research") {
+    return pathname === "/research" || pathname.startsWith("/research/");
+  }
+
   if (href.startsWith("#")) {
     return pathname === "/" && activeHash === href;
   }

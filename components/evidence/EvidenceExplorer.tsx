@@ -6,7 +6,6 @@ import {
   ArrowDown,
   ArrowUp,
   BarChart3,
-  BookOpen,
   LineChart,
   Map,
   Minus,
@@ -14,6 +13,13 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
 import { EvidenceLineChart } from "@/components/charts/EvidenceLineChart";
+import {
+  DISTRICT_LEGEND_COLOR,
+  EvidenceLegendRow,
+  EvidenceLegendSwatch,
+  STATE_BENCHMARK_COLOR,
+  StateBenchmarkLegendRow,
+} from "@/components/charts/EvidenceChartLegend";
 import { EvidenceScatterChart } from "@/components/charts/EvidenceScatterChart";
 import {
   EvidenceDistrictList,
@@ -22,7 +28,6 @@ import {
 import { EvidenceGradeSelect } from "@/components/evidence/EvidenceGradeSelect";
 import { EvidenceShowLinesSelect } from "@/components/evidence/EvidenceShowLinesSelect";
 import { EvidenceEquityRankings } from "@/components/evidence/EvidenceEquityRankings";
-import { EvidenceResearchTab } from "@/components/evidence/research/EvidenceResearchTab";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -62,7 +67,6 @@ const TABS: {
 }[] = [
   { id: "nebraska", label: "Nebraska", icon: Map },
   { id: "district-66", label: "District 66", icon: BarChart3 },
-  { id: "research", label: "Research", icon: BookOpen },
 ];
 
 const SUBJECTS: { id: EvidenceSubject; label: string }[] = [
@@ -81,7 +85,6 @@ function useEvidenceTabCopy(): Record<
 > {
   const nebraska = useSection("evidence.nebraska");
   const district66 = useSection("evidence.district_66");
-  const research = useSection("evidence.research_tab");
 
   return {
     nebraska: {
@@ -99,12 +102,6 @@ function useEvidenceTabCopy(): Record<
       viewDescription:
         (district66.viewDescription as string) ??
         "Compare individual school trends against district and state averages over time.",
-    },
-    research: {
-      title: (research.title as string) ?? "Research Charts",
-      subtitle:
-        (research.subtitle as string) ??
-        "Findings from NAEP, PISA, TIMSS, PIRLS and peer-reviewed research — documenting the relationship between digital device use and academic performance across the United States and internationally.",
     },
   };
 }
@@ -192,10 +189,19 @@ export function EvidenceExplorer({ bootstrap }: { bootstrap: EvidenceBootstrap }
 
     if (tab === "district-66") {
       void Promise.all([
-        fetchCachedSchools(evidenceVersion, subject),
-        fetchCachedSchoolYears(evidenceVersion, subject, "district-66"),
+        fetchCachedSchools(evidenceVersion, subject, studentGroup),
+        fetchCachedSchoolYears(
+          evidenceVersion,
+          subject,
+          "district-66",
+          studentGroup,
+        ),
       ]).then(([schools, years]) => {
         setSchoolOptions(schools);
+        const schoolIds = new Set(schools.map((school) => school.id));
+        setSelectedSchoolIds((current) =>
+          current.filter((id) => schoolIds.has(id)),
+        );
         if (years.length > 0) {
           setSchoolYears(years);
           setSchoolYear((current) =>
@@ -207,10 +213,19 @@ export function EvidenceExplorer({ bootstrap }: { bootstrap: EvidenceBootstrap }
     }
 
     void Promise.all([
-      fetchCachedDistricts(evidenceVersion, subject),
-      fetchCachedSchoolYears(evidenceVersion, subject, "nebraska"),
+      fetchCachedDistricts(evidenceVersion, subject, studentGroup),
+      fetchCachedSchoolYears(
+        evidenceVersion,
+        subject,
+        "nebraska",
+        studentGroup,
+      ),
     ]).then(([districts, years]) => {
       setAllDistricts(districts);
+      const districtIds = new Set(districts.map((district) => district.id));
+      setSelectedDistrictIds((current) =>
+        current.filter((id) => districtIds.has(id)),
+      );
       if (years.length > 0) {
         setSchoolYears(years);
         setSchoolYear((current) =>
@@ -218,7 +233,7 @@ export function EvidenceExplorer({ bootstrap }: { bootstrap: EvidenceBootstrap }
         );
       }
     });
-  }, [evidenceVersion, subject, tab]);
+  }, [evidenceVersion, subject, tab, studentGroup]);
 
   const fetchPanel = useCallback(
     async (
@@ -234,8 +249,6 @@ export function EvidenceExplorer({ bootstrap }: { bootstrap: EvidenceBootstrap }
       nextStudentGroup: StudentGroup,
       nextSchoolYear: string,
     ) => {
-      if (nextTab === "research") return;
-
       const params = new URLSearchParams({
         tab: nextTab,
         view: nextView,
@@ -267,7 +280,7 @@ export function EvidenceExplorer({ bootstrap }: { bootstrap: EvidenceBootstrap }
   );
 
   useEffect(() => {
-    if (tab === "research" || !evidenceVersion) return;
+    if (!evidenceVersion) return;
 
     startTransition(() => {
       void fetchPanel(
@@ -348,12 +361,17 @@ export function EvidenceExplorer({ bootstrap }: { bootstrap: EvidenceBootstrap }
   const showStateReference =
     !isDistrict66 &&
     includeState &&
-    (studentGroup === "gender" ||
-      Boolean(
-        linePanel?.chart.series.some(
-          (series) => series.label === "State Average Benchmark",
-        ),
-      ));
+    (studentGroup === "gender"
+      ? Boolean(
+          linePanel?.chart.series.some((series) =>
+            series.label.toLowerCase().includes("state"),
+          ),
+        )
+      : Boolean(
+          linePanel?.chart.series.some(
+            (series) => series.label === "State Average Benchmark",
+          ),
+        ));
   const showDistrict66Reference =
     isDistrict66 && view === "performance";
 
@@ -411,9 +429,7 @@ export function EvidenceExplorer({ bootstrap }: { bootstrap: EvidenceBootstrap }
           </div>
         </div>
 
-        {tab !== "research" && (
-          <>
-            <div className="flex w-full min-w-0 max-w-full flex-col gap-4 sm:w-fit">
+        <div className="flex w-full min-w-0 max-w-full flex-col gap-4 sm:w-fit">
               <div className="flex w-full rounded-full border border-gold-500 p-1 sm:w-fit">
                 <button
                   type="button"
@@ -609,13 +625,9 @@ export function EvidenceExplorer({ bootstrap }: { bootstrap: EvidenceBootstrap }
                 </div>
               )}
             </div>
-          </>
-        )}
       </div>
 
-      {tab === "research" ? (
-        <EvidenceResearchTab />
-      ) : panel.panelType === "equity" ? (
+      {panel.panelType === "equity" ? (
         <div className={cn("flex flex-col gap-6 lg:gap-8", isPending && "opacity-70")}>
           <p className="max-w-4xl text-sm leading-relaxed text-[#6b7280] sm:text-base">
             {isDistrict66
@@ -692,7 +704,6 @@ export function EvidenceExplorer({ bootstrap }: { bootstrap: EvidenceBootstrap }
                     {studentGroup === "gender" ? (
                       <>
                         <LineStyleLegendItem
-                          dashArray={undefined}
                           marker="circle"
                           title="Male"
                           subtitle="Solid line"
@@ -712,9 +723,10 @@ export function EvidenceExplorer({ bootstrap }: { bootstrap: EvidenceBootstrap }
                       </>
                     ) : (
                       <li className="flex items-center gap-6">
-                        <span
-                          className="size-2.5 shrink-0 rounded-full bg-slate-400"
-                          aria-hidden
+                        <EvidenceLegendSwatch
+                          color={DISTRICT_LEGEND_COLOR}
+                          marker="circle"
+                          strokeWidth={2}
                         />
                         <span className="text-base leading-4 text-[#18263a]/70">
                           All Students
@@ -729,20 +741,7 @@ export function EvidenceExplorer({ bootstrap }: { bootstrap: EvidenceBootstrap }
                     <h3 className="text-base leading-display text-[#18263a] lg:text-lg">
                       Reference
                     </h3>
-                    <div className="flex items-start gap-6">
-                      <span
-                        className="mt-1 size-2.5 shrink-0 rotate-45 rounded-sm bg-[#b91c1c]"
-                        aria-hidden
-                      />
-                      <div className="flex flex-col gap-2">
-                        <span className="text-base leading-4 text-[#18263a]/70">
-                          State Average
-                        </span>
-                        <span className="text-sm leading-[14px] text-[#18263a]/60">
-                          Benchmark
-                        </span>
-                      </div>
-                    </div>
+                    <StateBenchmarkLegendRow />
                   </div>
                 )}
 
@@ -754,13 +753,17 @@ export function EvidenceExplorer({ bootstrap }: { bootstrap: EvidenceBootstrap }
                     <div className="flex flex-col gap-4">
                       <ReferenceLegendRow
                         active={includeState}
-                        markerClassName="rotate-45 rounded-sm bg-[#b91c1c]"
+                        color={STATE_BENCHMARK_COLOR}
+                        dashArray="6 4"
+                        marker="diamond"
                         title="State Average"
                         subtitle="Benchmark"
                       />
                       <ReferenceLegendRow
                         active={includeDistrictAvg}
-                        markerClassName="rounded-full bg-[#1e40af]"
+                        color="#1e40af"
+                        dashArray="6 4"
+                        marker="diamond"
                         title={DISTRICT_66_AVG_LABEL}
                         subtitle="District benchmark"
                       />
@@ -839,82 +842,55 @@ export function EvidenceExplorer({ bootstrap }: { bootstrap: EvidenceBootstrap }
 
 function ReferenceLegendRow({
   active,
-  markerClassName,
-  title,
-  subtitle,
-}: {
-  active: boolean;
-  markerClassName: string;
-  title: string;
-  subtitle: string;
-}) {
-  return (
-    <div
-      className={cn(
-        "flex items-start gap-6 transition-opacity",
-        !active && "opacity-35",
-      )}
-    >
-      <span
-        className={cn("mt-1 size-2.5 shrink-0", markerClassName)}
-        aria-hidden
-      />
-      <div className="flex flex-col gap-2">
-        <span className="text-base leading-4 text-[#18263a]/70">{title}</span>
-        <span className="text-sm leading-[14px] text-[#18263a]/60">
-          {subtitle}
-        </span>
-      </div>
-    </div>
-  );
-}
-
-function LineStyleLegendItem({
+  color,
   dashArray,
   marker,
   title,
   subtitle,
 }: {
+  active: boolean;
+  color: string;
   dashArray?: string;
   marker: "circle" | "diamond" | "square";
   title: string;
   subtitle: string;
 }) {
   return (
-    <li className="flex items-center gap-6">
-      <svg width="36" height="12" aria-hidden>
-        <line
-          x1="0"
-          y1="6"
-          x2="36"
-          y2="6"
-          stroke="#94A3B8"
-          strokeWidth="2.5"
-          strokeDasharray={dashArray}
-        />
-        {marker === "circle" && (
-          <circle cx="18" cy="6" r="3.5" fill="#94A3B8" />
-        )}
-        {marker === "diamond" && (
-          <rect
-            x="15"
-            y="3"
-            width="6"
-            height="6"
-            fill="#94A3B8"
-            transform="rotate(45 18 6)"
-          />
-        )}
-        {marker === "square" && (
-          <rect x="14.5" y="2.5" width="7" height="7" fill="#94A3B8" />
-        )}
-      </svg>
-      <div className="flex flex-col gap-1">
-        <span className="text-base leading-4 text-[#18263a]/70">{title}</span>
-        <span className="text-sm leading-[14px] text-[#18263a]/60">
-          {subtitle}
-        </span>
-      </div>
+    <EvidenceLegendRow
+      color={color}
+      dashArray={dashArray}
+      marker={marker}
+      title={title}
+      subtitle={subtitle}
+      inactive={!active}
+      className="gap-6"
+    />
+  );
+}
+
+function LineStyleLegendItem({
+  color = DISTRICT_LEGEND_COLOR,
+  dashArray,
+  marker,
+  title,
+  subtitle,
+}: {
+  color?: string;
+  dashArray?: string;
+  marker: "circle" | "diamond" | "square";
+  title: string;
+  subtitle: string;
+}) {
+  return (
+    <li>
+      <EvidenceLegendRow
+        color={color}
+        dashArray={dashArray}
+        marker={marker}
+        title={title}
+        subtitle={subtitle}
+        className="gap-6"
+      />
     </li>
   );
 }

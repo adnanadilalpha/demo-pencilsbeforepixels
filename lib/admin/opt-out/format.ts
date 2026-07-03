@@ -23,11 +23,11 @@ export function formatWeekDelta(delta: number): string {
 }
 
 export function submissionsToCsv(submissions: AdminOptOutSubmission[]): string {
-  const header = ["Parent", "School", "District", "Date", "Status"];
+  const header = ["Parent", "Student", "School", "Date", "Status"];
   const rows = submissions.map((submission) => [
     submission.parentName,
+    submission.studentName ?? "",
     submission.school ?? "",
-    submission.district ?? "",
     formatOptOutDate(submission.generatedAt),
     submission.status,
   ]);

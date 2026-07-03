@@ -5,6 +5,7 @@ import { Download } from "lucide-react";
 import { AdminConfirmDeleteModal } from "@/components/admin/AdminConfirmDeleteModal";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { AdminStatCard } from "@/components/admin/AdminStatCard";
+import { OptOutSettingsEditor } from "@/components/admin/opt-out/OptOutSettingsEditor";
 import { OptOutSubmissionsTable } from "@/components/admin/opt-out/OptOutSubmissionsTable";
 import {
   formatDownloadRate,
@@ -16,19 +17,36 @@ import type {
   OptOutPageData,
 } from "@/lib/admin/opt-out/types";
 import { formatCount } from "@/lib/admin/format";
+import { packageFilename } from "@/lib/opt-out/filenames";
+import type { OptOutFormConfig, OptOutSchool } from "@/lib/opt-out/types";
 import { createClient } from "@/lib/supabase/client";
+import { cn } from "@/lib/utils";
 
 type OptOutViewProps = {
   initialData: OptOutPageData;
 };
 
+type OptOutTab = "submissions" | "settings";
+
+const TABS: { id: OptOutTab; label: string }[] = [
+  { id: "submissions", label: "Submissions" },
+  { id: "settings", label: "Schools & templates" },
+];
+
 export function OptOutView({ initialData }: OptOutViewProps) {
   const [data, setData] = useState(initialData);
+  const [activeTab, setActiveTab] = useState<OptOutTab>("submissions");
   const [query, setQuery] = useState("");
   const [busyId, setBusyId] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] =
     useState<AdminOptOutSubmission | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [schools, setSchools] = useState<OptOutSchool[]>([]);
+  const [config, setConfig] = useState<OptOutFormConfig | null>(null);
+  const [settingsLoaded, setSettingsLoaded] = useState(false);
+  const [settingsSaving, setSettingsSaving] = useState(false);
+  const [settingsSaved, setSettingsSaved] = useState(false);
+  const [settingsError, setSettingsError] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
     const response = await fetch("/api/admin/opt-out", { cache: "no-store" });
@@ -56,6 +74,28 @@ export function OptOutView({ initialData }: OptOutViewProps) {
     };
   }, [refresh]);
 
+  useEffect(() => {
+    if (activeTab !== "settings" || settingsLoaded) return;
+
+    void (async () => {
+      const response = await fetch("/api/admin/opt-out/settings", {
+        cache: "no-store",
+      });
+      if (!response.ok) {
+        setSettingsError("Failed to load settings.");
+        return;
+      }
+
+      const body = (await response.json()) as {
+        schools: OptOutSchool[];
+        config: OptOutFormConfig;
+      };
+      setSchools(body.schools);
+      setConfig(body.config);
+      setSettingsLoaded(true);
+    })();
+  }, [activeTab, settingsLoaded]);
+
   const filteredSubmissions = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return data.submissions;
@@ -63,8 +103,8 @@ export function OptOutView({ initialData }: OptOutViewProps) {
     return data.submissions.filter((submission) => {
       const haystack = [
         submission.parentName,
+        submission.studentName,
         submission.school,
-        submission.district,
         submission.status,
       ]
         .filter(Boolean)
@@ -110,13 +150,13 @@ export function OptOutView({ initialData }: OptOutViewProps) {
       const blob = await response.blob();
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
-      const extension = format === "pdf" ? "pdf" : "docx";
-      const slug =
-        submission.parentName.trim().replace(/\s+/g, "-").toLowerCase() ||
-        "letter";
+      const filename = packageFilename(
+        submission.studentName ?? submission.parentName,
+        format,
+      );
 
       link.href = url;
-      link.download = `device-opt-out-letter-${slug}.${extension}`;
+      link.download = filename;
       link.click();
       URL.revokeObjectURL(url);
     } catch (error) {
@@ -157,6 +197,41 @@ export function OptOutView({ initialData }: OptOutViewProps) {
     }
   };
 
+  const handleSaveSettings = async () => {
+    if (!config) return;
+
+    setSettingsSaving(true);
+    setSettingsSaved(false);
+    setSettingsError(null);
+
+    try {
+      const response = await fetch("/api/admin/opt-out/settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ schools, config }),
+      });
+
+      if (!response.ok) {
+        const body = (await response.json()) as { error?: string };
+        throw new Error(body.error ?? "Failed to save settings.");
+      }
+
+      const body = (await response.json()) as {
+        schools: OptOutSchool[];
+        config: OptOutFormConfig;
+      };
+      setSchools(body.schools);
+      setConfig(body.config);
+      setSettingsSaved(true);
+    } catch (error) {
+      setSettingsError(
+        error instanceof Error ? error.message : "Failed to save settings.",
+      );
+    } finally {
+      setSettingsSaving(false);
+    }
+  };
+
   const { stats } = data;
 
   return (
@@ -164,20 +239,62 @@ export function OptOutView({ initialData }: OptOutViewProps) {
       <div className="flex flex-wrap items-start justify-between gap-4">
         <AdminPageHeader
           title="Opt Out Forms"
-          description="Track generated opt-out letters."
+          description="Track generated Form B packages and manage schools and default answers."
         />
 
-        <button
-          type="button"
-          onClick={handleExport}
-          disabled={!filteredSubmissions.length}
-          className="inline-flex items-center gap-2 rounded-full border border-navy-800/12 bg-navy-800 px-4 py-2.5 text-sm font-medium text-paper-50 transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          <Download className="size-3.5" aria-hidden />
-          Export CSV
-        </button>
+        {activeTab === "submissions" ? (
+          <button
+            type="button"
+            onClick={handleExport}
+            disabled={!filteredSubmissions.length}
+            className="inline-flex items-center gap-2 rounded-full border border-navy-800/12 bg-navy-800 px-4 py-2.5 text-sm font-medium text-paper-50 transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <Download className="size-3.5" aria-hidden />
+            Export CSV
+          </button>
+        ) : null}
       </div>
 
+      <div className="flex flex-wrap gap-2 border-b border-navy-800/8 pb-1">
+        {TABS.map((tab) => (
+          <button
+            key={tab.id}
+            type="button"
+            onClick={() => setActiveTab(tab.id)}
+            className={cn(
+              "rounded-full px-4 py-2 text-sm font-medium transition-colors",
+              activeTab === tab.id
+                ? "bg-navy-800 text-paper-50"
+                : "text-navy-800/70 hover:bg-navy-800/5",
+            )}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === "settings" ? (
+        config ? (
+          <OptOutSettingsEditor
+            schools={schools}
+            config={config}
+            onChange={({ schools: nextSchools, config: nextConfig }) => {
+              setSchools(nextSchools);
+              setConfig(nextConfig);
+              setSettingsSaved(false);
+            }}
+            onSave={() => void handleSaveSettings()}
+            saving={settingsSaving}
+            saved={settingsSaved}
+            error={settingsError}
+          />
+        ) : (
+          <p className="text-sm text-body-muted">
+            {settingsError ?? "Loading settings…"}
+          </p>
+        )
+      ) : (
+        <>
       <section className="grid gap-4 lg:grid-cols-3">
         <AdminStatCard
           label="Generated"
@@ -230,6 +347,8 @@ export function OptOutView({ initialData }: OptOutViewProps) {
         }}
         onConfirm={() => void confirmDelete()}
       />
+        </>
+      )}
     </div>
   );
 }

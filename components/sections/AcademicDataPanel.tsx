@@ -1,35 +1,28 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { AcademicLineChart } from "@/components/charts/AcademicLineChart";
+import { EvidenceStyleAcademicChartPanel } from "@/components/charts/EvidenceStyleAcademicChartPanel";
+import { NaepGradeAcademicPanel } from "@/components/charts/NaepGradeAcademicPanel";
+import { ParccAcademicPanel } from "@/components/charts/ParccAcademicPanel";
+import { PisaChartsSection } from "@/components/charts/PisaChartsSection";
 import { NewsletterTrigger } from "@/components/newsletter/NewsletterTrigger";
-import { DisplayHeading } from "@/components/ui/DisplayHeading";
+import { AcademicDatasetSelector } from "@/components/sections/AcademicDatasetSelector";
 import { TextLink } from "@/components/ui/TextLink";
+import { combineAcademicCharts } from "@/lib/academic-data/combine-charts";
+import type { AcademicDataset, InsightSegment } from "@/lib/academic-data/types";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import type { AcademicChart, AcademicDataset, InsightSegment } from "@/lib/academic-data/types";
+  NAEP_GRADE_CHART_IMAGES,
+  NAEP_GRADE_SECTIONS,
+} from "@/lib/charts/naep-data";
 
 type AcademicDataPanelProps = {
   datasets: AcademicDataset[];
 };
 
-const EMPTY_CHART: AcademicChart = {
-  title: "",
-  yLabel: "",
-  xLabel: "",
-  categories: ["", "", "", "", "", ""],
-  yTicks: [0, 0, 0, 0],
-  series: [],
-};
-
 function InsightText({ segments }: { segments: InsightSegment[] }) {
   return (
-    <p className="text-sm leading-[1.4] text-white/65">
+    <p className="text-sm leading-relaxed text-white/65 sm:text-[15px] lg:text-base">
       {segments.map((segment, index) => {
         if (segment.emphasis === "gold") {
           return (
@@ -51,115 +44,118 @@ function InsightText({ segments }: { segments: InsightSegment[] }) {
   );
 }
 
-function chartSlots(charts: AcademicChart[]): [AcademicChart, AcademicChart] {
-  return [charts[0] ?? EMPTY_CHART, charts[1] ?? EMPTY_CHART];
-}
-
 export function AcademicDataPanel({ datasets }: AcademicDataPanelProps) {
-  const [activeIndex, setActiveIndex] = useState(0);
-  const active = datasets[activeIndex] ?? datasets[0];
+  const [activeId, setActiveId] = useState(datasets[0]?.id ?? "");
+  const active = datasets.find((dataset) => dataset.id === activeId) ?? datasets[0];
 
-  if (!active) return null;
+  const combinedChart = useMemo(() => {
+    if (
+      !active ||
+      active.sharedYearLegend ||
+      active.naepGradeKey ||
+      active.evidenceChartLayout ||
+      active.parccChartLayout
+    ) {
+      return null;
+    }
+    return combineAcademicCharts(active.charts);
+  }, [active]);
 
-  const [leftChart, rightChart] = chartSlots(active.charts);
-  const rightEmpty = active.charts.length < 2;
+  const chartsToRender = combinedChart ? [combinedChart] : (active?.charts ?? []);
+  const isPisaLayout = Boolean(active?.sharedYearLegend);
+  const isEvidenceChart = Boolean(active?.evidenceChartLayout);
+  const isParccChart = Boolean(active?.parccChartLayout);
+  const evidenceChart = isEvidenceChart ? active.charts[0] : null;
+  const parccChart = isParccChart ? active.charts[0] : null;
+  const naepGradeKey = active?.naepGradeKey;
+  const naepSection = naepGradeKey ? NAEP_GRADE_SECTIONS[naepGradeKey] : null;
+  const naepImage = naepGradeKey ? NAEP_GRADE_CHART_IMAGES[naepGradeKey] : null;
+  const pisaMath = isPisaLayout ? active.charts[0] : null;
+  const pisaReading = isPisaLayout ? active.charts[1] : null;
+
+  const hasChartContent =
+    isPisaLayout ||
+    Boolean(naepSection && naepImage) ||
+    Boolean(isEvidenceChart && evidenceChart) ||
+    Boolean(isParccChart && parccChart) ||
+    chartsToRender.length > 0;
+
+  if (!active || !hasChartContent) return null;
 
   return (
     <div className="w-full overflow-hidden border border-white/[0.07]">
-      <div className="flex w-full flex-col lg:h-[577px] lg:flex-row">
-        <aside className="hidden w-full shrink-0 flex-col border-b border-white/[0.07] lg:flex lg:h-full lg:w-[280px] lg:border-b-0 lg:border-r">
-          <p className="shrink-0 border-b border-white/[0.07] px-6 py-5 font-sans text-[9px] font-medium uppercase tracking-[0.2em] text-white/25">
-            Datasets
-          </p>
-          <ul className="flex flex-1 flex-col justify-between">
-            {datasets.map((dataset, index) => {
-              const isActive = index === activeIndex;
-              return (
-                <li key={dataset.id}>
-                  <button
-                    type="button"
-                    onClick={() => setActiveIndex(index)}
-                    className={`flex w-full items-center gap-2 border-l-[2.6px] py-4 pr-6 text-left transition-colors ${
-                      isActive
-                        ? "border-gold-accent bg-gold-accent/6 pl-[26px] text-white"
-                        : "border-transparent pl-[26px] text-white/70 hover:bg-white/5"
-                    }`}
-                  >
-                    <span
-                      className={`w-4 shrink-0 text-xs font-medium leading-none ${
-                        isActive ? "text-gold-accent" : ""
-                      }`}
-                    >
-                      {String(index + 1).padStart(2, "0")}
-                    </span>
-                    <span
-                      className={`text-sm leading-ui-label sm:leading-single ${
-                        isActive ? "font-semibold" : "font-normal"
-                      }`}
-                    >
-                      {dataset.label}
-                    </span>
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-        </aside>
+      <div className="border-b border-white/[0.07] px-4 py-4 sm:px-6 sm:py-5">
+        <AcademicDatasetSelector
+          datasets={datasets}
+          activeId={active.id}
+          onChange={setActiveId}
+        />
+      </div>
 
-        <div className="flex min-w-0 flex-1 flex-col">
-          <div className="flex shrink-0 items-center justify-between gap-4 border-b border-white/[0.07] px-6 py-5 lg:hidden">
-            <p className="shrink-0 font-sans text-[9px] font-medium uppercase tracking-[0.2em] text-white/70">
-              Datasets
-            </p>
-            <Select
-              value={String(activeIndex)}
-              onValueChange={(value) => setActiveIndex(Number(value))}
+      <div className="flex min-w-0 flex-col">
+        <div className="flex flex-col gap-5 px-3 py-5 sm:gap-6 sm:px-5 sm:py-6 lg:px-6">
+          {isPisaLayout && pisaMath && pisaReading ? (
+            <PisaChartsSection
+              variant="academic"
+              math={pisaMath}
+              reading={pisaReading}
+            />
+          ) : naepSection && naepImage ? (
+            <NaepGradeAcademicPanel
+              heading={naepSection.heading}
+              imageSrc={naepImage.academicSrc}
+              imageAlt={naepImage.alt}
+              math={naepSection.math}
+              reading={naepSection.reading}
+            />
+          ) : isParccChart && parccChart ? (
+            <ParccAcademicPanel chart={parccChart} />
+          ) : isEvidenceChart && evidenceChart ? (
+            <EvidenceStyleAcademicChartPanel
+              chart={evidenceChart}
+              subtitle={
+                active.performanceSubtitle ??
+                (active.evidenceStudentGroup === "gender"
+                  ? "By Gender · Solid = Male · Dotted = Female"
+                  : "All Students · Weighted average across selected grades")
+              }
+              studentGroup={active.evidenceStudentGroup ?? "all"}
+              selectedDistricts={active.evidenceSelectedDistricts}
+            />
+          ) : (
+            <div
+              className={
+                chartsToRender.length > 1
+                  ? "grid min-h-[440px] w-full grid-cols-1 gap-6 lg:grid-cols-2"
+                  : "min-h-[480px] w-full sm:min-h-[540px] lg:min-h-[560px]"
+              }
             >
-              <SelectTrigger className="h-auto w-full max-w-[264px] rounded-full border-navy-800/10 bg-paper-300 px-8 py-3 text-sm font-semibold text-navy-800">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {datasets.map((dataset, index) => (
-                  <SelectItem key={dataset.id} value={String(index)}>
-                    {String(index + 1).padStart(2, "0")} {dataset.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="shrink-0 border-b border-gold-500/50 px-6 py-6">
-            <DisplayHeading as="h3" size="md" className="text-white">
-              {active.title}
-            </DisplayHeading>
-          </div>
-
-          <div className="flex flex-col gap-6 px-6 pt-6 lg:min-h-0 lg:flex-1">
-            <div className="flex flex-col gap-8 lg:min-h-0 lg:flex-1 lg:flex-row lg:gap-8">
-              <div className="h-[296px] w-full shrink-0 lg:h-auto lg:min-h-0 lg:flex-1">
-                <AcademicLineChart chart={leftChart} />
-              </div>
-              <div className="h-[296px] w-full shrink-0 lg:h-auto lg:min-h-0 lg:flex-1">
-                <AcademicLineChart chart={rightChart} empty={rightEmpty} />
-              </div>
+              {chartsToRender.map((chart) => (
+                <div
+                  key={chart.title || chart.series.map((s) => s.label).join("-")}
+                  className="h-full min-h-[480px] w-full sm:min-h-[540px]"
+                >
+                  <AcademicLineChart chart={chart} />
+                </div>
+              ))}
             </div>
+          )}
 
-            <div className="shrink-0 bg-gold-accent/[0.07] px-5 py-4">
-              <InsightText segments={active.insight} />
-            </div>
+          <div className="shrink-0 bg-gold-accent/[0.07] px-4 py-4 sm:px-5">
+            <InsightText segments={active.insight} />
           </div>
+        </div>
 
-          <div className="shrink-0 border-t border-white/6 px-6 py-6">
-            <div className="flex w-full flex-col gap-10 lg:flex-row lg:items-center lg:justify-between lg:gap-8">
-              <p className="max-w-[500px] text-sm leading-[1.4] text-white/70">
-                {active.description}
-              </p>
-              <div className="flex flex-wrap items-center gap-x-8 gap-y-8">
-                <NewsletterTrigger source="academic-data">
-                  Join Newsletter
-                </NewsletterTrigger>
-                <TextLink href="/evidence">Explore Evidence</TextLink>
-              </div>
+        <div className="shrink-0 border-t border-white/6 px-4 py-5 sm:px-6 sm:py-6">
+          <div className="flex w-full flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
+            <p className="max-w-xl text-sm leading-relaxed text-white/70 sm:text-[15px] lg:text-base">
+              {active.description}
+            </p>
+            <div className="flex flex-wrap items-center gap-x-8 gap-y-4">
+              <NewsletterTrigger source="academic-data">
+                Join Newsletter
+              </NewsletterTrigger>
+              <TextLink href="/evidence">Explore Nebraska Data</TextLink>
             </div>
           </div>
         </div>

@@ -39,6 +39,7 @@ export type AdminBook = {
   coverMediaId: string | null;
   amazonUrl: string | null;
   publisherUrl: string | null;
+  viewUrl: string | null;
   featured: boolean;
   visible: boolean;
   sortOrder: number;
@@ -91,8 +92,7 @@ export type BookInput = {
   author: string;
   summary: string;
   coverMediaId: string | null;
-  amazonUrl: string;
-  publisherUrl: string;
+  viewUrl: string;
   featured: boolean;
 };
 

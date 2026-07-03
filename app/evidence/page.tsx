@@ -1,8 +1,13 @@
+import type { Metadata } from "next";
 import { Footer } from "@/components/layout/Footer";
 import { Header } from "@/components/layout/Header";
 import { EvidenceExplorer } from "@/components/evidence/EvidenceExplorer";
 import { PageFrame, sectionPaddingX } from "@/components/ui/Container";
 import { getEvidenceBootstrap } from "@/lib/evidence/cached";
+
+export const metadata: Metadata = {
+  title: "Nebraska Data",
+};
 
 export default async function EvidencePage() {
   const bootstrap = await getEvidenceBootstrap();

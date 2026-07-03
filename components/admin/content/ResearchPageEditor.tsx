@@ -154,7 +154,9 @@ export function ResearchPageEditor({
             <div>
               <h3 className="text-sm font-semibold text-navy-800">Academic charts</h3>
               <p className="mt-1 text-xs text-body-muted">
-                PISA and NAEP chart copy used on the research tab.
+                PISA and NAEP chart copy on the research tab. PARCC, screen time,
+                and other research charts are edited in their sections above —
+                chart data always comes from code.
               </p>
             </div>
             <AcademicDatasetsEditor

@@ -1,7 +1,7 @@
 import type { AcademicChart } from "@/lib/academic-data/types";
 import type { ResearchChartsData } from "@/lib/research/types";
 
-export type EvidenceTab = "nebraska" | "district-66" | "research";
+export type EvidenceTab = "nebraska" | "district-66";
 export type EvidenceView = "performance" | "equity";
 export type EvidenceSubject = "math" | "english";
 export type StudentGroup = "all" | "gender";
@@ -63,5 +63,4 @@ export type EvidenceBootstrap = {
   schoolYears: string[];
   defaultSchoolYear: string;
   performance: PerformancePanelData;
-  research: ResearchPanelData;
 };

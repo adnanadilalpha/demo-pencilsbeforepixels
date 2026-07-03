@@ -1,12 +1,15 @@
 "use client";
 
-import Image from "next/image";
+import { ContentImage } from "@/components/ui/ContentImage";
 import { useState } from "react";
 import { useSiteContent } from "@/lib/cms/hooks";
+import { cn } from "@/lib/utils";
 
 type YouTubeEmbedProps = {
   videoId: string;
   title: string;
+  fill?: boolean;
+  className?: string;
 };
 
 const THUMBNAIL_QUALITIES = [
@@ -21,6 +24,7 @@ function embedUrl(videoId: string) {
     rel: "0",
     modestbranding: "1",
     playsinline: "1",
+    cc_load_policy: "0",
   });
 
   return `https://www.youtube-nocookie.com/embed/${videoId}?${params.toString()}`;
@@ -33,16 +37,26 @@ function posterUrl(
   return `https://i.ytimg.com/vi/${videoId}/${quality}.jpg`;
 }
 
-export function YouTubeEmbed({ videoId, title }: YouTubeEmbedProps) {
+export function YouTubeEmbed({
+  videoId,
+  title,
+  fill = false,
+  className,
+}: YouTubeEmbedProps) {
   const { media } = useSiteContent();
   const [isPlaying, setIsPlaying] = useState(false);
   const [qualityIndex, setQualityIndex] = useState(0);
 
   const quality = THUMBNAIL_QUALITIES[qualityIndex];
+  const frameClass = cn(
+    "relative w-full overflow-hidden bg-black",
+    fill ? "absolute inset-0 h-full" : "aspect-560/315 rounded-sm",
+    className,
+  );
 
   if (isPlaying) {
     return (
-      <div className="relative aspect-560/315 w-full overflow-hidden rounded-sm bg-black">
+      <div className={frameClass}>
         <iframe
           src={embedUrl(videoId)}
           title={title}
@@ -60,10 +74,10 @@ export function YouTubeEmbed({ videoId, title }: YouTubeEmbedProps) {
     <button
       type="button"
       onClick={() => setIsPlaying(true)}
-      className="group relative aspect-560/315 w-full overflow-hidden rounded-sm bg-black text-left"
+      className={cn(frameClass, "group text-left")}
       aria-label={`Play video: ${title}`}
     >
-      <Image
+      <ContentImage
         src={posterUrl(videoId, quality)}
         alt={title}
         fill
@@ -79,7 +93,7 @@ export function YouTubeEmbed({ videoId, title }: YouTubeEmbedProps) {
       <div className="absolute inset-0 bg-black/15 transition-colors group-hover:bg-black/25" aria-hidden />
       <div className="absolute inset-0 flex items-center justify-center">
         <span className="flex size-[60px] items-center justify-center rounded-full border-[1.5px] border-gold-accent/40 bg-gold-accent/8 transition-transform duration-300 group-hover:scale-105">
-          <Image
+          <ContentImage
             src={media.icons.play}
             alt=""
             width={22}

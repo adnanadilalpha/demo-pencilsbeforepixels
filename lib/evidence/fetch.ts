@@ -1,8 +1,10 @@
 import "server-only";
 
 import { researchChartsData } from "@/lib/research/data";
+import { mergeResearchWithFallback } from "@/lib/research/merge";
 import { getSiteContent } from "@/lib/cms/cached";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { fetchAllRows } from "@/lib/supabase/fetch-all";
 import { getEquityScatterPanelData } from "./equity-scatter";
 import {
   buildGenderPerformanceChart,
@@ -55,22 +57,26 @@ async function fetchScoreRows(options: {
   const table = subjectTable(options.subject);
   const grades = normalizeGrades(options.grades);
 
-  let query = supabase
-    .from(table)
-    .select(
-      "school_year, district_id, agency_name, avg_scale_score, count_tested, subgroup_desc, grade, level",
-    )
-    .in("level", options.levels)
-    .eq("subgroup_type", options.subgroupType)
-    .in("grade", grades)
-    .order("school_year");
+  const rows = await fetchAllRows<EvidenceScoreRow>((from, to) => {
+    let query = supabase
+      .from(table)
+      .select(
+        "school_year, district_id, agency_name, avg_scale_score, count_tested, subgroup_desc, grade, level",
+      )
+      .in("level", options.levels)
+      .eq("subgroup_type", options.subgroupType)
+      .in("grade", grades)
+      .order("school_year")
+      .range(from, to);
 
-  if (options.agencyNames && options.agencyNames.length > 0) {
-    query = query.in("agency_name", options.agencyNames);
-  }
+    if (options.agencyNames && options.agencyNames.length > 0) {
+      query = query.in("agency_name", options.agencyNames);
+    }
 
-  const { data } = await query;
-  return (data as EvidenceScoreRow[]) ?? [];
+    return query;
+  });
+
+  return rows;
 }
 
 export async function getSchoolYears(
@@ -94,22 +100,22 @@ export async function getSchoolYears(
 
 export async function getAllDistrictOptions(
   subject: EvidenceSubject,
+  subgroupType: "ALL" | "GENDER" = "ALL",
 ): Promise<DistrictOption[]> {
   const supabase = createAdminClient();
-  const { data } = await supabase
-    .from(subjectTable(subject))
-    .select("agency_name")
-    .eq("level", "DI")
-    .eq("subgroup_type", "ALL")
-    .eq("grade", "03")
-    .not("agency_name", "is", null)
-    .order("agency_name");
+  const rows = await fetchAllRows<{ agency_name: string }>((from, to) =>
+    supabase
+      .from(subjectTable(subject))
+      .select("agency_name")
+      .eq("level", "DI")
+      .eq("subgroup_type", subgroupType)
+      .eq("grade", "03")
+      .not("agency_name", "is", null)
+      .order("agency_name")
+      .range(from, to),
+  );
 
-  const uniqueNames = [
-    ...new Set(
-      ((data as { agency_name: string }[]) ?? []).map((row) => row.agency_name),
-    ),
-  ];
+  const uniqueNames = [...new Set(rows.map((row) => row.agency_name))];
 
   return uniqueNames.map((name, index) => ({
     id: name,
@@ -240,22 +246,19 @@ export async function getEvidenceBootstrapUncached() {
     includeState: true,
   });
 
-  const research = await getResearchPanelData();
-
   return {
     allDistricts,
     grades: DEFAULT_GRADES,
     schoolYears,
     defaultSchoolYear,
     performance,
-    research,
   };
 }
 
 export async function getResearchPanelData(): Promise<ResearchPanelData> {
   try {
     const content = await getSiteContent();
-    return content.research;
+    return mergeResearchWithFallback(content.research);
   } catch {
     return researchChartsData;
   }

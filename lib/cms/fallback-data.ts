@@ -1,11 +1,12 @@
 import { LOCAL_FAVICONS } from "@/lib/brand/favicon";
+import { createMissionTimelineSlides } from "./mission-slides";
+import { whatToDoPoints } from "./what-to-do-points";
 import type {
   ExpertQuote,
   LibraryCategory,
   LibraryItem,
   NavLink,
   OptOutStep,
-  TimelineSlide,
 } from "./types";
 
 export const LOCAL_ASSETS = {
@@ -38,14 +39,16 @@ export const LOCAL_ASSETS = {
 } as const;
 
 export const navLinks: NavLink[] = [
-  { label: "Evidence", href: "/evidence" },
+  { label: "Nebraska Data", href: "/evidence" },
+  { label: "Research", href: "/research" },
   { label: "Our Mission", href: "#mission" },
   { label: "Resources", href: "#resources" },
   { label: "Device Opt Out", href: "#opt-out" },
 ];
 
 export const footerLinks: NavLink[] = [
-  { label: "Evidence", href: "/evidence" },
+  { label: "Nebraska Data", href: "/evidence" },
+  { label: "Research", href: "/research" },
   { label: "Our Mission", href: "/#mission" },
   { label: "Resources", href: "/#resources" },
 ];
@@ -202,85 +205,15 @@ export const optOutSteps: OptOutStep[] = [
   },
 ];
 
-export const timelineSlides: TimelineSlide[] = [
-  {
-    era: "1980s",
-    number: "01",
-    title: "Books and Slates",
-    description:
-      "Shared printed textbooks, handwritten notes, and a single teacher's voice defined how knowledge moved from one generation to the next.",
-    image: "/images/timeline/books-slates.jpg",
-    background: "#f0eae0",
-    textColor: "dark",
-    eraStyle: "large",
-    indentContent: false,
-  },
-  {
-    era: "1990s",
-    number: "02",
-    title: "Computer Labs",
-    description:
-      "Students visited shared computer rooms once or twice a week. The machine was a novelty, not a constant companion. Learning happened elsewhere.",
-    image: "/images/timeline/computer-labs.jpg",
-    background: "var(--color-navy-800)",
-    textColor: "light",
-    eraStyle: "compact",
-    indentContent: true,
-  },
-  {
-    era: "2005",
-    number: "03",
-    title: "Whiteboards",
-    description:
-      "The classroom front wall went digital. Teachers adapted their lessons to whiteboards connected to projectors and the early internet.",
-    image: "/images/timeline/whiteboards.jpg",
-    background: "var(--color-navy-600)",
-    textColor: "light",
-    eraStyle: "compact",
-    indentContent: true,
-  },
-  {
-    era: "2012",
-    number: "04",
-    title: "Chromebooks",
-    description:
-      "Affordable laptops arrived at scale. Districts across the country adopted 1:1 programs. The device moved from shared resource to personal companion.",
-    image: "/images/timeline/chromebooks.jpg",
-    background: "var(--color-navy-500)",
-    textColor: "light",
-    eraStyle: "compact",
-    indentContent: true,
-  },
-  {
-    era: "2018",
-    number: "05",
-    title: "1:1 Device",
-    description:
-      "Full device deployment became policy. Every student, every lesson, every day. Screen time in education had no precedent. Neither did the questions.",
-    image: "/images/timeline/device-1-1.jpg",
-    background: "var(--color-navy-400)",
-    textColor: "light",
-    eraStyle: "compact",
-    indentContent: true,
-  },
-  {
-    era: "Today",
-    number: "06",
-    title: "AI Integration",
-    description:
-      "Generative AI entered schools faster than curriculum, policy, or research could follow. Parents were never asked. Neither were most teachers.",
-    image: "/images/timeline/ai-integration.jpg",
-    background: "var(--color-gold-500)",
-    textColor: "light",
-    eraStyle: "compact",
-    indentContent: true,
-  },
-];
+export const timelineSlides = createMissionTimelineSlides();
+
+export { whatToDoPoints };
 
 export const epicReviewContent = {
   title: "Epic",
   summary:
     "This review examines how Epic works, what behaviours it encourages, and how it compares with current research on reading comprehension and screen-based learning.",
+  audioSrc: "/audio/Media1.mp3",
 };
 
 export const ixlReviewContent = {

@@ -2,7 +2,8 @@ import "server-only";
 
 import { LOCAL_FAVICONS } from "@/lib/brand/favicon";
 import type { AcademicDataset } from "@/lib/academic-data/types";
-import { mergeResearchWithFallback } from "@/lib/admin/research-persistence";
+import { hydrateAcademicStaticDatasets } from "@/lib/academic-data/hydrate-static";
+import { mergeResearchWithFallback } from "@/lib/research/merge";
 import { hydrateSettingsBrand, resolveBrandForSiteContent } from "@/lib/admin/settings/brand-media";
 import { mergeStoredGeneral } from "@/lib/admin/settings/defaults";
 import type { ResearchChartsData } from "@/lib/research/types";
@@ -13,17 +14,61 @@ import {
   fileNameFromUrl,
 } from "@/lib/cms/library-file";
 import { buildFallbackSiteContent } from "./fallback";
+import { navLinks as defaultNavLinks } from "./fallback-data";
+import {
+  createMissionTimelineSlides,
+  normalizeMissionTimeline,
+} from "./mission-slides";
 import { resolvePrivacyPolicyUrl, resolveTermsOfServiceUrl } from "./settings-urls";
 import type {
   ExpertQuote,
   LibraryCategory,
   LibraryItem,
+  NavLink,
   OptOutStep,
   SectionKey,
   SiteContent,
   SoftwareReview,
   TimelineSlide,
 } from "./types";
+
+function migrateEvidenceNavLabel(links: NavLink[]): NavLink[] {
+  return links.map((link) =>
+    link.href === "/evidence" &&
+    (link.label === "Evidence" || link.label === "Evidence Dashboard")
+      ? { ...link, label: "Nebraska Data" }
+      : link,
+  );
+}
+
+function withResearchNavLink(links: NavLink[]): NavLink[] {
+  if (links.some((link) => link.href === "/research")) {
+    return links;
+  }
+
+  const researchLink = { label: "Research", href: "/research" };
+  const evidenceIndex = links.findIndex((link) => link.href === "/evidence");
+  if (evidenceIndex >= 0) {
+    return [
+      ...links.slice(0, evidenceIndex + 1),
+      researchLink,
+      ...links.slice(evidenceIndex + 1),
+    ];
+  }
+
+  return [researchLink, ...links];
+}
+
+function resolveHeaderNav(links: NavLink[]): NavLink[] {
+  const base = links.length > 0 ? links : defaultNavLinks.map((link) => ({ ...link }));
+  return withResearchNavLink(migrateEvidenceNavLabel(base));
+}
+
+function resolveFooterNav(links: NavLink[]): NavLink[] {
+  const fallback = buildFallbackSiteContent().navigation.footer;
+  const base = links.length > 0 ? links : fallback.map((link) => ({ ...link }));
+  return withResearchNavLink(migrateEvidenceNavLabel(base));
+}
 
 type MediaRow = {
   id: string;
@@ -189,14 +234,16 @@ async function fetchSiteContentFromDb(): Promise<SiteContent | null> {
     settingsMap.set(row.key, row.value);
   }
 
-  const headerNav =
+  const headerNav = resolveHeaderNav(
     navRes.data
       ?.filter((l) => l.location === "header")
-      .map((l) => ({ label: l.label, href: l.href })) ?? [];
-  const footerNav =
+      .map((l) => ({ label: l.label, href: l.href })) ?? [],
+  );
+  const footerNav = resolveFooterNav(
     navRes.data
       ?.filter((l) => l.location === "footer")
-      .map((l) => ({ label: l.label, href: l.href })) ?? [];
+      .map((l) => ({ label: l.label, href: l.href })) ?? [],
+  );
 
   const expertQuotes: ExpertQuote[] = (quotesRes.data ?? []).map((q) => ({
     number: q.number,
@@ -206,7 +253,7 @@ async function fetchSiteContentFromDb(): Promise<SiteContent | null> {
     image: mediaUrl(mediaById, q.image_media_id),
   }));
 
-  const timeline: TimelineSlide[] = (timelineRes.data ?? []).map((s) => ({
+  const rawTimeline: TimelineSlide[] = (timelineRes.data ?? []).map((s) => ({
     era: s.era,
     number: s.number,
     title: s.title,
@@ -217,6 +264,9 @@ async function fetchSiteContentFromDb(): Promise<SiteContent | null> {
     eraStyle: s.era_style as "large" | "compact",
     indentContent: s.indent_content,
   }));
+  const timeline = normalizeMissionTimeline(
+    rawTimeline.length > 0 ? rawTimeline : createMissionTimelineSlides(),
+  );
 
   const libraryCategories: LibraryCategory[] =
     (researchLibrarySection.categories as LibraryCategory[] | undefined)?.length
@@ -246,9 +296,12 @@ async function fetchSiteContentFromDb(): Promise<SiteContent | null> {
         kind === "book" && item.image_media_id
           ? mediaUrl(mediaById, item.image_media_id)
           : undefined,
-      youtubeUrl: item.external_url
-        ? normalizeYouTubeUrl(item.external_url)
-        : undefined,
+      viewUrl:
+        kind === "book" && item.external_url ? item.external_url : undefined,
+      youtubeUrl:
+        kind === "video" && item.external_url
+          ? normalizeYouTubeUrl(item.external_url)
+          : undefined,
       videoUrl: item.video_media_id
         ? mediaUrl(mediaById, item.video_media_id)
         : undefined,
@@ -297,6 +350,9 @@ async function fetchSiteContentFromDb(): Promise<SiteContent | null> {
     if (review.slug === "ixl") softwareReviews.ixl = mapped;
   }
 
+  const fallbackReviews = buildFallbackSiteContent().softwareReviews;
+  softwareReviews.epic.audioSrc ??= fallbackReviews.epic.audioSrc;
+
   const researchRow = researchRes.data?.[0];
   const research = researchRow?.data as ResearchChartsData | undefined;
 
@@ -313,15 +369,15 @@ async function fetchSiteContentFromDb(): Promise<SiteContent | null> {
     insightsByKey.set(row.dataset_key, list);
   }
 
-  const academicStatic: AcademicDataset[] = (academicRes.data ?? []).map(
-    (row) => ({
+  const academicStatic: AcademicDataset[] = hydrateAcademicStaticDatasets(
+    (academicRes.data ?? []).map((row) => ({
       id: row.key,
       label: row.label,
       title: row.title,
       charts: row.charts as AcademicDataset["charts"],
       description: row.description,
       insight: insightsByKey.get(row.key) ?? [],
-    }),
+    })),
   );
 
   const settingsRecord = (settingsMap.get("general") ?? {}) as Record<

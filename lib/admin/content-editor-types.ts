@@ -21,6 +21,7 @@ export type ContentEditorState = {
   expertQuotes: ExpertQuote[];
   timeline: TimelineSlide[];
   mentalHealthChartImage: string;
+  optOutLetterPreviewImage: string;
   softwareReviews: {
     epic: SoftwareReview;
     ixl: SoftwareReview;
@@ -43,6 +44,7 @@ export type ContentSavePayload = {
   expertQuotes?: ExpertQuote[];
   timeline?: TimelineSlide[];
   mentalHealthChartImage?: string;
+  optOutLetterPreviewImage?: string;
   softwareReviews?: ContentEditorState["softwareReviews"];
   academicDatasets?: AcademicDatasetCopy[];
   evidenceScores?: EditableScoreRow[];

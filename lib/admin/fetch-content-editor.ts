@@ -4,6 +4,7 @@ import { mergeStoredGeneral } from "@/lib/admin/settings/defaults";
 import { getEditorSection } from "@/lib/admin/content-config";
 import {
   mergeAcademicDatasetCopies,
+  STATIC_ACADEMIC_DATASET_KEYS,
   type AcademicDatasetCopy,
 } from "@/lib/admin/academic-dataset-defaults";
 import type {
@@ -11,21 +12,31 @@ import type {
   ContentSavePayload,
   SectionDraft,
 } from "@/lib/admin/content-editor-types";
+import type {
+  EditableLibraryItem,
+  EditableNavLink,
+  SiteSettingsDraft,
+} from "@/lib/admin/cms-entity-types";
 import {
   applyResearchContentDraft,
   mergeResearchWithFallback,
 } from "@/lib/admin/research-persistence";
 import { saveEvidenceScores } from "@/lib/admin/evidence-scores";
 import { resolveMediaIdByUrl } from "@/lib/admin/media-storage";
+import { epicReviewContent } from "@/lib/cms/fallback-data";
 import { normalizeYouTubeUrl } from "@/lib/youtube";
-import type { SectionKey, SoftwareReview } from "@/lib/cms/types";
+import {
+  createMissionTimelineSlides,
+  normalizeMissionTimeline,
+} from "@/lib/cms/mission-slides";
 import type {
-  EditableLibraryItem,
-  EditableNavLink,
-  SiteSettingsDraft,
-} from "@/lib/admin/cms-entity-types";
-import type { ExpertQuote, OptOutStep, TimelineSlide } from "@/lib/cms/types";
-import type { LibraryCategory } from "@/lib/cms/types";
+  ExpertQuote,
+  LibraryCategory,
+  OptOutStep,
+  SectionKey,
+  SoftwareReview,
+  TimelineSlide,
+} from "@/lib/cms/types";
 import type { ResearchChartsData } from "@/lib/research/types";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { applyPublishBatch } from "@/lib/admin/publish-batch";
@@ -88,6 +99,8 @@ async function loadSoftwareReviews(): Promise<ContentEditorState["softwareReview
     if (row.slug === "epic") reviews.epic = mapped;
     if (row.slug === "ixl") reviews.ixl = mapped;
   }
+
+  reviews.epic.audioSrc ??= epicReviewContent.audioSrc;
 
   return reviews;
 }
@@ -167,11 +180,11 @@ async function saveEvidenceResearchBundle(content: SectionDraft) {
   }
 
   if (Object.keys(introContent).length > 0) {
-    await upsertSectionContent("evidence.intro", introContent, "evidence");
+    await upsertSectionContent("evidence.intro", introContent, "research");
   }
 
   if (Object.keys(headerContent).length > 0) {
-    await upsertSectionContent("evidence.research_tab", headerContent, "evidence");
+    await upsertSectionContent("evidence.research_tab", headerContent, "research");
   }
 
   await saveResearchSectionContent(content);
@@ -201,6 +214,9 @@ async function saveAcademicDatasets(datasets: AcademicDatasetCopy[]) {
           title: dataset.title,
           description: dataset.description,
           sort_order: index,
+          ...(STATIC_ACADEMIC_DATASET_KEYS.includes(dataset.key)
+            ? { charts: staticChartsByKey.get(dataset.key) ?? [] }
+            : {}),
         })
         .eq("id", existing.id);
 
@@ -330,19 +346,21 @@ async function loadTimeline(): Promise<TimelineSlide[] | null> {
     (mediaRes.data ?? []).map((row) => [row.id, row.public_url]),
   );
 
-  return timelineRes.data.map((slide) => ({
-    era: slide.era,
-    number: slide.number,
-    title: slide.title,
-    description: slide.body,
-    image: slide.image_media_id
-      ? (mediaById.get(slide.image_media_id) ?? "")
-      : "",
-    background: slide.background,
-    textColor: slide.text_color as "light" | "dark",
-    eraStyle: slide.era_style as "large" | "compact",
-    indentContent: slide.indent_content,
-  }));
+  return normalizeMissionTimeline(
+    timelineRes.data.map((slide) => ({
+      era: slide.era,
+      number: slide.number,
+      title: slide.title,
+      description: slide.body,
+      image: slide.image_media_id
+        ? (mediaById.get(slide.image_media_id) ?? "")
+        : "",
+      background: slide.background,
+      textColor: slide.text_color as "light" | "dark",
+      eraStyle: slide.era_style as "large" | "compact",
+      indentContent: slide.indent_content,
+    })),
+  );
 }
 
 async function loadSiteSettings(): Promise<SiteSettingsDraft> {
@@ -396,7 +414,7 @@ async function loadLibraryItems(): Promise<EditableLibraryItem[]> {
   const [itemsRes, mediaRes] = await Promise.all([
     supabase
       .from("library_items")
-      .select("id, category, title, subtitle, kind, image_media_id, sort_order")
+      .select("id, category, title, subtitle, kind, image_media_id, external_url, sort_order")
       .order("sort_order"),
     supabase.from("media_assets").select("id, public_url"),
   ]);
@@ -414,6 +432,8 @@ async function loadLibraryItems(): Promise<EditableLibraryItem[]> {
     subtitle: row.subtitle,
     kind: row.kind as EditableLibraryItem["kind"],
     image: row.image_media_id ? (mediaById.get(row.image_media_id) ?? "") : "",
+    viewUrl:
+      row.kind === "book" && row.external_url ? row.external_url : undefined,
   }));
 }
 
@@ -500,17 +520,22 @@ async function saveLibraryItems(items: EditableLibraryItem[]): Promise<void> {
       ? await resolveMediaIdByUrl(item.image)
       : null;
 
+    const row = {
+      category: item.category,
+      title: item.title,
+      subtitle: item.subtitle,
+      kind: item.kind,
+      image_media_id: imageMediaId,
+      sort_order: index,
+      ...(item.kind === "book"
+        ? { external_url: item.viewUrl?.trim() || null }
+        : {}),
+    };
+
     if (item.id) {
       const { error } = await supabase
         .from("library_items")
-        .update({
-          category: item.category,
-          title: item.title,
-          subtitle: item.subtitle,
-          kind: item.kind,
-          image_media_id: imageMediaId,
-          sort_order: index,
-        })
+        .update(row)
         .eq("id", item.id);
 
       assertNoError(error, `Failed to update library item ${item.title}`);
@@ -518,12 +543,7 @@ async function saveLibraryItems(items: EditableLibraryItem[]): Promise<void> {
     }
 
     const { error } = await supabase.from("library_items").insert({
-      category: item.category,
-      title: item.title,
-      subtitle: item.subtitle,
-      kind: item.kind,
-      image_media_id: imageMediaId,
-      sort_order: index,
+      ...row,
       visible: true,
     });
 
@@ -574,6 +594,7 @@ export async function fetchContentEditorState(): Promise<ContentEditorState> {
     optOutSteps,
     versionRes,
     chartMediaRes,
+    optOutLetterMediaRes,
   ] = await Promise.all([
     loadDraftSections(),
     loadResearch(),
@@ -596,6 +617,11 @@ export async function fetchContentEditorState(): Promise<ContentEditorState> {
       .select("public_url")
       .eq("storage_path", "site-media/charts/mental-health.png")
       .maybeSingle(),
+    supabase
+      .from("media_assets")
+      .select("public_url")
+      .eq("storage_path", "site-media/opt-out/letter.png")
+      .maybeSingle(),
   ]);
 
   const sections = mergeEditorSections(published, drafts);
@@ -607,8 +633,9 @@ export async function fetchContentEditorState(): Promise<ContentEditorState> {
     sections,
     research: mergeResearchWithFallback(research),
     expertQuotes: expertQuotes ?? [],
-    timeline: timeline ?? [],
+    timeline: timeline ?? createMissionTimelineSlides(),
     mentalHealthChartImage: chartMediaRes.data?.public_url ?? "",
+    optOutLetterPreviewImage: optOutLetterMediaRes.data?.public_url ?? "",
     softwareReviews,
     academicDatasets,
     siteSettings,
@@ -655,6 +682,7 @@ async function upsertSectionContent(
 
 async function saveResearchDraft(research: ResearchChartsData) {
   const supabase = createAdminClient();
+  const merged = mergeResearchWithFallback(research);
   const { data: existing, error: selectError } = await supabase
     .from("research_datasets")
     .select("id")
@@ -666,7 +694,7 @@ async function saveResearchDraft(research: ResearchChartsData) {
   if (existing?.id) {
     const { error } = await supabase
       .from("research_datasets")
-      .update({ data: research })
+      .update({ data: merged })
       .eq("id", existing.id);
 
     assertNoError(error, "Failed to update research dataset");
@@ -675,7 +703,8 @@ async function saveResearchDraft(research: ResearchChartsData) {
 
   const { error } = await supabase.from("research_datasets").insert({
     key: "main",
-    data: research,
+    label: "Research Charts",
+    data: merged,
   });
 
   assertNoError(error, "Failed to create research dataset");
@@ -696,6 +725,7 @@ export async function applyContentDraft(
   if (editorSection.sectionKey) {
     const content = { ...payload.content };
     delete content.chartImage;
+    delete content.letterPreviewImage;
 
     await upsertSectionContent(
       editorSection.sectionKey,
@@ -809,10 +839,11 @@ async function saveTimeline(slides: TimelineSlide[]) {
 
   assertNoError(deleteError, "Failed to clear timeline slides");
 
-  if (!slides.length) return;
+  const missionSlides = normalizeMissionTimeline(slides);
+  if (!missionSlides.length) return;
 
   const rows = await Promise.all(
-    slides.map(async (slide, index) => ({
+    missionSlides.map(async (slide, index) => ({
       era: slide.era,
       number: slide.number,
       title: slide.title,

@@ -1,44 +1,11 @@
+import { mergeResearchWithFallback } from "@/lib/research/merge";
 import { researchChartsData } from "@/lib/research/data";
 import type { ResearchChartsData } from "@/lib/research/types";
 import type { SectionDraft } from "@/lib/admin/content-editor-types";
 import { researchFieldKeys } from "@/lib/admin/content-config";
 import { getResearchFieldValue, setResearchFieldValue } from "@/lib/admin/content-paths";
 
-function isPlainObject(value: unknown): value is Record<string, unknown> {
-  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
-}
-
-function deepMergeRecords(
-  base: Record<string, unknown>,
-  overlay: Record<string, unknown>,
-): Record<string, unknown> {
-  const result = { ...base };
-
-  for (const [key, value] of Object.entries(overlay)) {
-    if (isPlainObject(value) && isPlainObject(base[key])) {
-      result[key] = deepMergeRecords(
-        base[key] as Record<string, unknown>,
-        value,
-      );
-      continue;
-    }
-
-    result[key] = value;
-  }
-
-  return result;
-}
-
-export function mergeResearchWithFallback(
-  db: ResearchChartsData | undefined | null,
-): ResearchChartsData {
-  if (!db) return structuredClone(researchChartsData);
-
-  return deepMergeRecords(
-    structuredClone(researchChartsData) as unknown as Record<string, unknown>,
-    structuredClone(db) as unknown as Record<string, unknown>,
-  ) as ResearchChartsData;
-}
+export { mergeResearchWithFallback };
 
 export function applyResearchContentDraft(
   current: ResearchChartsData | undefined | null,

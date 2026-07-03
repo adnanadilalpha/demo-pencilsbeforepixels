@@ -12,6 +12,7 @@ export type EditableLibraryItem = {
   subtitle: string;
   kind: "book" | "paper" | "video" | "resource";
   image: string;
+  viewUrl?: string;
 };
 
 export type MentalHealthLegendItem = {

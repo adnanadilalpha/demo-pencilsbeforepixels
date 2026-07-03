@@ -2,7 +2,13 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { getEditorSection, getSectionsForPage, researchFieldKeys, type ContentPageId } from "@/lib/admin/content-config";
+import {
+  getEditorSection,
+  getSectionsForPage,
+  normalizeContentPageId,
+  researchFieldKeys,
+  type ContentPageId,
+} from "@/lib/admin/content-config";
 import { buildPublishPayloads } from "@/lib/admin/build-save-payload";
 import type { ContentEditorState } from "@/lib/admin/content-editor-types";
 import {
@@ -43,6 +49,7 @@ import { SiteSettingsEditor } from "@/components/admin/content/SiteSettingsEdito
 import type { AcademicDatasetCopy } from "@/lib/admin/academic-dataset-defaults";
 import { mergeAcademicDatasetEditorState } from "@/lib/admin/academic-dataset-defaults";
 import { normalizeYouTubeUrl } from "@/lib/youtube";
+import { normalizeMissionTimeline } from "@/lib/cms/mission-slides";
 import type {
   ExpertQuote,
   LibraryCategory,
@@ -118,6 +125,11 @@ function buildFormValues(
       base = {
         ...sectionContent,
         chartImage: state.mentalHealthChartImage,
+      };
+    } else if (sectionId === "device_opt_out") {
+      base = {
+        ...sectionContent,
+        letterPreviewImage: state.optOutLetterPreviewImage,
       };
     } else {
       base = { ...sectionContent };
@@ -200,8 +212,12 @@ export function ContentEditor({
   routeSection,
 }: ContentEditorProps) {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const localDraft = readLocalDraft();
-  const initialPage = routePage ?? localDraft?.page ?? "homepage";
+  const initialPage =
+    routePage ??
+    normalizeContentPageId(localDraft?.page) ??
+    "homepage";
   const initialSectionId =
     resolveRouteSection(initialPage, routeSection) ??
     getSectionsForPage(initialPage)[0]?.id ??
@@ -218,8 +234,10 @@ export function ContentEditor({
     getSectionFromLocalDraft("expert_voices")?.expertQuotes ??
       initialState.expertQuotes,
   );
-  const [timeline, setTimeline] = useState<TimelineSlide[]>(
-    getSectionFromLocalDraft("timeline")?.timeline ?? initialState.timeline,
+  const [timeline, setTimeline] = useState<TimelineSlide[]>(() =>
+    normalizeMissionTimeline(
+      getSectionFromLocalDraft("timeline")?.timeline ?? initialState.timeline,
+    ),
   );
   const [softwareReviews, setSoftwareReviews] = useState<
     ContentEditorState["softwareReviews"]
@@ -319,7 +337,9 @@ export function ContentEditor({
       }
 
       if (sectionId === "timeline") {
-        setTimeline(local?.timeline ?? serverState.timeline);
+        setTimeline(
+          normalizeMissionTimeline(local?.timeline ?? serverState.timeline),
+        );
       }
 
       if (sectionId === "learning_apps") {
@@ -392,18 +412,12 @@ export function ContentEditor({
   }, [page, searchParams, loadSection, persistCurrentSection]);
 
   useEffect(() => {
-    const pageParam = searchParams.get("page");
-    if (
-      pageParam !== "homepage" &&
-      pageParam !== "evidence" &&
-      pageParam !== "site"
-    ) {
+    const pageParam = normalizeContentPageId(searchParams.get("page") ?? undefined);
+    if (!pageParam || pageParam === page) {
       return;
     }
 
-    if (pageParam !== page) {
-      setPage(pageParam);
-    }
+    setPage(pageParam);
   }, [searchParams, page]);
 
   const selectSection = useCallback(
@@ -546,6 +560,19 @@ export function ContentEditor({
     }
   }, [activeSectionId, loadSection]);
 
+  const handlePageChange = useCallback(
+    (nextPage: ContentPageId) => {
+      persistCurrentSection(activeSectionIdRef.current);
+      const nextSection = getSectionsForPage(nextPage)[0]?.id ?? "hero";
+      setPage(nextPage);
+      router.replace(
+        `/admin/content?page=${nextPage}&section=${nextSection}`,
+        { scroll: false },
+      );
+    },
+    [persistCurrentSection, router],
+  );
+
   if (!activeSection) {
     return null;
   }
@@ -554,7 +581,7 @@ export function ContentEditor({
     <div className="-mx-6 -my-6 flex min-h-[calc(100dvh-4rem)] flex-col">
       <ContentToolbar
         page={page}
-        onPageChange={setPage}
+        onPageChange={handlePageChange}
         onPublish={() => void handlePublish()}
         publishing={publishing}
         publishMessage={publishMessage}
@@ -655,13 +682,14 @@ export function ContentEditor({
 
                   {activeSection.id === "learning_apps" ? (
                     <SoftwareReviewsEditor
-                      reviews={[softwareReviews.ixl, softwareReviews.epic]}
+                      reviews={[softwareReviews.epic]}
                       onChange={(reviews) => {
-                        const next = {
-                          ixl: reviews.find((review) => review.slug === "ixl")!,
-                          epic: reviews.find((review) => review.slug === "epic")!,
-                        };
-                        setSoftwareReviews(next);
+                        const epic = reviews.find((review) => review.slug === "epic");
+                        if (!epic) return;
+                        setSoftwareReviews({
+                          ...softwareReviews,
+                          epic,
+                        });
                       }}
                     />
                   ) : null}

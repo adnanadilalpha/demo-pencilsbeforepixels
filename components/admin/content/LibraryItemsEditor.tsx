@@ -96,6 +96,15 @@ export function LibraryItemsEditor({
                     value={item.subtitle}
                     onChange={(value) => updateItem(item.id, { subtitle: value })}
                   />
+                  {item.kind === "book" ? (
+                    <Field
+                      label="View link"
+                      value={item.viewUrl ?? ""}
+                      onChange={(value) => updateItem(item.id, { viewUrl: value })}
+                      placeholder="https://..."
+                      hint="Opens in a new tab from the View button on the homepage."
+                    />
+                  ) : null}
                 </div>
                 {item.kind === "book" || item.kind === "resource" ? (
                   <MediaField
@@ -120,17 +129,23 @@ function Field({
   label,
   value,
   onChange,
+  placeholder,
+  hint,
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
+  placeholder?: string;
+  hint?: string;
 }) {
   return (
     <div className="flex flex-col gap-1.5">
       <label className={adminLabelClass}>{label}</label>
+      {hint ? <p className="text-xs text-body-muted">{hint}</p> : null}
       <input
         className={adminInputClass}
         value={value}
+        placeholder={placeholder}
         onChange={(event) => onChange(event.target.value)}
       />
     </div>

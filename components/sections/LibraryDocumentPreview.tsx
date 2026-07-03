@@ -49,7 +49,7 @@ export function LibraryDocumentPreview({
       <span
         className={cn(
           "inline-flex items-center justify-center rounded-md border border-gold-accent/35 bg-gold-accent/10 font-semibold tracking-wide text-gold-accent",
-          compact ? "px-2.5 py-1 text-[10px]" : "px-3 py-1.5 text-xs",
+          compact ? "px-2.5 py-1 text-[10px] lg:text-base" : "px-3 py-1.5 text-xs lg:text-base",
         )}
       >
         {label}
@@ -73,7 +73,7 @@ export function LibraryDocumentPreview({
         <p
           className={cn(
             "max-w-full truncate text-center text-white/55",
-            compact ? "text-[10px]" : "text-xs",
+            compact ? "text-[10px] lg:text-base" : "text-xs lg:text-base",
           )}
         >
           {fileName}

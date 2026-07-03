@@ -5,11 +5,12 @@ import type {
   EvidenceBootstrap,
   EvidencePanelResponse,
   EvidenceVersion,
+  StudentGroup,
 } from "@/lib/evidence/types";
 
 const VERSION_KEY = "pbp:evidence-version";
 const BOOTSTRAP_KEY = "pbp:evidence-bootstrap";
-const LOOKUPS_KEY = "pbp:evidence-lookups";
+const LOOKUPS_KEY = "pbp:evidence-lookups-v2";
 const PANELS_KEY = "pbp:evidence-panels";
 
 type LookupsEntry = {
@@ -69,18 +70,19 @@ export function clearEvidenceCache() {
   localStorage.removeItem(PANELS_KEY);
 }
 
-function lookupKey(tab: string, subject: string) {
-  return `${tab}:${subject}`;
+function lookupKey(tab: string, subject: string, studentGroup: StudentGroup = "all") {
+  return `${tab}:${subject}:${studentGroup}`;
 }
 
 export function readCachedLookups(
   version: string,
   tab: string,
   subject: string,
+  studentGroup: StudentGroup = "all",
 ): LookupsEntry | null {
   const cache = readJson<LookupsCache>(LOOKUPS_KEY);
   if (!cache || cache.version !== version) return null;
-  return cache.entries[lookupKey(tab, subject)] ?? null;
+  return cache.entries[lookupKey(tab, subject, studentGroup)] ?? null;
 }
 
 export function writeCachedLookups(
@@ -88,6 +90,7 @@ export function writeCachedLookups(
   tab: string,
   subject: string,
   entry: LookupsEntry,
+  studentGroup: StudentGroup = "all",
 ) {
   const cache = readJson<LookupsCache>(LOOKUPS_KEY);
   const next: LookupsCache =
@@ -95,8 +98,9 @@ export function writeCachedLookups(
       ? cache
       : { version, entries: {} };
 
-  next.entries[lookupKey(tab, subject)] = {
-    ...next.entries[lookupKey(tab, subject)],
+  const key = lookupKey(tab, subject, studentGroup);
+  next.entries[key] = {
+    ...next.entries[key],
     ...entry,
   };
 

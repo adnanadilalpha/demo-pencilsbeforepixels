@@ -1,6 +1,6 @@
 "use client";
 
-import Image from "next/image";
+import { ContentImage } from "@/components/ui/ContentImage";
 import { Container } from "@/components/ui/Container";
 import { DisplayHeading } from "@/components/ui/DisplayHeading";
 import { TextLink } from "@/components/ui/TextLink";
@@ -17,7 +17,7 @@ export function MentalHealthSection() {
     (section.body as string) ??
     "Researchers continue to study how increased screen exposure may influence attention, behaviour and emotional wellbeing.";
   const cta = (section.cta as { label: string; href: string }) ?? {
-    label: "Explore Evidence",
+    label: "Explore Nebraska Data",
     href: "/evidence",
   };
 
@@ -46,7 +46,7 @@ export function MentalHealthSection() {
                     style={{ backgroundColor: item.color }}
                     aria-hidden
                   />
-                  <span className="text-[11px] leading-normal text-white/40">
+                  <span className="text-[11px] leading-normal text-white/40 sm:text-sm lg:text-base">
                     {item.label}
                   </span>
                 </div>
@@ -54,7 +54,7 @@ export function MentalHealthSection() {
             </div>
 
             <div className="relative w-full overflow-hidden pt-5">
-              <Image
+              <ContentImage
                 src={media.charts.mentalHealth}
                 alt="Line chart showing rising mental health indicators from 2012 to 2018"
                 width={2000}

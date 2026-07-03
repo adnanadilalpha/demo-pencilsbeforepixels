@@ -1,6 +1,10 @@
 "use client";
 
 import type { TimelineSlide } from "@/lib/cms/types";
+import {
+  MISSION_SLIDE_COUNT,
+  MISSION_SLIDE_LABELS,
+} from "@/lib/cms/mission-slides";
 import { adminInputClass, adminLabelClass } from "@/components/admin/admin-styles";
 import { MediaField } from "@/components/admin/content/MediaField";
 
@@ -10,9 +14,11 @@ type TimelineEditorProps = {
 };
 
 export function TimelineEditor({ slides, onChange }: TimelineEditorProps) {
+  const missionSlides = slides.slice(0, MISSION_SLIDE_COUNT);
+
   const updateSlide = (index: number, patch: Partial<TimelineSlide>) => {
     onChange(
-      slides.map((slide, slideIndex) =>
+      missionSlides.map((slide, slideIndex) =>
         slideIndex === index ? { ...slide, ...patch } : slide,
       ),
     );
@@ -20,19 +26,19 @@ export function TimelineEditor({ slides, onChange }: TimelineEditorProps) {
 
   return (
     <div className="space-y-4">
-      {slides.map((slide, index) => (
+      {missionSlides.map((slide, index) => (
         <div
-          key={`${slide.era}-${index}`}
+          key={`${slide.number}-${index}`}
           className="rounded-[10px] border border-navy-800/10 bg-paper-50 p-4"
         >
           <div className="flex flex-col gap-5 lg:grid lg:grid-cols-2 lg:items-start lg:gap-6">
             <div className="flex min-w-0 flex-col gap-3">
               <p className="text-sm font-semibold text-navy-800">
-                {slide.era || `Slide ${index + 1}`}
+                {MISSION_SLIDE_LABELS[index] ?? `Slide ${index + 1}`}
               </p>
               <div className="grid gap-3 sm:grid-cols-2">
                 <Field
-                  label="Era"
+                  label="Label"
                   value={slide.era}
                   onChange={(value) => updateSlide(index, { era: value })}
                 />
@@ -64,7 +70,7 @@ export function TimelineEditor({ slides, onChange }: TimelineEditorProps) {
                 label="Slide image"
                 value={slide.image}
                 folder="timeline"
-                filename={`slide-${slide.number || index + 1}.jpg`}
+                filename={`mission-slide-${slide.number || index + 1}.jpg`}
                 altText={slide.title}
                 onChange={(url) => updateSlide(index, { image: url })}
               />

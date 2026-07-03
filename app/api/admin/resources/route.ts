@@ -113,6 +113,7 @@ export async function POST(request: Request) {
         title: string;
         author: string;
         coverMediaId: string | null;
+        viewUrl?: string | null;
         featured: boolean;
       };
 
@@ -124,6 +125,7 @@ export async function POST(request: Request) {
           subtitle: input.author,
           kind: "book",
           image_media_id: input.coverMediaId,
+          external_url: input.viewUrl?.trim() || null,
           visible: true,
           sort_order: await nextLibrarySortOrder(),
         })
@@ -214,6 +216,10 @@ export async function PATCH(request: Request) {
       if (type === "books") {
         if ("author" in body.patch) patch.subtitle = body.patch.author;
         if ("coverMediaId" in body.patch) patch.image_media_id = body.patch.coverMediaId;
+        if ("viewUrl" in body.patch) {
+          const viewUrl = body.patch.viewUrl as string | null;
+          patch.external_url = viewUrl?.trim() || null;
+        }
       }
 
       if (type === "videos") {

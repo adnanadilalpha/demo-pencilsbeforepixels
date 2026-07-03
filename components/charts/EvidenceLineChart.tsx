@@ -3,10 +3,35 @@
 import { useEffect, useRef, useState } from "react";
 import { ChartCrosshair, ChartTooltip } from "@/components/charts/ChartTooltip";
 import {
+  CHART_RESEARCH_MARGIN,
+  CHART_RESEARCH_MARGIN_COMPACT,
+  getCategoryTickTextAnchor,
+  getCategoryTickX,
   getChartLayout,
+  getDataPlotBounds,
   scaleToPlotY,
 } from "@/components/charts/chart-layout";
+import {
+  chartAxisLabelDark,
+  chartTickDark,
+  chartTitleDark,
+  researchChartAxisLabelDark,
+  researchChartTickDark,
+  researchChartTitleDark,
+  RESEARCH_CHART_PLOT_HEIGHT,
+} from "@/components/charts/chart-theme";
+import { isResearchDesktopWidth } from "@/lib/research/responsive";
 import type { ChartTooltipState } from "@/lib/charts/tooltip";
+import {
+  formatChartTooltipValue,
+  formatSeriesTooltipTitle,
+} from "@/lib/charts/tooltip";
+import {
+  bindChartHitTarget,
+  useDismissChartTooltip,
+} from "@/lib/charts/tooltip";
+
+import { PISA_CPU_MINUTES } from "@/lib/charts/pisa-data";
 import type {
   AcademicChart,
   ChartMarkerShape,
@@ -15,7 +40,9 @@ import type {
 type EvidenceLineChartProps = {
   chart: AcademicChart;
   empty?: boolean;
+  /** @deprecated Use `research` for the evidence research tab. */
   compact?: boolean;
+  research?: boolean;
   hideTitle?: boolean;
   showTooltip?: boolean;
 };
@@ -26,10 +53,11 @@ function buildPath(
   max: number,
   layout: ReturnType<typeof getChartLayout>,
   step: number,
+  dataPlotLeft: number,
 ) {
   return values
     .map((value, index) => {
-      const x = layout.plotLeft + index * step;
+      const x = dataPlotLeft + index * step;
       const y = scaleToPlotY(value, min, max, layout);
       return `${index === 0 ? "M" : "L"} ${x} ${y}`;
     })
@@ -75,6 +103,7 @@ export function EvidenceLineChart({
   chart,
   empty = false,
   compact = false,
+  research = false,
   hideTitle = true,
   showTooltip = false,
 }: EvidenceLineChartProps) {
@@ -102,46 +131,180 @@ export function EvidenceLineChart({
 
   const width = size.width;
   const height = size.height;
-  const layout = getChartLayout(width, height);
-  const [yMin, , , yMax] = chart.yTicks;
+  const researchMargin =
+    research && !isResearchDesktopWidth(width)
+      ? CHART_RESEARCH_MARGIN_COMPACT
+      : CHART_RESEARCH_MARGIN;
+  const layout = getChartLayout(
+    width,
+    height,
+    research ? researchMargin : undefined,
+  );
+  const tickClass = research ? researchChartTickDark : chartTickDark;
+  const axisLabelClass = research
+    ? researchChartAxisLabelDark
+    : chartAxisLabelDark;
+  const titleClass = research ? researchChartTitleDark : chartTitleDark;
+  const yMin = chart.yMin ?? chart.yTicks[0];
+  const yMax = chart.yMax ?? chart.yTicks[chart.yTicks.length - 1];
+  const { dataPlotLeft, dataPlotWidth } = getDataPlotBounds(layout);
   const step =
     chart.categories.length > 1
-      ? layout.plotWidth / (chart.categories.length - 1)
+      ? dataPlotWidth / (chart.categories.length - 1)
       : 0;
 
-  const subjectLabel =
-    chart.title.charAt(0) + chart.title.slice(1).toLowerCase();
-  const isPisaMath = chart.title.toUpperCase() === "MATH";
+  const titleUpper = chart.title.toUpperCase();
+  const isPisaMath = titleUpper === "MATH";
+  const isPisaReading = titleUpper === "READING";
+  const isParcc = chart.yLabel === "Std. Achievement";
+  const isDeviceTime =
+    chart.yLabel === "Mean Score in Mathematics" &&
+    chart.series.length === 2;
+  const isPerformance = chart.yLabel === "Average Scale Score";
+
+  const buildPointTooltip = (
+    series: AcademicChart["series"][number],
+    index: number,
+    value: number,
+    x: number,
+    y: number,
+  ): ChartTooltipState => {
+    const category = chart.categories[index] ?? "";
+
+    if (isPisaMath) {
+      const cpu = PISA_CPU_MINUTES[index] ?? 0;
+      return {
+        x,
+        y,
+        title: `Math ${series.label}`,
+        accent: series.color,
+        lines: [
+          { label: "CPU", value: `${cpu} min/day` },
+          {
+            label: "Score",
+            value: formatChartTooltipValue(value, { preferInteger: true }),
+          },
+        ],
+      };
+    }
+
+    if (isPisaReading) {
+      return {
+        x,
+        y,
+        title: `Reading ${series.label}`,
+        accent: series.color,
+        lines: [
+          {
+            label: "Score",
+            value: formatChartTooltipValue(value, { preferInteger: true }),
+          },
+        ],
+      };
+    }
+
+    if (isDeviceTime) {
+      return {
+        x,
+        y,
+        title: series.label,
+        accent: series.color,
+        lines: [
+          { label: "Time", value: category },
+          {
+            label: "Score",
+            value: formatChartTooltipValue(value, { yLabel: chart.yLabel }),
+          },
+        ],
+      };
+    }
+
+    if (isParcc) {
+      return {
+        x,
+        y,
+        title: series.label,
+        accent: series.color,
+        lines: [
+          { label: "Year", value: category },
+          {
+            label: "Std. Achievement",
+            value: formatChartTooltipValue(value, { yLabel: chart.yLabel }),
+          },
+        ],
+      };
+    }
+
+    if (isPerformance) {
+      return {
+        x,
+        y,
+        title: formatSeriesTooltipTitle(series.label),
+        accent: series.color,
+        lines: [
+          { label: "School Year", value: category },
+          {
+            label: chart.yLabel,
+            value: formatChartTooltipValue(value, { yLabel: chart.yLabel }),
+          },
+        ],
+      };
+    }
+
+    return {
+      x,
+      y,
+      title: series.label,
+      accent: series.color,
+      lines: [
+        {
+          label: chart.yLabel || "Score",
+          value: formatChartTooltipValue(value, { yLabel: chart.yLabel }),
+        },
+      ],
+    };
+  };
 
   const clearTooltip = () => {
     setTooltip(null);
     setActivePoint(null);
   };
 
+  useDismissChartTooltip(plotRef, showTooltip && !!tooltip, clearTooltip);
+
+  const wrapperClass = research
+    ? "flex w-full flex-col gap-3 md:gap-4 lg:gap-6"
+    : compact
+      ? "flex h-[220px] w-full flex-col"
+      : "flex h-[220px] min-h-[220px] w-full flex-col sm:h-[320px] sm:min-h-[320px] lg:h-auto lg:min-h-[400px] lg:flex-1";
+
+  const plotClass = research
+    ? `relative w-full ${RESEARCH_CHART_PLOT_HEIGHT}`
+    : "relative min-h-0 w-full flex-1";
+
   return (
-    <div
-      className={`flex w-full flex-col ${
-        compact
-          ? "h-[220px]"
-          : "h-[220px] min-h-[220px] sm:h-[320px] sm:min-h-[320px] lg:h-auto lg:min-h-[400px] lg:flex-1"
-      }`}
-    >
+    <div className={wrapperClass}>
       {!hideTitle && (
-        <p className="mb-3 shrink-0 text-center font-sans text-[9px] font-medium uppercase tracking-[0.2em] text-navy-800/50">
+        <p
+          className={`shrink-0 text-center ${titleClass} ${
+            research ? "pt-1" : "mb-3"
+          }`}
+        >
           {empty ? "\u00A0" : chart.title}
         </p>
       )}
 
       <div
         ref={plotRef}
-        className="relative min-h-0 w-full flex-1"
+        className={plotClass}
         onMouseLeave={showTooltip ? clearTooltip : undefined}
+        onClick={showTooltip ? clearTooltip : undefined}
       >
         {width > 0 && height > 0 && (
           <svg
             width={width}
             height={height}
-            className="absolute inset-0"
+            className="absolute inset-0 overflow-visible"
             role="img"
             aria-hidden={empty}
             aria-label={empty ? undefined : `${chart.title} line chart`}
@@ -162,7 +325,7 @@ export function EvidenceLineChart({
                     x={layout.plotLeft - 8}
                     y={y + 3}
                     textAnchor="end"
-                    className="fill-navy-800 font-sans text-[10px]"
+                    className={tickClass}
                   >
                     {tick}
                   </text>
@@ -184,20 +347,27 @@ export function EvidenceLineChart({
               y={layout.yAxisLabelY}
               transform={`rotate(-90 12 ${layout.yAxisLabelY})`}
               textAnchor="middle"
-              className="fill-navy-800 text-[9px]"
+              className={axisLabelClass}
             >
               {chart.yLabel}
             </text>
 
             {chart.categories.map((category, index) => {
-              const x = layout.plotLeft + index * step;
+              const x = getCategoryTickX(
+                index,
+                chart.categories.length,
+                layout,
+              );
               return (
                 <text
                   key={`${category}-${index}`}
                   x={x}
                   y={layout.tickY}
-                  textAnchor="middle"
-                  className="fill-navy-800 font-sans text-[10px]"
+                  textAnchor={getCategoryTickTextAnchor(
+                    index,
+                    chart.categories.length,
+                  )}
+                  className={tickClass}
                 >
                   {category}
                 </text>
@@ -208,7 +378,7 @@ export function EvidenceLineChart({
               x={width / 2}
               y={layout.xLabelY}
               textAnchor="middle"
-              className="fill-navy-800 text-[9px]"
+              className={axisLabelClass}
             >
               {chart.xLabel}
             </text>
@@ -231,6 +401,7 @@ export function EvidenceLineChart({
                   yMax,
                   layout,
                   step,
+                  dataPlotLeft,
                 );
                 const markerShape = series.markerShape ?? "circle";
                 const markerSize = markerShape === "circle" ? 8 : 7;
@@ -247,9 +418,9 @@ export function EvidenceLineChart({
                       strokeDasharray={series.dashArray}
                     />
                     {series.values.map((value, index) => {
-                      if (!Number.isFinite(value) || value <= 0) return null;
+                      if (!Number.isFinite(value)) return null;
 
-                      const x = layout.plotLeft + index * step;
+                      const x = dataPlotLeft + index * step;
                       const y = scaleToPlotY(value, yMin, yMax, layout);
                       const pointId = `${series.label}-${index}`;
                       const isActive = activePoint === pointId;
@@ -263,25 +434,22 @@ export function EvidenceLineChart({
                               r={14}
                               fill="transparent"
                               className="cursor-pointer"
-                              onMouseEnter={() => {
-                                const category = chart.categories[index] ?? "";
-                                setActivePoint(pointId);
-                                setTooltip({
-                                  x,
-                                  y,
-                                  title: `${subjectLabel} ${series.label}`,
-                                  accent: series.color,
-                                  lines: isPisaMath
-                                    ? [
-                                        {
-                                          label: "CPU",
-                                          value: `${category} min/day`,
-                                        },
-                                        { label: "Score", value: String(value) },
-                                      ]
-                                    : [{ label: "Score", value: String(value) }],
-                                });
-                              }}
+                              {...bindChartHitTarget({
+                                isActive,
+                                onActivate: () => {
+                                  setActivePoint(pointId);
+                                  setTooltip(
+                                    buildPointTooltip(
+                                      series,
+                                      index,
+                                      value,
+                                      x,
+                                      y,
+                                    ),
+                                  );
+                                },
+                                onClear: clearTooltip,
+                              })}
                             />
                           ) : null}
                           {isActive ? (
@@ -314,6 +482,7 @@ export function EvidenceLineChart({
             tooltip={tooltip}
             containerWidth={width}
             containerHeight={height}
+            onDismiss={clearTooltip}
           />
         )}
       </div>

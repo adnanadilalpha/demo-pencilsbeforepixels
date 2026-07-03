@@ -88,7 +88,7 @@ export function LibraryDocumentModal({
               {item.title}
             </h2>
             {item.subtitle ? (
-              <p className="truncate text-xs uppercase tracking-wide text-white/60 sm:text-sm">
+              <p className="truncate text-xs uppercase tracking-wide text-white/60 sm:text-sm lg:text-base">
                 {item.subtitle}
               </p>
             ) : null}
@@ -113,14 +113,14 @@ export function LibraryDocumentModal({
             />
           ) : (
             <div className="flex h-[min(40vh,420px)] flex-col items-center justify-center gap-4 px-6 text-center text-white">
-              <p className="text-sm text-white/70">
+              <p className="text-sm text-white/70 lg:text-base">
                 This file opens best in a new tab or downloads to your device.
               </p>
               <a
                 href={item.fileUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex rounded-full border border-white/20 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-white/10"
+                className="inline-flex rounded-full border border-white/20 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-white/10 lg:text-base"
               >
                 Open file
               </a>

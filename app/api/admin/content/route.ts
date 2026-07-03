@@ -18,6 +18,7 @@ function revalidateSiteContent() {
   revalidatePath("/", "layout");
   revalidatePath("/");
   revalidatePath("/evidence");
+  revalidatePath("/research");
 }
 
 export async function GET() {

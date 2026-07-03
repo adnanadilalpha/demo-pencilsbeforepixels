@@ -7,12 +7,14 @@ import {
 } from "@/lib/admin/academic-dataset-defaults";
 import type { ContentSavePayload, SectionDraft } from "@/lib/admin/content-editor-types";
 import { applyResearchContentDraft } from "@/lib/admin/research-persistence";
+import { mergeResearchWithFallback } from "@/lib/research/merge";
 import { saveEvidenceScores } from "@/lib/admin/evidence-scores";
 import {
   publicUrlToStoragePath,
   stripUrlCacheBuster,
 } from "@/lib/admin/media-paths";
 import { normalizeYouTubeUrl } from "@/lib/youtube";
+import { normalizeMissionTimeline } from "@/lib/cms/mission-slides";
 import type { SectionKey } from "@/lib/cms/types";
 import type {
   EditableLibraryItem,
@@ -71,6 +73,7 @@ function mergePublishPayloads(payloads: ContentSavePayload[]): MergedPublishPayl
     if (editorSection.sectionKey) {
       const content = { ...payload.content };
       delete content.chartImage;
+      delete content.letterPreviewImage;
       sectionMap.set(editorSection.sectionKey, {
         content,
         page: editorSection.page,
@@ -92,13 +95,13 @@ function mergePublishPayloads(payloads: ContentSavePayload[]): MergedPublishPayl
       if (Object.keys(introContent).length > 0) {
         sectionMap.set("evidence.intro", {
           content: introContent,
-          page: "evidence",
+          page: "research",
         });
       }
       if (Object.keys(headerContent).length > 0) {
         sectionMap.set("evidence.research_tab", {
           content: headerContent,
-          page: "evidence",
+          page: "research",
         });
       }
     }
@@ -185,13 +188,15 @@ async function saveResearchContent(content: SectionDraft): Promise<void> {
     .eq("key", "main")
     .maybeSingle();
 
-  const research = applyResearchContentDraft(
-    (data?.data as ResearchChartsData | undefined) ?? null,
-    content,
+  const research = mergeResearchWithFallback(
+    applyResearchContentDraft(
+      (data?.data as ResearchChartsData | undefined) ?? null,
+      content,
+    ),
   );
 
   const { error } = await supabase.from("research_datasets").upsert(
-    { key: "main", data: research },
+    { key: "main", label: "Research Charts", data: research },
     { onConflict: "key" },
   );
 
@@ -384,10 +389,11 @@ async function saveTimelineBatch(
     .neq("id", "00000000-0000-0000-0000-000000000000");
 
   assertNoError(deleteError, "Failed to clear timeline slides");
-  if (!slides.length) return;
+  const missionSlides = normalizeMissionTimeline(slides);
+  if (!missionSlides.length) return;
 
   const { error } = await supabase.from("timeline_slides").insert(
-    slides.map((slide, index) => ({
+    missionSlides.map((slide, index) => ({
       era: slide.era,
       number: slide.number,
       title: slide.title,
@@ -414,18 +420,22 @@ async function saveLibraryItemsBatch(
   await Promise.all(
     items.map(async (item, index) => {
       const imageMediaId = resolveMediaId(item.image);
+      const row = {
+        category: item.category,
+        title: item.title,
+        subtitle: item.subtitle,
+        kind: item.kind,
+        image_media_id: imageMediaId,
+        sort_order: index,
+        ...(item.kind === "book"
+          ? { external_url: item.viewUrl?.trim() || null }
+          : {}),
+      };
 
       if (item.id) {
         const { error } = await supabase
           .from("library_items")
-          .update({
-            category: item.category,
-            title: item.title,
-            subtitle: item.subtitle,
-            kind: item.kind,
-            image_media_id: imageMediaId,
-            sort_order: index,
-          })
+          .update(row)
           .eq("id", item.id);
 
         assertNoError(error, `Failed to update library item ${item.title}`);
@@ -433,12 +443,7 @@ async function saveLibraryItemsBatch(
       }
 
       const { error } = await supabase.from("library_items").insert({
-        category: item.category,
-        title: item.title,
-        subtitle: item.subtitle,
-        kind: item.kind,
-        image_media_id: imageMediaId,
-        sort_order: index,
+        ...row,
         visible: true,
       });
 

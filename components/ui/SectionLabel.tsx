@@ -19,7 +19,7 @@ export function SectionLabel({
 }: SectionLabelProps) {
   return (
     <p
-      className={`font-sans text-xs font-medium uppercase tracking-[0.2em] ${variantClasses[variant]} ${className}`}
+      className={`font-sans text-xs font-medium uppercase tracking-[0.2em] lg:text-base ${variantClasses[variant]} ${className}`}
     >
       {children}
     </p>

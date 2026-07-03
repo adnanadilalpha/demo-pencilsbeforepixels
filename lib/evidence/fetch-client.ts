@@ -17,6 +17,7 @@ import type {
   EvidenceSubject,
   EvidenceTab,
   EvidenceVersion,
+  StudentGroup,
 } from "@/lib/evidence/types";
 
 export async function fetchEvidenceVersion(): Promise<EvidenceVersion> {
@@ -56,32 +57,36 @@ export async function getClientEvidenceBootstrap(
 export async function fetchCachedDistricts(
   version: string,
   subject: EvidenceSubject,
+  studentGroup: StudentGroup = "all",
 ): Promise<DistrictOption[]> {
-  const cached = readCachedLookups(version, "nebraska", subject);
+  const cached = readCachedLookups(version, "nebraska", subject, studentGroup);
   if (cached?.districts) return cached.districts;
 
-  const res = await fetch(`/api/evidence/districts?subject=${subject}`, {
+  const params = new URLSearchParams({ subject, studentGroup });
+  const res = await fetch(`/api/evidence/districts?${params.toString()}`, {
     cache: "no-store",
   });
   if (!res.ok) throw new Error("Failed to load districts");
   const districts = (await res.json()) as DistrictOption[];
-  writeCachedLookups(version, "nebraska", subject, { districts });
+  writeCachedLookups(version, "nebraska", subject, { districts }, studentGroup);
   return districts;
 }
 
 export async function fetchCachedSchools(
   version: string,
   subject: EvidenceSubject,
+  studentGroup: StudentGroup = "all",
 ): Promise<DistrictOption[]> {
-  const cached = readCachedLookups(version, "district-66", subject);
+  const cached = readCachedLookups(version, "district-66", subject, studentGroup);
   if (cached?.schools) return cached.schools;
 
-  const res = await fetch(`/api/evidence/schools?subject=${subject}`, {
+  const params = new URLSearchParams({ subject, studentGroup });
+  const res = await fetch(`/api/evidence/schools?${params.toString()}`, {
     cache: "no-store",
   });
   if (!res.ok) throw new Error("Failed to load schools");
   const schools = (await res.json()) as DistrictOption[];
-  writeCachedLookups(version, "district-66", subject, { schools });
+  writeCachedLookups(version, "district-66", subject, { schools }, studentGroup);
   return schools;
 }
 
@@ -89,8 +94,9 @@ export async function fetchCachedSchoolYears(
   version: string,
   subject: EvidenceSubject,
   tab: EvidenceTab,
+  studentGroup: StudentGroup = "all",
 ): Promise<string[]> {
-  const cached = readCachedLookups(version, tab, subject);
+  const cached = readCachedLookups(version, tab, subject, studentGroup);
   if (cached?.schoolYears) return cached.schoolYears;
 
   const params = new URLSearchParams({ subject, tab });
@@ -99,7 +105,13 @@ export async function fetchCachedSchoolYears(
   });
   if (!res.ok) throw new Error("Failed to load school years");
   const schoolYears = (await res.json()) as string[];
-  writeCachedLookups(version, tab, subject, { schoolYears });
+  writeCachedLookups(
+    version,
+    tab,
+    subject,
+    { schoolYears },
+    studentGroup,
+  );
   return schoolYears;
 }
 

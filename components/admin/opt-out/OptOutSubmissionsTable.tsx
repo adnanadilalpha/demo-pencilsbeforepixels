@@ -54,10 +54,10 @@ export function OptOutSubmissionsTable({
                   Parent
                 </th>
                 <th className="px-5 py-3 font-mono text-[11px] font-medium uppercase tracking-[0.05em] text-body-muted">
-                  School
+                  Student
                 </th>
                 <th className="px-5 py-3 font-mono text-[11px] font-medium uppercase tracking-[0.05em] text-body-muted">
-                  District
+                  School
                 </th>
                 <th className="px-5 py-3 font-mono text-[11px] font-medium uppercase tracking-[0.05em] text-body-muted">
                   Date
@@ -83,10 +83,10 @@ export function OptOutSubmissionsTable({
                       {submission.parentName}
                     </td>
                     <td className="px-5 py-4 text-sm text-body-muted">
-                      {submission.school || "—"}
+                      {submission.studentName || "—"}
                     </td>
                     <td className="px-5 py-4 text-sm text-body-muted">
-                      {submission.district || "—"}
+                      {submission.school || "—"}
                     </td>
                     <td className="px-5 py-4 font-mono text-sm text-body-muted">
                       {formatOptOutDate(submission.generatedAt)}

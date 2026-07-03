@@ -1,7 +1,16 @@
 import type { SectionKey } from "@/lib/cms/types";
 import { researchEditorSections } from "@/lib/admin/research-field-definitions";
 
-export type ContentPageId = "homepage" | "evidence" | "site";
+export type ContentPageId = "homepage" | "nebraska" | "research" | "site";
+
+/** Legacy admin URLs used `?page=evidence` before the Nebraska / Research split. */
+export function normalizeContentPageId(value: string | undefined): ContentPageId | undefined {
+  if (value === "evidence") return "nebraska";
+  if (value === "homepage" || value === "nebraska" || value === "research" || value === "site") {
+    return value;
+  }
+  return undefined;
+}
 
 export type FieldType =
   | "text"
@@ -58,41 +67,34 @@ export const homepageSections: EditorSection[] = [
     ],
   },
   {
-    id: "problem",
-    label: "Problem",
-    page: "homepage",
-    sectionKey: "homepage.problem",
-    fields: [
-      { key: "label", label: "Label", type: "text" },
-      { key: "headline", label: "Headline", type: "textarea" },
-      { key: "body", label: "Body copy", type: "textarea" },
-    ],
-  },
-  {
     id: "timeline",
-    label: "Timeline",
+    label: "Our Mission",
     page: "homepage",
     fields: [
       {
         key: "_note",
-        label: "Timeline slides",
+        label: "Mission slides",
         type: "text",
-        placeholder: "Edit individual slides in the list below",
+        placeholder:
+          "Three slides: The Problem, The Goal, and The Solution. Edit copy and images below.",
       },
     ],
   },
   {
     id: "goal",
-    label: "Goal & Solution",
+    label: "Evidence Snapshot",
     page: "homepage",
     sectionKey: "homepage.goal",
     fields: [
-      { key: "label", label: "Label", type: "text" },
-      { key: "tagline", label: "Tagline", type: "textarea" },
-      { key: "goalTitle", label: "Goal title", type: "text" },
-      { key: "goalBody", label: "Goal body", type: "textarea" },
-      { key: "solutionTitle", label: "Solution title", type: "text" },
-      { key: "solutionBody", label: "Solution body", type: "textarea" },
+      { key: "label", label: "Section label", type: "text" },
+      { key: "tagline", label: "Story headline", type: "textarea" },
+      {
+        key: "points",
+        label: "Key findings",
+        type: "stringList",
+        placeholder:
+          "Stat — supporting detail (e.g. −1.45 pts/yr — NAEP Grade 4 math decline…)",
+      },
     ],
   },
   {
@@ -108,13 +110,14 @@ export const homepageSections: EditorSection[] = [
         key: "_note",
         label: "Dataset tabs",
         type: "text",
-        placeholder: "Each tab below matches a chart on the homepage Academic Data section",
+        placeholder:
+          "Eight homepage tabs: PISA, NAEP Grade 4/8, Nebraska Math, Nebraska Math by Gender, Westside Math by Gender, Nebraska English, State & Federal Testing (PARCC ELA). Chart data is code-managed; edit copy below.",
       },
     ],
   },
   {
     id: "learning_apps",
-    label: "IXL & Epic",
+    label: "Epic Review",
     page: "homepage",
     sectionKey: "homepage.learning_apps",
     fields: [
@@ -180,6 +183,13 @@ export const homepageSections: EditorSection[] = [
     page: "homepage",
     sectionKey: "homepage.device_opt_out",
     fields: [
+      {
+        key: "_note",
+        label: "",
+        type: "text",
+        placeholder:
+          "School list, Form B default answers, and cover/essay templates are managed under Admin → Opt Out → Settings. Publish here to update homepage copy, steps, and the letter preview image.",
+      },
       { key: "headline", label: "Headline", type: "text" },
       { key: "body", label: "Body copy", type: "textarea" },
       { key: "primaryCta", label: "Primary CTA", type: "text" },
@@ -188,6 +198,13 @@ export const homepageSections: EditorSection[] = [
         label: "Secondary CTA",
         type: "cta",
         ctaKeys: { label: "label", href: "href" },
+      },
+      {
+        key: "letterPreviewImage",
+        label: "Letter preview image",
+        type: "image",
+        mediaFolder: "opt-out",
+        mediaFilename: "letter.png",
       },
     ],
   },
@@ -208,11 +225,11 @@ export const homepageSections: EditorSection[] = [
   },
 ];
 
-export const evidenceSections: EditorSection[] = [
+export const nebraskaDataSections: EditorSection[] = [
   {
     id: "evidence_nebraska",
     label: "Nebraska",
-    page: "evidence",
+    page: "nebraska",
     sectionKey: "evidence.nebraska",
     fields: [
       { key: "title", label: "Tab title", type: "text" },
@@ -222,7 +239,7 @@ export const evidenceSections: EditorSection[] = [
   {
     id: "evidence_district_66",
     label: "District 66",
-    page: "evidence",
+    page: "nebraska",
     sectionKey: "evidence.district_66",
     fields: [
       { key: "title", label: "Tab title", type: "text" },
@@ -231,13 +248,19 @@ export const evidenceSections: EditorSection[] = [
       { key: "viewDescription", label: "View description", type: "textarea" },
     ],
   },
+];
+
+export const researchPageSections: EditorSection[] = [
   {
     id: "evidence_research",
-    label: "Research",
-    page: "evidence",
+    label: "Page content",
+    page: "research",
     fields: [],
   },
 ];
+
+/** @deprecated Use nebraskaDataSections + researchPageSections */
+export const evidenceSections = [...nebraskaDataSections, ...researchPageSections];
 
 export const siteSections: EditorSection[] = [
   {
@@ -276,7 +299,15 @@ export const allEditorSections = [
 
 export function getSectionsForPage(page: ContentPageId): EditorSection[] {
   if (page === "site") return siteSections;
-  return page === "homepage" ? homepageSections : evidenceSections;
+  if (page === "homepage") return homepageSections;
+  if (page === "research") return researchPageSections;
+  return nebraskaDataSections;
+}
+
+export function previewPathForContentPage(page: ContentPageId): string {
+  if (page === "homepage" || page === "site") return "/";
+  if (page === "research") return "/research";
+  return "/evidence";
 }
 
 export function getEditorSection(id: string): EditorSection | undefined {

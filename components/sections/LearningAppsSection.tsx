@@ -1,90 +1,96 @@
 "use client";
 
+import { AudioReviewPlayer } from "@/components/ui/AudioReviewPlayer";
+import { Container } from "@/components/ui/Container";
 import { DisplayHeading } from "@/components/ui/DisplayHeading";
-import { sectionPaddingX } from "@/components/ui/Container";
+import { SectionLabel } from "@/components/ui/SectionLabel";
 import { YouTubeEmbed } from "@/components/ui/YouTubeEmbed";
 import { ScrollReveal } from "@/components/motion/ScrollReveal";
 import { useSection, useSiteContent } from "@/lib/cms/hooks";
-import type { ResearchNote } from "@/lib/cms/types";
+import { epicReviewContent } from "@/lib/cms/fallback-data";
 import { youTubeUrlToId } from "@/lib/youtube";
-
-function ResearchNoteBlock({ label, summary, note }: ResearchNote) {
-  return (
-    <div className="flex flex-col gap-3 border-t border-navy-800/10 pt-5 first:border-t-0 first:pt-0">
-      <p className="font-sans text-[10px] font-medium uppercase tracking-[0.2em] text-gold-500">
-        {label}
-      </p>
-      <p className="text-base leading-normal text-navy-800">{summary}</p>
-      <p className="text-sm leading-[1.45] text-navy-800/65">{note}</p>
-    </div>
-  );
-}
 
 export function LearningAppsSection() {
   const section = useSection("homepage.learning_apps");
   const { softwareReviews } = useSiteContent();
-  const { epic, ixl } = softwareReviews;
+  const { epic } = softwareReviews;
 
-  const headline = (section.headline as string) ?? "IXL & Epic";
+  const headline = (section.headline as string) ?? "Epic Reading Platform";
   const body =
     (section.body as string) ??
-    "We reviewed two classroom platforms commonly used in schools.";
+    "A closer look at how Epic works, what behaviours it encourages, and how it compares with current research on reading comprehension and screen-based learning.";
   const epicVideoId = youTubeUrlToId(epic.youtubeId);
+  const audioSrc = epic.audioSrc ?? epicReviewContent.audioSrc;
 
   return (
-    <section className="w-full bg-paper-300">
-      <ScrollReveal className={`flex flex-col items-center gap-6 pb-12 pt-24 text-center max-lg:pb-12 max-lg:pt-16 ${sectionPaddingX}`}>
-        <DisplayHeading as="h2" className="text-navy-800">
-          {headline}
-        </DisplayHeading>
-        <p className="max-w-[500px] text-base leading-[1.4] text-navy-800 sm:text-lg lg:w-2/5">
-          {body}
-        </p>
-      </ScrollReveal>
+    <section className="w-full bg-paper-300 py-20 max-lg:py-16">
+      <Container className="flex flex-col gap-10 lg:gap-14">
+        <ScrollReveal className="mx-auto flex max-w-2xl flex-col items-center gap-5 text-center">
+          <SectionLabel className="text-gold-500">Platform Review</SectionLabel>
+          <DisplayHeading as="h2" className="text-navy-800">
+            {headline}
+          </DisplayHeading>
+          <p className="text-base leading-relaxed text-navy-800/80 sm:text-lg">
+            {body}
+          </p>
+          <p className="rounded-full border border-navy-800/10 bg-paper-50 px-4 py-1.5 text-xs font-medium uppercase tracking-[0.18em] text-navy-800/70 lg:text-base">
+            Watch the review or listen on the go
+          </p>
+        </ScrollReveal>
 
-      <div className="grid w-full grid-cols-1 border-t border-navy-800 lg:grid-cols-2">
         <ScrollReveal
           as="article"
           delay={0.1}
-          className={`flex flex-col gap-8 py-12 max-lg:py-8 ${sectionPaddingX}`}
+          className="overflow-hidden rounded-2xl border border-navy-800/10 bg-paper-50 shadow-[0_8px_32px_rgba(15,31,61,0.08)]"
         >
-          <DisplayHeading as="h3" size="md" className="text-navy-800">
-            {ixl.title}
-          </DisplayHeading>
+          <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)] lg:items-stretch">
+            <div className="relative min-h-[56.25vw] bg-black lg:min-h-0 lg:h-full">
+              {epicVideoId ? (
+                <YouTubeEmbed
+                  fill
+                  videoId={epicVideoId}
+                  title={`${epic.title} reading platform review`}
+                />
+              ) : (
+                <div className="flex h-full min-h-[240px] items-center justify-center text-sm text-white/70 lg:text-base">
+                  Video review coming soon
+                </div>
+              )}
+            </div>
 
-          <div className="flex flex-col gap-5 rounded-sm bg-paper-50 p-6 shadow-[0_1px_3px_rgba(10,22,40,0.08)] ring-1 ring-navy-800/8">
-            {ixl.vendorResearch && <ResearchNoteBlock {...ixl.vendorResearch} />}
-            {ixl.independentResearch && (
-              <ResearchNoteBlock {...ixl.independentResearch} />
-            )}
+            <div className="flex flex-col justify-center gap-6 border-t border-navy-800/10 p-6 sm:p-8 lg:border-t-0 lg:border-l lg:p-10">
+              <div className="flex flex-col gap-3">
+                <p className="font-sans text-[10px] font-medium uppercase tracking-[0.2em] text-gold-500 lg:text-base">
+                  Featured review
+                </p>
+                <DisplayHeading as="h3" size="md" className="text-navy-800">
+                  {epic.title}
+                </DisplayHeading>
+              </div>
+
+              {epic.summary ? (
+                <p className="text-base leading-relaxed text-navy-800/85 sm:text-[17px] sm:leading-[1.55]">
+                  {epic.summary}
+                </p>
+              ) : null}
+
+              {audioSrc ? (
+                <AudioReviewPlayer
+                  src={audioSrc}
+                  title={`${epic.title} review`}
+                  label="Listen instead"
+                  variant="light"
+                />
+              ) : null}
+
+              <p className="text-sm leading-relaxed text-navy-800/60 lg:text-base">
+                Prefer audio? Play the review above while commuting or between
+                meetings — the same analysis as the video, in podcast form.
+              </p>
+            </div>
           </div>
-
-          {ixl.referencesNote && (
-            <p className="text-base leading-[1.4] text-navy-800">
-              {ixl.referencesNote}
-            </p>
-          )}
         </ScrollReveal>
-
-        <ScrollReveal
-          as="article"
-          delay={0.18}
-          className={`flex flex-col gap-8 border-t border-navy-800 py-12 max-lg:py-8 lg:border-t-0 lg:border-l ${sectionPaddingX}`}
-        >
-          <DisplayHeading as="h3" size="md" className="text-navy-800">
-            {epic.title}
-          </DisplayHeading>
-          {epicVideoId ? (
-            <YouTubeEmbed
-              videoId={epicVideoId}
-              title="Epic reading platform review"
-            />
-          ) : null}
-          {epic.summary && (
-            <p className="text-base leading-[1.4] text-navy-800">{epic.summary}</p>
-          )}
-        </ScrollReveal>
-      </div>
+      </Container>
     </section>
   );
 }

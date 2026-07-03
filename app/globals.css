@@ -144,6 +144,19 @@ body {
   }
 }
 
+@keyframes audio-bar {
+  0%,
+  100% {
+    transform: scaleY(0.45);
+    opacity: 0.55;
+  }
+
+  50% {
+    transform: scaleY(1);
+    opacity: 1;
+  }
+}
+
 .animate-scroll-line {
   animation: scroll-line 2.1s cubic-bezier(0.22, 1, 0.36, 1) infinite;
 }
@@ -419,6 +432,27 @@ body {
     forwards;
 }
 
+.audio-review-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  border: 2px solid var(--color-gold-accent);
+  background: var(--color-paper-50);
+  box-shadow: 0 1px 4px rgba(10, 22, 40, 0.2);
+  cursor: pointer;
+}
+
+.audio-review-range::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  border: 2px solid var(--color-gold-accent);
+  background: var(--color-paper-50);
+  box-shadow: 0 1px 4px rgba(10, 22, 40, 0.2);
+  cursor: pointer;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .scroll-reveal-hidden,
   .scroll-reveal-visible {
@@ -429,7 +463,8 @@ body {
 
   .animate-scroll-line,
   .animate-scroll-chevron,
-  .hero-enter {
+  .hero-enter,
+  .animate-\[audio-bar_1\.1s_ease-in-out_infinite\] {
     animation: none;
   }
 

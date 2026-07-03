@@ -57,19 +57,28 @@ export function AcademicDatasetsEditor({
 
   return (
     <div className="space-y-4">
+      <p className="text-xs leading-relaxed text-body-muted">
+        Chart data and layouts (PISA, NAEP, PARCC, Nebraska Data charts)
+        are defined in code and stay in sync automatically. Edit tab labels,
+        descriptions, and insight copy here.
+      </p>
+
       <div className="flex flex-wrap gap-2 rounded-[12px] border border-navy-800/10 bg-paper-50 p-2">
-        {datasets.map((dataset) => (
+        {datasets.map((dataset, index) => (
           <button
             key={dataset.key}
             type="button"
             onClick={() => setActiveKey(dataset.key)}
             className={cn(
-              "rounded-full px-3 py-1.5 text-xs font-medium transition-colors",
+              "inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-medium transition-colors",
               (activeDataset?.key ?? datasets[0]?.key) === dataset.key
                 ? "bg-navy-800 text-white shadow-sm"
                 : "text-body-muted hover:bg-white hover:text-navy-800",
             )}
           >
+            <span className="tabular-nums opacity-70">
+              {String(index + 1).padStart(2, "0")}
+            </span>
             {dataset.label}
           </button>
         ))}

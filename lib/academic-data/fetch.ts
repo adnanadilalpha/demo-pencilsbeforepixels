@@ -1,26 +1,39 @@
 import "server-only";
 
 import { createAdminClient } from "@/lib/supabase/admin";
+import { fetchAllRows } from "@/lib/supabase/fetch-all";
 import { getSiteContent } from "@/lib/cms/cached";
 import {
   applyAcademicCopyOverride,
   loadAcademicCopyOverrides,
 } from "./copy-overrides";
+import { hydrateAcademicStaticDatasets } from "./hydrate-static";
 import {
   buildNebraskaEnglishDataset,
   buildNebraskaMathDataset,
   buildNebraskaMathGenderDataset,
-  buildStateFederalDataset,
   buildWestsideMathGenderDataset,
 } from "./builders";
+import { stateFederalParccDataset } from "./static";
 import type { AcademicDataset } from "./types";
 
 const WESTSIDE_DISTRICT_ID = "66";
 
+function getStateFederalDataset(
+  overrides: Map<
+    string,
+    Pick<AcademicDataset, "label" | "title" | "description" | "insight">
+  >,
+): AcademicDataset {
+  return applyAcademicCopyOverride(stateFederalParccDataset, overrides);
+}
+
 export async function getAcademicDatasets(): Promise<AcademicDataset[]> {
   const supabase = createAdminClient();
   const siteContent = await getSiteContent();
-  const staticAcademicDatasets = siteContent.academicStatic;
+  const staticAcademicDatasets = hydrateAcademicStaticDatasets(
+    siteContent.academicStatic,
+  );
 
   const [
     copyOverrides,
@@ -28,94 +41,75 @@ export async function getAcademicDatasets(): Promise<AcademicDataset[]> {
     nebraskaMathGender,
     westsideMathGender,
     nebraskaEnglish,
-    mathProficiency,
-    englishProficiency,
   ] = await Promise.all([
     loadAcademicCopyOverrides(),
-    supabase
-      .from("math_scores")
-      .select("school_year, grade, avg_scale_score")
-      .eq("level", "ST")
-      .eq("subgroup_type", "ALL")
-      .in("grade", ["03", "04", "05", "06", "07", "08"])
-      .order("school_year"),
-    supabase
-      .from("math_scores")
-      .select("school_year, subgroup_desc, avg_scale_score")
-      .eq("level", "ST")
-      .eq("subgroup_type", "GENDER")
-      .eq("grade", "ALL")
-      .order("school_year"),
-    supabase
-      .from("math_scores")
-      .select("school_year, subgroup_desc, avg_scale_score")
-      .eq("district_id", WESTSIDE_DISTRICT_ID)
-      .eq("level", "DI")
-      .eq("subgroup_type", "GENDER")
-      .eq("grade", "ALL")
-      .order("school_year"),
-    supabase
-      .from("english_scores")
-      .select("school_year, grade, avg_scale_score")
-      .eq("level", "ST")
-      .eq("subgroup_type", "ALL")
-      .in("grade", ["03", "04", "05", "06", "07", "08", "ALL"])
-      .order("school_year"),
-    supabase
-      .from("math_scores")
-      .select("school_year, pct_ontrack, pct_advanced, pct_developing")
-      .eq("level", "ST")
-      .eq("subgroup_type", "ALL")
-      .eq("grade", "08")
-      .order("school_year"),
-    supabase
-      .from("english_scores")
-      .select("school_year, pct_ontrack, pct_advanced, pct_developing")
-      .eq("level", "ST")
-      .eq("subgroup_type", "ALL")
-      .eq("grade", "08")
-      .order("school_year"),
+    fetchAllRows((from, to) =>
+      supabase
+        .from("math_scores")
+        .select("school_year, grade, avg_scale_score, count_tested")
+        .eq("level", "ST")
+        .eq("subgroup_type", "ALL")
+        .in("grade", ["03", "04", "05", "06"])
+        .order("school_year")
+        .range(from, to),
+    ),
+    fetchAllRows((from, to) =>
+      supabase
+        .from("math_scores")
+        .select(
+          "school_year, grade, subgroup_desc, avg_scale_score, count_tested, agency_name",
+        )
+        .eq("level", "ST")
+        .eq("subgroup_type", "GENDER")
+        .in("grade", ["03", "04", "05", "06"])
+        .order("school_year")
+        .range(from, to),
+    ),
+    fetchAllRows((from, to) =>
+      supabase
+        .from("math_scores")
+        .select(
+          "school_year, grade, subgroup_desc, avg_scale_score, count_tested, agency_name",
+        )
+        .eq("district_id", WESTSIDE_DISTRICT_ID)
+        .eq("level", "DI")
+        .eq("subgroup_type", "GENDER")
+        .in("grade", ["03", "04", "05", "06"])
+        .order("school_year")
+        .range(from, to),
+    ),
+    fetchAllRows((from, to) =>
+      supabase
+        .from("english_scores")
+        .select("school_year, grade, avg_scale_score, count_tested")
+        .eq("level", "ST")
+        .eq("subgroup_type", "ALL")
+        .in("grade", ["03", "04", "05", "06"])
+        .order("school_year")
+        .range(from, to),
+    ),
   ]);
-
-  const errors = [
-    nebraskaMathByGrade.error,
-    nebraskaMathGender.error,
-    westsideMathGender.error,
-    nebraskaEnglish.error,
-    mathProficiency.error,
-    englishProficiency.error,
-  ].filter(Boolean);
-
-  if (errors.length > 0) {
-    console.error("Academic data fetch errors:", errors);
-  }
 
   return [
     applyAcademicCopyOverride(staticAcademicDatasets[0], copyOverrides),
     applyAcademicCopyOverride(staticAcademicDatasets[1], copyOverrides),
     applyAcademicCopyOverride(staticAcademicDatasets[2], copyOverrides),
     applyAcademicCopyOverride(
-      buildNebraskaMathDataset(nebraskaMathByGrade.data ?? []),
+      buildNebraskaMathDataset(nebraskaMathByGrade),
       copyOverrides,
     ),
     applyAcademicCopyOverride(
-      buildNebraskaMathGenderDataset(nebraskaMathGender.data ?? []),
+      buildNebraskaMathGenderDataset(nebraskaMathGender),
       copyOverrides,
     ),
     applyAcademicCopyOverride(
-      buildWestsideMathGenderDataset(westsideMathGender.data ?? []),
+      buildWestsideMathGenderDataset(westsideMathGender),
       copyOverrides,
     ),
     applyAcademicCopyOverride(
-      buildNebraskaEnglishDataset(nebraskaEnglish.data ?? []),
+      buildNebraskaEnglishDataset(nebraskaEnglish),
       copyOverrides,
     ),
-    applyAcademicCopyOverride(
-      buildStateFederalDataset(
-        mathProficiency.data ?? [],
-        englishProficiency.data ?? [],
-      ),
-      copyOverrides,
-    ),
+    getStateFederalDataset(copyOverrides),
   ];
 }

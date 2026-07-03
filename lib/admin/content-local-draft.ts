@@ -2,7 +2,7 @@ import type { EditableLibraryItem, EditableNavLink } from "@/lib/admin/cms-entit
 import type { EditableScoreRow } from "@/lib/admin/evidence-scores";
 import type { AcademicDatasetCopy } from "@/lib/admin/academic-dataset-defaults";
 import type { ExpertQuote, OptOutStep, TimelineSlide, SoftwareReview, SiteSettings } from "@/lib/cms/types";
-import { allEditorSections, type ContentPageId } from "@/lib/admin/content-config";
+import { allEditorSections, normalizeContentPageId, type ContentPageId } from "@/lib/admin/content-config";
 
 const STORAGE_KEY = "pbp-admin-content-draft";
 
@@ -88,8 +88,11 @@ export function preparePublishSections(
 }
 
 export function sanitizeLocalDraft(draft: ContentLocalDraft): ContentLocalDraft {
+  const page = normalizeContentPageId(draft.page) ?? draft.page;
+
   return {
     ...draft,
+    page: page as ContentPageId | undefined,
     sections: Object.fromEntries(
       preparePublishSections(draft.sections).map(([sectionId, sectionDraft]) => [
         sectionId,

@@ -22,8 +22,7 @@ const emptyForm = (): BookInput => ({
   author: "",
   summary: "",
   coverMediaId: null,
-  amazonUrl: "",
-  publisherUrl: "",
+  viewUrl: "",
   featured: false,
 });
 
@@ -47,8 +46,7 @@ export function BookFormModal({
             author: initial.author,
             summary: initial.summary ?? "",
             coverMediaId: initial.coverMediaId,
-            amazonUrl: "",
-            publisherUrl: "",
+            viewUrl: initial.viewUrl ?? "",
             featured: false,
           }
         : emptyForm(),
@@ -70,6 +68,7 @@ export function BookFormModal({
       title: form.title,
       author: form.author,
       coverMediaId: form.coverMediaId,
+      viewUrl: form.viewUrl.trim() || null,
       featured: false,
     };
 
@@ -164,6 +163,21 @@ export function BookFormModal({
             placeholder="Author name"
             className={adminInputClass}
           />
+        </AdminModalField>
+
+        <AdminModalField label="View link">
+          <input
+            type="url"
+            value={form.viewUrl}
+            onChange={(event) =>
+              setForm((current) => ({ ...current, viewUrl: event.target.value }))
+            }
+            placeholder="https://..."
+            className={adminInputClass}
+          />
+          <p className="mt-1 text-xs text-body-muted">
+            Optional. Opens in a new tab from the View button on the homepage.
+          </p>
         </AdminModalField>
 
         {error ? <p className="text-sm text-red-600">{error}</p> : null}
