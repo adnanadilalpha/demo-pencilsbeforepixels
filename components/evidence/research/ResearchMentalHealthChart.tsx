@@ -10,23 +10,46 @@ import {
 } from "@/lib/charts/tooltip";
 import {
   RESEARCH_CHART_PLOT_HEIGHT,
+  chartAxisLabelLight,
+  chartTickLight,
   researchChartAxisLabelMutedDark,
   researchChartCaptionDark,
   researchChartTickMutedDark,
 } from "@/components/charts/chart-theme";
+import { cn } from "@/lib/utils";
 import { isResearchDesktopWidth } from "@/lib/research/responsive";
 import type { MentalHealthSeries } from "@/lib/research/types";
 
-const PADDING_DESKTOP = { top: 36, right: 24, bottom: 96, left: 56 };
-const PADDING_COMPACT = { top: 28, right: 10, bottom: 72, left: 44 };
+const PADDING_DESKTOP = { top: 36, right: 24, bottom: 108, left: 56 };
+const PADDING_COMPACT = { top: 28, right: 10, bottom: 84, left: 44 };
 
 type ResearchMentalHealthChartProps = {
   series: MentalHealthSeries[];
+  variant?: "research" | "home";
+  showLegend?: boolean;
 };
 
 export function ResearchMentalHealthChart({
   series,
+  variant = "research",
+  showLegend = true,
 }: ResearchMentalHealthChartProps) {
+  const isHome = variant === "home";
+  const tickClass = isHome ? chartTickLight : researchChartTickMutedDark;
+  const axisLabelClass = isHome
+    ? chartAxisLabelLight
+    : researchChartAxisLabelMutedDark;
+  const legendClass = isHome
+    ? "text-[10px] font-medium uppercase tracking-wide text-white/40 md:text-[11px] lg:text-sm"
+    : researchChartCaptionDark;
+  const gridStroke = isHome ? "rgba(255,255,255,0.08)" : "rgba(15,31,61,0.08)";
+  const zeroLineStroke = isHome ? "rgba(255,255,255,0.25)" : "#9ca3af";
+  const highlightFill = isHome
+    ? "rgba(103, 232, 249, 0.1)"
+    : "rgba(59, 130, 246, 0.08)";
+  const annotationClass = isHome
+    ? "fill-[#67e8f9] font-sans text-[10px] md:text-[11px] lg:text-sm"
+    : "fill-[#3b82f6] font-sans text-[10px] md:text-[11px] lg:text-sm";
   const plotRef = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ width: 0, height: 0 });
   const [tooltip, setTooltip] = useState<ChartTooltipState>(null);
@@ -68,6 +91,10 @@ export function ResearchMentalHealthChart({
   const toY = (value: number) =>
     PADDING.top + plotHeight - ((value - yMin) / (yMax - yMin)) * plotHeight;
 
+  const plotBottom = PADDING.top + plotHeight;
+  const yearTickY = plotBottom + 18;
+  const xLabelY = height - 12;
+
   const highlightStart = toX(2012);
 
   const clearTooltip = () => {
@@ -98,7 +125,7 @@ export function ResearchMentalHealthChart({
               y={PADDING.top}
               width={Math.max(width - PADDING.right - highlightStart, 0)}
               height={plotHeight}
-              fill="rgba(59, 130, 246, 0.08)"
+              fill={highlightFill}
             />
 
             {[-1.5, -1, -0.5, 0, 0.5, 1, 1.5, 2].map((tick) => {
@@ -110,14 +137,14 @@ export function ResearchMentalHealthChart({
                     x2={width - PADDING.right}
                     y1={y}
                     y2={y}
-                    stroke="rgba(15,31,61,0.08)"
+                    stroke={gridStroke}
                     strokeWidth={1}
                   />
                   <text
                     x={PADDING.left - 8}
                     y={y + 3}
                     textAnchor="end"
-                    className={researchChartTickMutedDark}
+                    className={tickClass}
                   >
                     {tick.toFixed(1)}
                   </text>
@@ -130,7 +157,7 @@ export function ResearchMentalHealthChart({
               x2={width - PADDING.right}
               y1={toY(0)}
               y2={toY(0)}
-              stroke="#9ca3af"
+              stroke={zeroLineStroke}
               strokeWidth={1.5}
             />
 
@@ -224,16 +251,16 @@ export function ResearchMentalHealthChart({
               y={height / 2}
               transform={`rotate(-90 12 ${height / 2})`}
               textAnchor="middle"
-              className={researchChartAxisLabelMutedDark}
+              className={axisLabelClass}
             >
               Z-score
             </text>
 
             <text
               x={width / 2}
-              y={height - 20}
+              y={xLabelY}
               textAnchor="middle"
-              className={researchChartAxisLabelMutedDark}
+              className={axisLabelClass}
             >
               Year
             </text>
@@ -244,10 +271,10 @@ export function ResearchMentalHealthChart({
                 <text
                   key={year}
                   x={x}
-                  y={height - PADDING.bottom + 36}
+                  y={yearTickY}
                   textAnchor="end"
-                  transform={`rotate(-90 ${x} ${height - PADDING.bottom + 36})`}
-                  className={researchChartTickMutedDark}
+                  transform={`rotate(-90 ${x} ${yearTickY})`}
+                  className={tickClass}
                 >
                   {year}
                 </text>
@@ -257,7 +284,7 @@ export function ResearchMentalHealthChart({
             <text
               x={toX(2012) + 4}
               y={PADDING.top + 12}
-              className="fill-[#3b82f6] font-sans text-[9px] md:text-[10px] lg:text-xs"
+              className={annotationClass}
             >
               Sustained rise begins →
             </text>
@@ -272,18 +299,20 @@ export function ResearchMentalHealthChart({
         />
       </div>
 
-      <div className="flex flex-wrap justify-center gap-3 md:gap-4">
-        {series.map((entry) => (
-          <div key={entry.label} className="flex items-center gap-2">
-            <span
-              className="h-0.5 w-5 lg:w-6"
-              style={{ backgroundColor: entry.color }}
-              aria-hidden
-            />
-            <span className={researchChartCaptionDark}>{entry.label}</span>
-          </div>
-        ))}
-      </div>
+      {showLegend ? (
+        <div className="flex flex-wrap justify-center gap-3 md:gap-4">
+          {series.map((entry) => (
+            <div key={entry.label} className="flex items-center gap-2">
+              <span
+                className={cn("h-0.5 w-5 lg:w-6", isHome && "w-6")}
+                style={{ backgroundColor: entry.color }}
+                aria-hidden
+              />
+              <span className={legendClass}>{entry.label}</span>
+            </div>
+          ))}
+        </div>
+      ) : null}
     </div>
   );
 }

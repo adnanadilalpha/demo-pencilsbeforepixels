@@ -1,12 +1,8 @@
 import type { TimelineSlide } from "./types";
 
-export const MISSION_SLIDE_COUNT = 3;
+export const MISSION_SLIDE_COUNT = 2;
 
-export const MISSION_SLIDE_LABELS = [
-  "The Problem",
-  "The Goal",
-  "The Solution",
-] as const;
+export const MISSION_SLIDE_LABELS = ["The Problem", "The Goal"] as const;
 
 export function createMissionTimelineSlides(): TimelineSlide[] {
   return [
@@ -34,27 +30,28 @@ export function createMissionTimelineSlides(): TimelineSlide[] {
       eraStyle: "compact",
       indentContent: true,
     },
-    {
-      era: "The Solution",
-      number: "03",
-      title: "The Solution",
-      description:
-        "As parents, model the desired behaviour at home and create a coalition, representing a majority of the student population, that advocates for a tech intentional school that champions focus and cognitive friction by eliminating 1:1 digital devices.",
-      image: "/images/timeline/whiteboards.jpg",
-      background: "var(--color-navy-600)",
-      textColor: "light",
-      eraStyle: "compact",
-      indentContent: true,
-    },
   ];
 }
 
 export function normalizeMissionTimeline(
   slides: TimelineSlide[],
 ): TimelineSlide[] {
+  const defaults = createMissionTimelineSlides();
+
+  if (!slides.length) {
+    return defaults;
+  }
+
+  if (slides.length > MISSION_SLIDE_COUNT) {
+    return slides.slice(0, MISSION_SLIDE_COUNT);
+  }
+
   if (slides.length === MISSION_SLIDE_COUNT) {
     return slides;
   }
 
-  return createMissionTimelineSlides();
+  return defaults.map((fallback, index) => ({
+    ...fallback,
+    ...(slides[index] ?? {}),
+  }));
 }

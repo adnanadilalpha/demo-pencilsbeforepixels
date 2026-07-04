@@ -10,6 +10,7 @@ import type {
 import { colorForDistrictIndex } from "./builders";
 import { getYear, weightedAvg } from "./chart-utils";
 import { normalizeDistrictName } from "./district-names";
+import { formatSchoolDisplayName } from "./school-names";
 
 type ScoreRow = {
   agency_name: string;
@@ -68,7 +69,7 @@ function buildDistrictScores(
     byDistrict[normName].grades.add(row.grade);
   });
 
-  const result: Record<string, { score: number; gradesPresent: string }> = {};
+  const result: Record<string, { score: number; gradesPresent: string; totalTested: number }> = {};
 
   Object.entries(byDistrict).forEach(([name, { scores, counts, grades: used }]) => {
     const score = weightedAvg(scores, counts);
@@ -80,11 +81,17 @@ function buildDistrictScores(
         .sort()
         .map((grade) => parseInt(grade, 10).toString())
         .join(", "),
+      totalTested: Math.round(counts.reduce((sum, count) => sum + count, 0)),
     };
   });
 
   return result;
 }
+
+type DistrictFrlEntry = {
+  pct: number;
+  countFrl: number | null;
+};
 
 function buildDistrictFrl(rows: FrlRow[], schoolYear: string) {
   const accum: Record<
@@ -120,22 +127,32 @@ function buildDistrictFrl(rows: FrlRow[], schoolYear: string) {
     }
   });
 
-  const result: Record<string, number> = {};
+  const result: Record<string, DistrictFrlEntry> = {};
 
   Object.entries(accum).forEach(([name, { weighted, pctOnly }]) => {
     const hasWeighted = weighted.total > 0;
     const hasPctOnly = pctOnly.length > 0;
 
     if (hasWeighted && !hasPctOnly) {
-      result[name] = (weighted.countFrl / weighted.total) * 100;
+      result[name] = {
+        pct: (weighted.countFrl / weighted.total) * 100,
+        countFrl: Math.round(weighted.countFrl),
+      };
     } else if (hasWeighted && hasPctOnly) {
       const weightedPct = (weighted.countFrl / weighted.total) * 100;
       const simplePct = pctOnly.reduce((sum, value) => sum + value, 0) / pctOnly.length;
       const totalYears = weighted.yearCount + pctOnly.length;
-      result[name] =
-        (weightedPct * weighted.yearCount + simplePct * pctOnly.length) / totalYears;
+      result[name] = {
+        pct:
+          (weightedPct * weighted.yearCount + simplePct * pctOnly.length) /
+          totalYears,
+        countFrl: Math.round(weighted.countFrl),
+      };
     } else if (hasPctOnly) {
-      result[name] = pctOnly.reduce((sum, value) => sum + value, 0) / pctOnly.length;
+      result[name] = {
+        pct: pctOnly.reduce((sum, value) => sum + value, 0) / pctOnly.length,
+        countFrl: null,
+      };
     }
   });
 
@@ -174,29 +191,40 @@ export function buildEquityScatterPanel(
   subject: EvidenceSubject,
   grades: string[],
   schoolYear: string,
-  districtScores: Record<string, { score: number; gradesPresent: string }>,
-  districtFrl: Record<string, number>,
+  districtScores: Record<string, { score: number; gradesPresent: string; totalTested: number }>,
+  districtFrl: Record<string, DistrictFrlEntry>,
   highlightIds: string[],
 ): EquityScatterPanelData {
   const normalizedHighlights = highlightIds.map(normalizeDistrictName);
   const districtNames = Object.keys(districtScores).sort();
+  const totalSelectedGrades = grades.length;
 
   const merged = districtNames
     .map((name, index) => {
-      const frlPct = districtFrl[name];
+      const frlEntry = districtFrl[name];
       const scoreEntry = districtScores[name];
-      if (frlPct == null || Number.isNaN(frlPct) || !scoreEntry) return null;
+      if (!frlEntry || Number.isNaN(frlEntry.pct) || !scoreEntry) return null;
       if (scoreEntry.score <= 0) return null;
+
+      const gradesUsed = scoreEntry.gradesPresent
+        ? scoreEntry.gradesPresent.split(", ").filter(Boolean).length
+        : 0;
 
       return {
         id: name,
-        name,
+        name: formatSchoolDisplayName(name),
         color: colorForDistrictIndex(index),
-        frlPct: Math.round(frlPct * 10) / 10,
+        frlPct: Math.round(frlEntry.pct * 10) / 10,
         score: Math.round(scoreEntry.score * 10) / 10,
+        gradesPresent: scoreEntry.gradesPresent,
+        studentsOnFrl: frlEntry.countFrl,
+        studentsTested: scoreEntry.totalTested,
+        gradesUsed,
+        totalSelectedGrades,
+        isPartialGrade: gradesUsed > 0 && gradesUsed < totalSelectedGrades,
       };
     })
-    .filter((row): row is Omit<EquityDistrictPoint, "residual"> => row !== null);
+    .filter((row) => row !== null);
 
   const regression = linearRegression(
     merged.map((point) => ({ x: point.frlPct, y: point.score })),
@@ -207,6 +235,7 @@ export function buildEquityScatterPanel(
     return {
       ...point,
       color: colorForDistrictIndex(index),
+      predicted: Math.round(predicted * 10) / 10,
       residual: Math.round((point.score - predicted) * 10) / 10,
     };
   });
@@ -222,7 +251,7 @@ export function buildEquityScatterPanel(
   const subjectLabel = subject === "math" ? "Mathematics" : "English Language Arts";
   const availableDistricts: DistrictOption[] = districtNames.map((name, index) => ({
     id: name,
-    name,
+    name: formatSchoolDisplayName(name),
     color: colorForDistrictIndex(index),
   }));
 

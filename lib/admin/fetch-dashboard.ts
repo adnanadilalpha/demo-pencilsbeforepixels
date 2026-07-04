@@ -85,7 +85,7 @@ export async function fetchDashboardData(
       .eq("visible", true),
     supabase
       .from("page_views")
-      .select("session_id, path, duration_seconds, is_bounce, created_at")
+      .select("session_id, visitor_id, path, duration_seconds, is_bounce, created_at")
       .gte("created_at", sixMonthsAgo.toISOString()),
   ]);
 

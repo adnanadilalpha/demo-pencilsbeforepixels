@@ -5,7 +5,7 @@ import {
   PARCC_STUDY_DESCRIPTION,
 } from "@/lib/charts/parcc-data";
 
-export const stateFederalParccDataset: AcademicDataset = {
+const stateFederalParccDataset: AcademicDataset = {
   id: "state-federal",
   label: "State & Federal Testing",
   title: "State & Federal Testing",

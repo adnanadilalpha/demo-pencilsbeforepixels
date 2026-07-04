@@ -27,6 +27,13 @@ export type EquityDistrictPoint = {
   frlPct: number;
   score: number;
   residual: number;
+  predicted: number;
+  gradesPresent: string;
+  studentsOnFrl?: number | null;
+  studentsTested?: number;
+  gradesUsed?: number;
+  totalSelectedGrades?: number;
+  isPartialGrade?: boolean;
 };
 
 export type EquityScatterPanelData = {

@@ -26,7 +26,7 @@ const COMPACT_CHART_HEIGHT =
 const VERTICAL_BAR_FILL = 0.82;
 const HORIZONTAL_BAR_FILL = 0.72;
 
-const CATEGORY_LINE_HEIGHT = 12;
+const CATEGORY_LINE_HEIGHT = 14;
 const CATEGORY_GAP_BELOW_PLOT = 10;
 
 type Padding = { top: number; right: number; bottom: number; left: number };
@@ -76,7 +76,7 @@ function resolveVerticalPadding(chart: BarChartData, compact: boolean): Padding 
   return {
     top: compact ? 14 : 18,
     right: compact ? 10 : 12,
-    bottom: categoryBlockHeight + (compact ? 30 : 34),
+    bottom: categoryBlockHeight + (compact ? 36 : 40),
     left:
       yTitleBand + gapBetweenTitleAndTicks + tickLabelWidth + (compact ? 8 : 10),
   };
@@ -271,7 +271,7 @@ export function ResearchBarChart({
   return (
     <div className="flex flex-col gap-2">
       {!hideTitle && chart.title ? (
-        <h4 className="text-center font-sans text-[11px] font-medium text-[#374151] md:text-xs lg:text-sm">
+        <h4 className="text-center font-sans text-xs font-medium text-[#374151] lg:text-sm">
           {chart.title}
         </h4>
       ) : null}

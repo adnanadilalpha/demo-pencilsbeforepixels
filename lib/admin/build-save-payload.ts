@@ -1,6 +1,16 @@
 import type { ContentSavePayload } from "@/lib/admin/content-editor-types";
 import type { SectionLocalDraft } from "@/lib/admin/content-local-draft";
+import { sanitizeGoalSectionForPublish } from "@/lib/cms/goal-section-content";
+import { sanitizeResearchLibraryForPublish } from "@/lib/cms/research-library-content";
+import { MISSION_SLIDE_LABELS } from "@/lib/cms/mission-slides";
+import { sanitizeMentalHealthForPublish } from "@/lib/cms/site-ctas";
 import { normalizeYouTubeUrl } from "@/lib/youtube";
+
+function stripEditorMetaKeys(content: Record<string, unknown>): Record<string, unknown> {
+  return Object.fromEntries(
+    Object.entries(content).filter(([key]) => !key.startsWith("_")),
+  );
+}
 
 function normalizeSoftwareReviews(
   reviews: NonNullable<SectionLocalDraft["softwareReviews"]>,
@@ -16,13 +26,37 @@ function normalizeSoftwareReviews(
   };
 }
 
-export function buildSavePayload(
+function buildSavePayload(
   sectionId: string,
   draft: SectionLocalDraft,
 ): ContentSavePayload {
+  let content = stripEditorMetaKeys(draft.content);
+
+  if (sectionId === "goal") {
+    content = sanitizeGoalSectionForPublish(content);
+  }
+
+  if (sectionId === "hero") {
+    content = { ...content };
+    delete content.secondaryCta;
+  }
+
+  if (sectionId === "mental_health") {
+    content = sanitizeMentalHealthForPublish(content);
+  }
+
+  if (sectionId === "research_library") {
+    content = sanitizeResearchLibraryForPublish(content);
+  }
+
+  if (sectionId === "device_opt_out") {
+    content = { ...content };
+    delete content.secondaryCta;
+  }
+
   const payload: ContentSavePayload = {
     sectionId,
-    content: draft.content,
+    content,
   };
 
   if (sectionId === "expert_voices" && draft.expertQuotes) {
@@ -30,11 +64,21 @@ export function buildSavePayload(
   }
 
   if (sectionId === "timeline" && draft.timeline) {
-    payload.timeline = draft.timeline;
+    payload.timeline = draft.timeline.map((slide, index) => ({
+      ...slide,
+      era: MISSION_SLIDE_LABELS[index] ?? slide.era,
+    }));
   }
 
   if (sectionId === "learning_apps" && draft.softwareReviews) {
     payload.softwareReviews = normalizeSoftwareReviews(draft.softwareReviews);
+    const { epic } = draft.softwareReviews;
+    payload.content = {
+      ...payload.content,
+      audioTitle: epic.audioTitle ?? "",
+      audioDescription: epic.audioDescription ?? "",
+      audioSrc: epic.audioSrc ?? "",
+    };
   }
 
   if (
@@ -67,10 +111,6 @@ export function buildSavePayload(
 
   if (sectionId === "device_opt_out" && draft.optOutSteps) {
     payload.optOutSteps = draft.optOutSteps;
-  }
-
-  if (sectionId === "academic_data" && draft.academicDatasets) {
-    payload.academicDatasets = draft.academicDatasets;
   }
 
   return payload;

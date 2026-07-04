@@ -1,9 +1,9 @@
 "use client";
 
 import { ContentImage } from "@/components/ui/ContentImage";
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { ScrollReveal } from "@/components/motion/ScrollReveal";
-import { Container } from "@/components/ui/Container";
+import { Container, sectionSubtextClass } from "@/components/ui/Container";
 import { DisplayHeading } from "@/components/ui/DisplayHeading";
 import {
   Select,
@@ -13,6 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useSection, useSiteContent } from "@/lib/cms/hooks";
+import { resolvePublicLibraryCategories } from "@/lib/cms/fallback-data";
 import { isLibraryVideoPlayable } from "@/lib/cms/library-video";
 import type { LibraryCategory, LibraryItem } from "@/lib/cms/types";
 import { cn } from "@/lib/utils";
@@ -27,7 +28,8 @@ import {
   VideoThumbnail,
 } from "@/components/sections/VideoThumbnail";
 
-const CARD_WIDTH = "w-[200px] sm:w-[220px] lg:w-[240px]";
+const CARD_WIDTH =
+  "w-[min(72vw,220px)] shrink-0 snap-start sm:w-[220px] lg:w-[240px]";
 
 const cardFrameClassName =
   "relative aspect-square w-full overflow-hidden rounded-xl border border-[rgba(220,218,212,0.3)] bg-overlay p-[15%] shadow-[0_10px_15px_-3px_rgba(24,38,58,0.05),0_4px_6px_-4px_rgba(24,38,58,0.05)]";
@@ -315,16 +317,16 @@ function CategoryNavButton({
       id={`library-tab-${index}`}
       onClick={onSelect}
       className={cn(
-        "flex w-full items-center justify-between gap-3 border-l-[2.6px] py-4 pl-6 pr-5 text-left transition-colors md:flex-1 md:shrink-0 md:justify-center md:border-l-0 md:px-4 lg:flex-none lg:w-full lg:justify-start lg:border-l-[2.6px] lg:py-4 lg:pl-6 lg:pr-5",
+        "flex w-full items-center justify-between gap-3 border-l-[2.6px] py-4 pl-6 pr-5 text-left transition-colors lg:flex-none lg:w-full lg:justify-start",
         isActive
-          ? "border-gold-accent bg-gold-accent/6 text-navy-800 md:border-l-[2.6px]"
+          ? "border-gold-accent bg-gold-accent/6 text-navy-800"
           : "border-transparent text-navy-800 hover:bg-white/30",
       )}
     >
-      <span className="flex min-w-0 items-center gap-2">
+      <span className="flex items-start gap-2">
         <span
           className={cn(
-            "shrink-0 font-sans text-xs font-medium leading-none tabular-nums lg:text-base",
+            "shrink-0 pt-0.5 font-sans text-base font-medium leading-none tabular-nums",
             isActive ? "text-navy-800" : "text-body-muted",
           )}
         >
@@ -332,7 +334,7 @@ function CategoryNavButton({
         </span>
         <span
           className={cn(
-            "truncate text-sm leading-single lg:text-base",
+            "text-base leading-snug",
             isActive ? "font-semibold" : "font-normal",
           )}
         >
@@ -366,40 +368,48 @@ export function ResearchLibrarySection() {
     }
   };
 
+  const visibleCategories = resolvePublicLibraryCategories(libraryCategories);
+
+  useEffect(() => {
+    if (!visibleCategories.includes(activeCategory)) {
+      setActiveCategory(visibleCategories[0] ?? "Books");
+    }
+  }, [activeCategory, visibleCategories]);
+
   const headline = (section.headline as string) ?? "Research Library";
   const body =
     (section.body as string) ??
     "Essential reading and viewing for the modern parent.";
 
   const activeItems = libraryContent[activeCategory] ?? [];
-  const activeIndex = libraryCategories.indexOf(activeCategory);
+  const activeIndex = visibleCategories.indexOf(activeCategory);
 
   return (
-    <section id="resources" className="w-full bg-paper-200 py-24 max-lg:py-16">
-      <Container className="flex flex-col gap-12 max-lg:gap-8">
-        <ScrollReveal className="flex flex-col gap-4">
+    <section id="resources" className="w-full bg-paper-200 py-16 max-lg:py-16 lg:py-24">
+      <Container className="flex flex-col gap-10 max-lg:gap-8 lg:gap-12">
+        <ScrollReveal className="flex flex-col gap-3 max-lg:gap-3 lg:gap-4">
           <DisplayHeading as="h2" className="text-[#18263a]">
             {headline}
           </DisplayHeading>
-          <p className="text-base leading-[1.4] text-body-muted sm:text-lg">
+          <p className={`${sectionSubtextClass} text-body-muted`}>
             {body}
           </p>
         </ScrollReveal>
 
-        <div className="flex w-full flex-col items-start gap-8 lg:flex-row lg:gap-10">
-          <aside className="w-full shrink-0 lg:w-[220px] xl:w-[240px] lg:border-r lg:border-white/[0.07]">
-            <div className="md:hidden">
+        <div className="flex w-full flex-col items-start gap-8 max-lg:gap-7 lg:flex-row lg:gap-10">
+          <aside className="w-full shrink-0 lg:w-[260px] xl:w-[280px] lg:border-r lg:border-white/[0.07]">
+            <div className="lg:hidden">
               <Select
                 value={activeCategory}
                 onValueChange={(value) =>
                   setActiveCategory(value as LibraryCategory)
                 }
               >
-                <SelectTrigger className="h-auto w-full rounded-full border-navy-800/10 bg-paper-300 px-8 py-3 text-sm font-semibold text-navy-800">
+                <SelectTrigger className="h-auto w-full rounded-full border-navy-800/10 bg-paper-300 px-6 py-3 text-base font-semibold text-navy-800 max-lg:px-5">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {libraryCategories.map((category, index) => (
+                  {visibleCategories.map((category, index) => (
                     <SelectItem key={category} value={category}>
                       <span className="text-body-muted tabular-nums">
                         {String(index + 1).padStart(2, "0")}
@@ -416,11 +426,11 @@ export function ResearchLibrarySection() {
             </div>
 
             <nav
-              className="hidden md:flex md:flex-row md:overflow-x-auto md:pb-1 lg:flex-col lg:overflow-visible lg:pb-0"
+              className="hidden lg:flex lg:flex-col"
               aria-label="Library categories"
               role="tablist"
             >
-              {libraryCategories.map((category, index) => (
+              {visibleCategories.map((category, index) => (
                 <CategoryNavButton
                   key={category}
                   category={category}
@@ -446,7 +456,7 @@ export function ResearchLibrarySection() {
               </p>
             ) : (
               <div
-                className="timeline-snap-track -mx-1 flex flex-row gap-5 overflow-x-auto px-1 pb-2 sm:gap-6 lg:gap-8"
+                className="timeline-snap-track -mx-1 flex flex-row gap-4 overflow-x-auto px-1 pb-3 snap-x snap-mandatory max-lg:gap-4 sm:gap-6 lg:gap-8 lg:pb-2"
                 data-lenis-prevent-horizontal
                 data-lenis-prevent-touch
               >

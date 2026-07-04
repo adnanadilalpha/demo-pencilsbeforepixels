@@ -1,5 +1,6 @@
 import "server-only";
 
+import { unstable_noStore as noStore } from "next/cache";
 import { mergeStoredGeneral } from "@/lib/admin/settings/defaults";
 import { getEditorSection } from "@/lib/admin/content-config";
 import {
@@ -17,6 +18,7 @@ import type {
   EditableNavLink,
   SiteSettingsDraft,
 } from "@/lib/admin/cms-entity-types";
+import { normalizeEditorNavLinks } from "@/lib/cms/navigation";
 import {
   applyResearchContentDraft,
   mergeResearchWithFallback,
@@ -24,6 +26,8 @@ import {
 import { saveEvidenceScores } from "@/lib/admin/evidence-scores";
 import { resolveMediaIdByUrl } from "@/lib/admin/media-storage";
 import { epicReviewContent } from "@/lib/cms/fallback-data";
+import { buildFallbackSiteContent } from "@/lib/cms/fallback";
+import { mergeSectionWithFallback } from "@/lib/cms/section-fields";
 import { normalizeYouTubeUrl } from "@/lib/youtube";
 import {
   createMissionTimelineSlides,
@@ -40,6 +44,11 @@ import type {
 import type { ResearchChartsData } from "@/lib/research/types";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { applyPublishBatch } from "@/lib/admin/publish-batch";
+import {
+  normalizeGoalSectionContent,
+  sanitizeGoalSectionForPublish,
+} from "@/lib/cms/goal-section-content";
+import { normalizeResearchLibraryCategories } from "@/lib/cms/research-library-content";
 
 function assertNoError(
   error: { message: string } | null,
@@ -101,6 +110,8 @@ async function loadSoftwareReviews(): Promise<ContentEditorState["softwareReview
   }
 
   reviews.epic.audioSrc ??= epicReviewContent.audioSrc;
+  reviews.epic.audioTitle ??= epicReviewContent.audioTitle;
+  reviews.epic.audioDescription ??= epicReviewContent.audioDescription;
 
   return reviews;
 }
@@ -169,22 +180,26 @@ async function saveResearchSectionContent(content: SectionDraft) {
 
 async function saveEvidenceResearchBundle(content: SectionDraft) {
   const introKeys = ["label", "body"];
-  const headerKeys = ["title", "subtitle"];
+  const pageHeaderKeys = ["title", "subtitle"];
 
   const introContent: SectionDraft = {};
-  const headerContent: SectionDraft = {};
+  const pageHeaderContent: SectionDraft = {};
 
   for (const [key, value] of Object.entries(content)) {
     if (introKeys.includes(key)) introContent[key] = value;
-    if (headerKeys.includes(key)) headerContent[key] = value;
+    if (pageHeaderKeys.includes(key)) pageHeaderContent[key] = value;
   }
 
   if (Object.keys(introContent).length > 0) {
     await upsertSectionContent("evidence.intro", introContent, "research");
   }
 
-  if (Object.keys(headerContent).length > 0) {
-    await upsertSectionContent("evidence.research_tab", headerContent, "research");
+  if (Object.keys(pageHeaderContent).length > 0) {
+    await upsertSectionContent(
+      "evidence.research_tab",
+      pageHeaderContent,
+      "research",
+    );
   }
 
   await saveResearchSectionContent(content);
@@ -406,7 +421,16 @@ async function loadNavigationLinks(): Promise<ContentEditorState["navigation"]> 
     if (row.location === "footer") footer.push(link);
   }
 
-  return { header, footer };
+  return {
+    header: normalizeEditorNavLinks(header, "header").map((link) => ({
+      ...link,
+      location: "header" as const,
+    })),
+    footer: normalizeEditorNavLinks(footer, "footer").map((link) => ({
+      ...link,
+      location: "footer" as const,
+    })),
+  };
 }
 
 async function loadLibraryItems(): Promise<EditableLibraryItem[]> {
@@ -501,14 +525,27 @@ async function saveNavigationLinks(
   ];
 
   for (const link of links) {
-    if (!link.id) continue;
+    const row = {
+      label: link.label,
+      href: link.href,
+      location: link.location,
+      sort_order: link.sort_order,
+      visible: true,
+    };
 
-    const { error } = await supabase
-      .from("navigation_links")
-      .update({ label: link.label, href: link.href, sort_order: link.sort_order })
-      .eq("id", link.id);
+    if (link.id) {
+      const { error } = await supabase
+        .from("navigation_links")
+        .update(row)
+        .eq("id", link.id);
 
-    assertNoError(error, `Failed to update navigation link ${link.label}`);
+      assertNoError(error, `Failed to update navigation link ${link.label}`);
+      continue;
+    }
+
+    const { error } = await supabase.from("navigation_links").insert(row);
+
+    assertNoError(error, `Failed to create navigation link ${link.label}`);
   }
 }
 
@@ -579,6 +616,7 @@ async function saveOptOutSteps(steps: OptOutStep[]): Promise<void> {
 }
 
 export async function fetchContentEditorState(): Promise<ContentEditorState> {
+  noStore();
   const supabase = createAdminClient();
 
   const [
@@ -625,6 +663,51 @@ export async function fetchContentEditorState(): Promise<ContentEditorState> {
   ]);
 
   const sections = mergeEditorSections(published, drafts);
+  const fallbackSections = buildFallbackSiteContent().sections;
+
+  for (const key of [
+    "evidence.research_tab",
+    "evidence.intro",
+    "evidence.nebraska",
+    "evidence.district_66",
+  ] as SectionKey[]) {
+    sections[key] = mergeSectionWithFallback(key, sections[key], fallbackSections);
+  }
+
+  if (sections["homepage.goal"]) {
+    sections["homepage.goal"] = normalizeGoalSectionContent(
+      sections["homepage.goal"],
+    );
+  }
+
+  if (sections["homepage.research_library"]) {
+    sections["homepage.research_library"] = {
+      ...sections["homepage.research_library"],
+      categories: normalizeResearchLibraryCategories(
+        sections["homepage.research_library"].categories,
+      ),
+    };
+  }
+  const learningAppsSection = sections["homepage.learning_apps"];
+  if (learningAppsSection) {
+    softwareReviews.epic = {
+      ...softwareReviews.epic,
+      audioTitle:
+        typeof learningAppsSection.audioTitle === "string" &&
+        learningAppsSection.audioTitle
+          ? learningAppsSection.audioTitle
+          : softwareReviews.epic.audioTitle,
+      audioDescription:
+        typeof learningAppsSection.audioDescription === "string"
+          ? learningAppsSection.audioDescription
+          : softwareReviews.epic.audioDescription,
+      audioSrc:
+        typeof learningAppsSection.audioSrc === "string" &&
+        learningAppsSection.audioSrc
+          ? learningAppsSection.audioSrc
+          : softwareReviews.epic.audioSrc,
+    };
+  }
 
   return {
     version: versionRes.data?.version ?? "0.0.0",
@@ -662,7 +745,14 @@ async function upsertSectionContent(
   if (existing?.id) {
     const { error } = await supabase
       .from("content_sections")
-      .update({ content, page, status: "published" })
+      .update({
+        content:
+          sectionKey === "homepage.goal"
+            ? sanitizeGoalSectionForPublish(content)
+            : content,
+        page,
+        status: "published",
+      })
       .eq("id", existing.id);
 
     assertNoError(error, `Failed to update section ${sectionKey}`);
@@ -671,7 +761,10 @@ async function upsertSectionContent(
 
   const { error } = await supabase.from("content_sections").insert({
     section_key: sectionKey,
-    content,
+    content:
+      sectionKey === "homepage.goal"
+        ? sanitizeGoalSectionForPublish(content)
+        : content,
     status: "published",
     page,
     section_type: "copy",
@@ -710,7 +803,7 @@ async function saveResearchDraft(research: ResearchChartsData) {
   assertNoError(error, "Failed to create research dataset");
 }
 
-export async function applyContentDraft(
+async function applyContentDraft(
   payload: ContentSavePayload,
 ): Promise<void> {
   const editorSection = getEditorSection(payload.sectionId);
@@ -780,7 +873,7 @@ export async function applyContentDraft(
   }
 }
 
-export async function saveAllContentDrafts(
+async function saveAllContentDrafts(
   payloads: ContentSavePayload[],
 ): Promise<void> {
   await applyPublishBatch(payloads);

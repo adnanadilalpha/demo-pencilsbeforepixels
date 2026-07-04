@@ -6,7 +6,6 @@ export type NewsletterSource =
   | "hero"
   | "header"
   | "mobile-nav"
-  | "academic-data"
   | "footer"
   | "modal-reopen";
 

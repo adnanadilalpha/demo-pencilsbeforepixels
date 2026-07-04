@@ -19,6 +19,7 @@ import {
   FORM_B_LAYOUT_SCALES,
   FORM_B_MARGIN_PT,
   FORM_B_PAGE_HEIGHT_PT,
+  SIGNATURE_TOP_GAP_PT,
   type FormBLayoutScale,
 } from "@/lib/opt-out/form-b-layout";
 import {
@@ -263,7 +264,7 @@ function estimateLayoutHeight(
     height += scale.questionGap;
   }
 
-  height += SIGNATURE_ROW_HEIGHT_PT + scale.sectionGap / 2;
+  height += SIGNATURE_TOP_GAP_PT + SIGNATURE_ROW_HEIGHT_PT + scale.sectionGap / 2;
   height += FORM_B_FOOTER_GAP_ABOVE_PT + FORM_B_FOOTER_SIZE_PT;
 
   return height;
@@ -274,15 +275,16 @@ async function drawSignatureRow(
   pen: Pen,
   form: OptOutLetterForm,
 ) {
-  const rowTop = pen.y;
-  const ruleY = rowTop - SIGNATURE_ROW_HEIGHT_PT;
+  pen.y -= SIGNATURE_TOP_GAP_PT;
+  const y = pen.y;
   const splitX = MARGIN + pen.contentWidth * 0.55;
   const signatureLabel = "Signature:   ";
   const dateLabel = "Date: ";
+  const ruleY = y - RULE_DROP;
 
   pen.page.drawText(signatureLabel, {
     x: MARGIN,
-    y: rowTop,
+    y,
     size: pen.scale.bodySize,
     font: pen.fonts.regular,
     color: BODY_COLOR,
@@ -301,7 +303,7 @@ async function drawSignatureRow(
         const fitted = fitSignatureDimensions(image.width, image.height);
         pen.page.drawImage(image, {
           x: signatureLineStart + 2,
-          y: ruleY + 2,
+          y: ruleY,
           width: fitted.width,
           height: fitted.height,
         });
@@ -309,7 +311,7 @@ async function drawSignatureRow(
         const name = form.signatureName.trim() || form.parentName.trim();
         pen.page.drawText(name, {
           x: signatureLineStart + 3,
-          y: rowTop,
+          y,
           size: pen.scale.bodySize,
           font: pen.fonts.regular,
           color: BODY_COLOR,
@@ -320,7 +322,7 @@ async function drawSignatureRow(
     const name = form.signatureName.trim() || form.parentName.trim();
     pen.page.drawText(
       truncateToWidth(name, pen.fonts.regular, pen.scale.bodySize, signatureLineEnd - signatureLineStart - 6),
-      { x: signatureLineStart + 3, y: rowTop, size: pen.scale.bodySize, font: pen.fonts.regular, color: BODY_COLOR },
+      { x: signatureLineStart + 3, y, size: pen.scale.bodySize, font: pen.fonts.regular, color: BODY_COLOR },
     );
   }
 
@@ -328,7 +330,7 @@ async function drawSignatureRow(
 
   pen.page.drawText(dateLabel, {
     x: splitX,
-    y: rowTop,
+    y,
     size: pen.scale.bodySize,
     font: pen.fonts.regular,
     color: BODY_COLOR,
@@ -341,7 +343,7 @@ async function drawSignatureRow(
   if (dateValue) {
     pen.page.drawText(dateValue, {
       x: dateLineStart + 3,
-      y: rowTop,
+      y,
       size: pen.scale.bodySize,
       font: pen.fonts.regular,
       color: BODY_COLOR,
@@ -349,7 +351,7 @@ async function drawSignatureRow(
   }
 
   drawRule(pen.page, dateLineStart, dateLineEnd, ruleY);
-  pen.y -= SIGNATURE_ROW_HEIGHT_PT + pen.scale.sectionGap / 2;
+  pen.y -= pen.scale.fieldRowHeight + pen.scale.sectionGap / 2;
 }
 
 async function layoutFormB(

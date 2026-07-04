@@ -18,19 +18,19 @@ export function PopularPagesChart({ pages }: PopularPagesChartProps) {
   }
 
   return (
-    <div className="flex min-h-[220px] flex-col">
+    <div className="flex flex-col">
       <div className="mb-4 flex items-center justify-between text-xs text-body-muted">
         <span className="font-medium uppercase tracking-[0.08em]">Top pages</span>
         <span>{formatCount(totalViews)} views total</span>
       </div>
 
-      <div className="flex flex-1 flex-col justify-center gap-4">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:gap-x-6">
         {pages.map((page) => {
           const widthPercent = Math.max((page.views / maxViews) * 100, 6);
           const share = Math.round((page.views / totalViews) * 100);
 
           return (
-            <div key={page.path}>
+            <div key={page.path} className="min-w-0">
               <div className="flex items-start justify-between gap-4">
                 <div className="min-w-0">
                   <p className="truncate text-sm font-medium text-navy-800">
@@ -45,7 +45,7 @@ export function PopularPagesChart({ pages }: PopularPagesChartProps) {
                   <p className="text-[11px] text-body-muted">{share}%</p>
                 </div>
               </div>
-              <div className="mt-2 h-2 rounded-full bg-navy-50">
+              <div className="mt-2 h-2 shrink-0 rounded-full bg-navy-50">
                 <div
                   className="h-2 rounded-full bg-gold-500 transition-all duration-500"
                   style={{ width: `${widthPercent}%` }}

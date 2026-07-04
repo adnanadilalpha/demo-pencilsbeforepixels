@@ -31,6 +31,10 @@ export function NavigationEditor({
 
   return (
     <div className="space-y-6">
+      <p className="text-xs text-body-muted">
+        Header and footer menus show four links in this order: Our Mission, Research,
+        Nebraska Data, Device Opt Out.
+      </p>
       <NavGroup
         title="Header links"
         links={header}

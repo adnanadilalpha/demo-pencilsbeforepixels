@@ -124,7 +124,7 @@ export async function getAllDistrictOptions(
   }));
 }
 
-export async function getPerformancePanelData(options: {
+async function getPerformancePanelData(options: {
   tab: EvidenceTab;
   subject: EvidenceSubject;
   grades: string[];
@@ -178,7 +178,7 @@ export async function getPerformancePanelData(options: {
   };
 }
 
-export async function getGenderLinePanelData(options: {
+async function getGenderLinePanelData(options: {
   tab: EvidenceTab;
   subject: EvidenceSubject;
   grades: string[];
@@ -255,7 +255,7 @@ export async function getEvidenceBootstrapUncached() {
   };
 }
 
-export async function getResearchPanelData(): Promise<ResearchPanelData> {
+async function getResearchPanelData(): Promise<ResearchPanelData> {
   try {
     const content = await getSiteContent();
     return mergeResearchWithFallback(content.research);

@@ -1,12 +1,13 @@
 "use client";
 
-import { EvidenceLineChart } from "@/components/charts/EvidenceLineChart";
+import { DualLineChartsWithLegend } from "@/components/charts/DualLineChartsWithLegend";
+import { LineChartWithLegend } from "@/components/charts/LineChartWithLegend";
 import { PisaChartsSection } from "@/components/charts/PisaChartsSection";
 import { NaepGradeImagePanel } from "@/components/evidence/research/NaepGradeImagePanel";
 import { ResearchBarChart } from "@/components/evidence/research/ResearchBarChart";
-import { ResearchMentalHealthChart } from "@/components/evidence/research/ResearchMentalHealthChart";
 import { ResearchOecdScatter } from "@/components/evidence/research/ResearchOecdScatter";
 import { ResearchScreenTimeChart } from "@/components/evidence/research/ResearchScreenTimeChart";
+import { HandwritingVsTypewriting } from "@/components/evidence/research/HandwritingVsTypewriting";
 import {
   ResearchChartCard,
   ResearchChartSection,
@@ -16,35 +17,18 @@ import {
   researchBodyTextItalic,
   researchChartCaptionDark,
   researchChartCaptionMutedDark,
-  researchChartLegendDark,
+  researchSectionHeading,
+  researchSectionTitle,
 } from "@/components/charts/chart-theme";
 import { NAEP_GRADE_CHART_IMAGES } from "@/lib/charts/naep-data";
 import { useSiteContent, useSection } from "@/lib/cms/hooks";
 import { mergeResearchWithFallback } from "@/lib/research/merge";
-import type { AcademicChart } from "@/lib/academic-data/types";
-
-function ChartSeriesLegend({ series }: { series: AcademicChart["series"] }) {
-  return (
-    <div className="mt-3 flex flex-wrap justify-center gap-3 md:mt-4 lg:mt-6 lg:gap-4">
-      {series.map((entry) => (
-        <div key={entry.label} className="flex items-center gap-2">
-          <span
-            className="h-0.5 w-6 shrink-0"
-            style={{ backgroundColor: entry.color }}
-            aria-hidden
-          />
-          <span className={researchChartLegendDark}>{entry.label}</span>
-        </div>
-      ))}
-    </div>
-  );
-}
 
 function NationalSlopeCard({ label, slope }: { label: string; slope: string }) {
   return (
     <div className="rounded-lg border border-navy-50 bg-navy-50 px-3 py-3 text-center md:px-4 md:py-4 lg:px-6 lg:py-5">
       <p className={researchChartCaptionDark}>{label}</p>
-      <p className="mt-1.5 text-lg font-semibold leading-single text-navy-800 md:mt-2 md:text-xl lg:text-2xl">
+      <p className="mt-1.5 text-base font-semibold leading-single text-navy-800 md:mt-2 md:text-lg">
         {slope}
       </p>
       <p className={`mt-1.5 md:mt-2 ${researchChartCaptionMutedDark}`}>
@@ -52,6 +36,13 @@ function NationalSlopeCard({ label, slope }: { label: string; slope: string }) {
       </p>
     </div>
   );
+}
+
+function splitBodyParagraphs(body: string): string[] {
+  return body
+    .split(/\n\s*\n/)
+    .map((paragraph) => paragraph.trim())
+    .filter(Boolean);
 }
 
 export function EvidenceResearchTab() {
@@ -72,42 +63,20 @@ export function EvidenceResearchTab() {
             <p className={`${researchChartCaptionDark} text-gold-500`}>
               {introLabel}
             </p>
-            <p className={`max-w-3xl ${researchBodyText} lg:text-lg`}>
+            <p className={`max-w-3xl ${researchBodyText}`}>
               {introBody}
             </p>
           </div>
 
           <div className="flex flex-col gap-6 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:items-start lg:gap-8">
             <div className="flex flex-col gap-4 lg:gap-6">
-              <h2 className="text-lg leading-display text-[#18263a] md:text-xl lg:text-2xl">
-                The NAEP Evidence: When Digital Adoption Aligns with Score
-                Decline
+              <h2 className={researchSectionTitle}>
+                {data.naepNarrative.heading}
               </h2>
               <div className={`flex flex-col gap-3 md:gap-4 ${researchBodyText}`}>
-                <p>
-                  Nebraska&apos;s assessment trends don&apos;t exist in isolation.
-                  Nationally, researchers have documented a striking pattern:
-                  across all 50 states, NAEP scores in Math and Reading rose
-                  steadily for years — then plateaued and declined in alignment
-                  with each state&apos;s large-scale digital adoption, not with a
-                  single calendar year. This{" "}
-                  <span className="font-semibold text-[#18263a]">
-                    staggered policy adoption
-                  </span>{" "}
-                  design provides strong evidence that the timing of digital
-                  lock-in, not external factors, drives the shift.
-                </p>
-                <p>
-                  The charts below show national NAEP averages aligned to each
-                  state&apos;s digital inflection point (Year 0). These results
-                  cannot be attributed to COVID because Year 0 for every state
-                  occurred before the pandemic and 2022 data was excluded
-                  entirely. Unlike most &quot;standardized&quot; educational
-                  assessments that periodically reset their scoring scales, NAEP
-                  has remained anchored to its original 1992 scale, meaning these
-                  declines reflect genuine losses in student learning, not
-                  adjustments to the test.
-                </p>
+                {splitBodyParagraphs(data.naepNarrative.body).map((paragraph) => (
+                  <p key={paragraph}>{paragraph}</p>
+                ))}
               </div>
             </div>
 
@@ -143,32 +112,23 @@ export function EvidenceResearchTab() {
           reading={data.grade8.reading}
         />
         <div className="mx-auto mt-4 max-w-3xl rounded-lg border border-[#e9e6df] bg-white px-4 py-4 text-center md:mt-5 lg:mt-6">
-          <p className={researchBodyTextItalic}>
-            Note: The national charts utilize a &quot;Year 0&quot; alignment
-            strategy where Year 0 represents the specific year each state reached
-            a threshold of digital device saturation in classrooms. Data via NAEP
-            (National Assessment of Educational Progress).
-          </p>
+          <p className={researchBodyTextItalic}>{data.naepNarrative.footnote}</p>
         </div>
       </ResearchChartSection>
 
       <ResearchChartSection>
         <div className="flex flex-col gap-3 lg:gap-4">
-          <h2 className="text-lg leading-[1.3] text-[#18263a] md:text-xl lg:text-2xl">
-            International Research: Screen Time &amp; Academic Performance
+          <h2 className={researchSectionTitle}>
+            {data.internationalNarrative.heading}
           </h2>
           <p className={`max-w-3xl ${researchBodyText}`}>
-            Beyond national trends, a robust body of international research has
-            examined the relationship between digital device use and academic
-            performance. Below are key charts summarizing findings from PISA and
-            OECD data, revealing consistent patterns of negative associations
-            between screen time and student achievement across multiple countries
-            and subjects.
+            {data.internationalNarrative.body}
           </p>
         </div>
         <ResearchChartCard className="mt-4 md:mt-5 lg:mt-6">
           <PisaChartsSection
-            variant="research"
+            title={data.pisa.title}
+            description={data.pisa.description}
             math={data.pisa.math}
             reading={data.pisa.reading}
             callout={
@@ -185,7 +145,7 @@ export function EvidenceResearchTab() {
       <ResearchChartSection>
         <ResearchChartCard>
           <div className="mb-4 flex flex-col gap-1.5 lg:mb-8 lg:gap-2">
-            <h3 className="text-sm text-[#18263a] md:text-base lg:text-lg">
+            <h3 className={researchSectionHeading}>
               {data.oecd.title}
             </h3>
             <p className={researchBodyText}>
@@ -200,7 +160,7 @@ export function EvidenceResearchTab() {
         <div className="grid gap-6 lg:grid-cols-2 lg:gap-8">
           <ResearchChartCard>
             <div className="mb-4 flex flex-col gap-1.5 lg:mb-8 lg:gap-2">
-              <h3 className="text-sm text-[#18263a] md:text-base lg:text-lg">
+              <h3 className={researchSectionHeading}>
                 {data.timss.title}
               </h3>
               <p className={researchBodyText}>{data.timss.description}</p>
@@ -221,7 +181,7 @@ export function EvidenceResearchTab() {
 
           <ResearchChartCard>
             <div className="mb-4 flex flex-col gap-1.5 lg:mb-8 lg:gap-2">
-              <h3 className="text-sm text-[#18263a] md:text-base lg:text-lg">
+              <h3 className={researchSectionHeading}>
                 {data.pirls.title}
               </h3>
               <p className={researchBodyText}>{data.pirls.description}</p>
@@ -245,55 +205,39 @@ export function EvidenceResearchTab() {
       <ResearchChartSection>
         <ResearchChartCard>
           <div className="mb-4 flex flex-col gap-1.5 lg:mb-8 lg:gap-2">
-            <h3 className="text-sm text-[#18263a] md:text-base lg:text-lg">
+            <h3 className={researchSectionHeading}>
               {data.deviceTime.title}
             </h3>
             <p className={researchBodyText}>
               {data.deviceTime.description}
             </p>
           </div>
-          <EvidenceLineChart
-            chart={data.deviceTime.chart}
-            research
-            hideTitle
-            showTooltip
-          />
-          <ChartSeriesLegend series={data.deviceTime.chart.series} />
+          <LineChartWithLegend chart={data.deviceTime.chart} />
         </ResearchChartCard>
       </ResearchChartSection>
 
       <ResearchChartSection>
         <ResearchChartCard>
           <div className="mb-4 flex flex-col gap-1.5 lg:mb-8 lg:gap-2">
-            <h3 className="text-sm text-[#18263a] md:text-base lg:text-lg">
+            <h3 className={researchSectionHeading}>
               {data.parcc.title}
             </h3>
             <p className={researchBodyText}>
               {data.parcc.description}
             </p>
           </div>
-          <div className="grid gap-6 lg:grid-cols-2 lg:gap-8">
-            <EvidenceLineChart
-              chart={data.parcc.math}
-              research
-              hideTitle={false}
-              showTooltip
-            />
-            <EvidenceLineChart
-              chart={data.parcc.ela}
-              research
-              hideTitle={false}
-              showTooltip
-            />
-          </div>
-          <ChartSeriesLegend series={data.parcc.math.series} />
+          <DualLineChartsWithLegend
+            left={data.parcc.math}
+            right={data.parcc.ela}
+            separateLegends
+          />
         </ResearchChartCard>
       </ResearchChartSection>
 
       <ResearchChartSection>
         <ResearchChartCard>
           <div className="mb-4 flex flex-col gap-1.5 lg:mb-8 lg:gap-2">
-            <h3 className="text-sm text-[#18263a] md:text-base lg:text-lg">
+            <h3 className={researchSectionHeading}>
               {data.screenTime.title}
             </h3>
             <p className={researchBodyText}>
@@ -306,20 +250,7 @@ export function EvidenceResearchTab() {
 
       <ResearchChartSection>
         <ResearchChartCard>
-          <div className="mb-4 flex flex-col gap-1.5 lg:mb-8 lg:gap-2">
-            <h3 className="text-sm text-[#18263a] md:text-base lg:text-lg">
-              {data.mentalHealth.title}
-            </h3>
-            <p className={researchBodyText}>
-              {data.mentalHealth.description}
-            </p>
-          </div>
-          <ResearchMentalHealthChart series={data.mentalHealth.series} />
-          <div className="mt-3 rounded-lg border border-navy-50 bg-navy-50 px-3 py-2.5 text-center md:mt-4 md:px-4 md:py-3 lg:mt-6">
-            <p className={researchBodyText}>
-              {data.mentalHealth.callout}
-            </p>
-          </div>
+          <HandwritingVsTypewriting />
         </ResearchChartCard>
       </ResearchChartSection>
     </div>

@@ -1,7 +1,6 @@
 import { Footer } from "@/components/layout/Footer";
 import { Header } from "@/components/layout/Header";
 import { HomeScrollExperience } from "@/components/motion/HomeScrollExperience";
-import { AcademicDataSection } from "@/components/sections/AcademicDataSection";
 import { DeviceOptOutSection } from "@/components/sections/DeviceOptOutSection";
 import { ExpertQuotesSection } from "@/components/sections/ExpertQuotesSection";
 import { GoalSection } from "@/components/sections/GoalSection";
@@ -19,7 +18,6 @@ export default function Home() {
         <HeroSection />
         <TimelineSection />
         <GoalSection />
-        <AcademicDataSection />
         <LearningAppsSection />
         <ExpertQuotesSection />
         <MentalHealthSection />

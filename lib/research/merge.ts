@@ -71,8 +71,20 @@ export function mergeResearchWithFallback(
 
   return {
     nationalSlopes: mergeSlopes(base.nationalSlopes, db.nationalSlopes),
+    naepNarrative: {
+      heading: db.naepNarrative?.heading || base.naepNarrative.heading,
+      body: db.naepNarrative?.body || base.naepNarrative.body,
+      footnote: db.naepNarrative?.footnote || base.naepNarrative.footnote,
+    },
     grade4: mergeNaepGrade(base.grade4, db.grade4),
     grade8: mergeNaepGrade(base.grade8, db.grade8),
+    internationalNarrative: {
+      heading:
+        db.internationalNarrative?.heading ||
+        base.internationalNarrative.heading,
+      body:
+        db.internationalNarrative?.body || base.internationalNarrative.body,
+    },
     pisa: {
       title: db.pisa?.title || base.pisa.title,
       description: db.pisa?.description || base.pisa.description,
@@ -98,6 +110,7 @@ export function mergeResearchWithFallback(
       ...base.pirls,
       title: db.pirls?.title || base.pirls.title,
       description: db.pirls?.description || base.pirls.description,
+      subtitle: db.pirls?.subtitle || base.pirls.subtitle,
       xLabel: db.pirls?.xLabel || base.pirls.xLabel,
       yLabel: db.pirls?.yLabel || base.pirls.yLabel,
       pdfUrl: db.pirls?.pdfUrl ?? base.pirls.pdfUrl,

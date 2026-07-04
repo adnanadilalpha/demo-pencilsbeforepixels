@@ -5,14 +5,25 @@ import { ArrowLeft } from "lucide-react";
 import { EvidenceResearchTab } from "@/components/evidence/research/EvidenceResearchTab";
 import { contentMaxWidthClass, sectionPaddingX } from "@/components/ui/Container";
 import { useSection } from "@/lib/cms/hooks";
+import { buildFallbackSiteContent } from "@/lib/cms/fallback";
+
+const PAGE_HEADER_FALLBACK =
+  buildFallbackSiteContent().sections["evidence.research_tab"] ?? {};
 
 export function ResearchPage() {
-  const researchSection = useSection("evidence.research_tab");
-
-  const title = (researchSection.title as string) ?? "Research";
+  const pageHeader = useSection("evidence.research_tab");
+  const title =
+    typeof pageHeader.title === "string" && pageHeader.title.trim()
+      ? pageHeader.title
+      : typeof PAGE_HEADER_FALLBACK.title === "string"
+        ? PAGE_HEADER_FALLBACK.title
+        : "Research";
   const subtitle =
-    (researchSection.subtitle as string) ??
-    "Findings from NAEP, PISA, TIMSS, PIRLS and peer-reviewed research — documenting the relationship between digital device use and academic performance across the United States and internationally.";
+    typeof pageHeader.subtitle === "string" && pageHeader.subtitle.trim()
+      ? pageHeader.subtitle
+      : typeof PAGE_HEADER_FALLBACK.subtitle === "string"
+        ? PAGE_HEADER_FALLBACK.subtitle
+        : "";
 
   return (
     <div className="flex w-full min-w-0 flex-col">
@@ -37,9 +48,11 @@ export function ResearchPage() {
             <h1 className="font-display text-[32px] leading-display text-[#18263a] sm:text-[40px] lg:text-[48px]">
               {title}
             </h1>
-            <p className="max-w-3xl text-base leading-snug text-[#6b7280] lg:text-[17px] lg:leading-[1.55]">
-              {subtitle}
-            </p>
+            {subtitle ? (
+              <p className="max-w-3xl text-base leading-snug text-[#6b7280] lg:text-[17px] lg:leading-[1.55]">
+                {subtitle}
+              </p>
+            ) : null}
           </div>
         </div>
       </div>

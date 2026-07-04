@@ -29,6 +29,8 @@ import {
   buildResearchEditorContent,
   isResearchPdfField,
 } from "@/lib/admin/research-persistence";
+import { buildFallbackSiteContent } from "@/lib/cms/fallback";
+import { resolveSectionTextField } from "@/lib/cms/section-fields";
 import type { EditableScoreRow } from "@/lib/admin/evidence-scores";
 import { EvidenceScopeEditor } from "@/components/admin/content/EvidenceScopeEditor";
 import { ResearchPageEditor } from "@/components/admin/content/ResearchPageEditor";
@@ -38,9 +40,9 @@ import { SectionForm } from "@/components/admin/content/SectionForm";
 import { SectionNav } from "@/components/admin/content/SectionNav";
 import { SoftwareReviewsEditor } from "@/components/admin/content/SoftwareReviewsEditor";
 import { TimelineEditor } from "@/components/admin/content/TimelineEditor";
+import { WhatToDoFindingsEditor } from "@/components/admin/content/WhatToDoFindingsEditor";
 import type { MentalHealthLegendItem } from "@/lib/admin/cms-entity-types";
 import type { EditableLibraryItem } from "@/lib/admin/cms-entity-types";
-import { AcademicDatasetsEditor } from "@/components/admin/content/AcademicDatasetsEditor";
 import { LibraryItemsEditor } from "@/components/admin/content/LibraryItemsEditor";
 import { MentalHealthLegendEditor } from "@/components/admin/content/MentalHealthLegendEditor";
 import { NavigationEditor } from "@/components/admin/content/NavigationEditor";
@@ -50,9 +52,9 @@ import type { AcademicDatasetCopy } from "@/lib/admin/academic-dataset-defaults"
 import { mergeAcademicDatasetEditorState } from "@/lib/admin/academic-dataset-defaults";
 import { normalizeYouTubeUrl } from "@/lib/youtube";
 import { normalizeMissionTimeline } from "@/lib/cms/mission-slides";
+import { normalizeGoalSectionContent } from "@/lib/cms/goal-section-content";
 import type {
   ExpertQuote,
-  LibraryCategory,
   OptOutStep,
   TimelineSlide,
 } from "@/lib/cms/types";
@@ -111,9 +113,21 @@ function buildFormValues(
   let base: Record<string, unknown> = {};
 
   if (sectionId === "evidence_research") {
+    const fallbackSections = buildFallbackSiteContent().sections;
+    const intro = state.sections["evidence.intro"] ?? {};
+    const pageHeader = state.sections["evidence.research_tab"] ?? {};
+    const introFallback = fallbackSections["evidence.intro"] ?? {};
+    const pageHeaderFallback = fallbackSections["evidence.research_tab"] ?? {};
+
     base = {
-      ...(state.sections["evidence.intro"] ?? {}),
-      ...(state.sections["evidence.research_tab"] ?? {}),
+      title: resolveSectionTextField(pageHeader, pageHeaderFallback, "title"),
+      subtitle: resolveSectionTextField(
+        pageHeader,
+        pageHeaderFallback,
+        "subtitle",
+      ),
+      label: resolveSectionTextField(intro, introFallback, "label"),
+      body: resolveSectionTextField(intro, introFallback, "body"),
     };
 
     for (const key of researchFieldKeys) {
@@ -121,7 +135,9 @@ function buildFormValues(
     }
   } else if (editorSection.sectionKey) {
     const sectionContent = state.sections[editorSection.sectionKey] ?? {};
-    if (sectionId === "mental_health") {
+    if (sectionId === "goal") {
+      base = normalizeGoalSectionContent(sectionContent);
+    } else if (sectionId === "mental_health") {
       base = {
         ...sectionContent,
         chartImage: state.mentalHealthChartImage,
@@ -142,7 +158,40 @@ function buildFormValues(
     }
   }
 
-  return localContent ? { ...base, ...localContent } : base;
+  const merged = localContent
+    ? sectionId === "goal"
+      ? normalizeGoalSectionContent({ ...base, ...localContent })
+      : { ...base, ...localContent }
+    : base;
+
+  if (sectionId === "evidence_research") {
+    const fallbackSections = buildFallbackSiteContent().sections;
+    return {
+      ...merged,
+      title: resolveSectionTextField(
+        merged,
+        fallbackSections["evidence.research_tab"],
+        "title",
+      ),
+      subtitle: resolveSectionTextField(
+        merged,
+        fallbackSections["evidence.research_tab"],
+        "subtitle",
+      ),
+      label: resolveSectionTextField(
+        merged,
+        fallbackSections["evidence.intro"],
+        "label",
+      ),
+      body: resolveSectionTextField(
+        merged,
+        fallbackSections["evidence.intro"],
+        "body",
+      ),
+    };
+  }
+
+  return merged;
 }
 
 function buildSectionLocalDraft(
@@ -175,7 +224,6 @@ function buildSectionLocalDraft(
   }
 
   if (
-    sectionId === "academic_data" ||
     sectionId === "evidence_research" ||
     sectionId === "evidence_nebraska" ||
     sectionId === "evidence_district_66"
@@ -213,11 +261,7 @@ export function ContentEditor({
 }: ContentEditorProps) {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const localDraft = readLocalDraft();
-  const initialPage =
-    routePage ??
-    normalizeContentPageId(localDraft?.page) ??
-    "homepage";
+  const initialPage = routePage ?? "homepage";
   const initialSectionId =
     resolveRouteSection(initialPage, routeSection) ??
     getSectionsForPage(initialPage)[0]?.id ??
@@ -226,36 +270,20 @@ export function ContentEditor({
   const [state, setState] = useState(initialState);
   const [page, setPage] = useState<ContentPageId>(initialPage);
   const [activeSectionId, setActiveSectionId] = useState(initialSectionId);
-  const [formValues, setFormValues] = useState<Record<string, unknown>>(() => {
-    const local = getSectionFromLocalDraft(initialSectionId);
-    return buildFormValues(initialState, initialSectionId, local?.content);
-  });
+  const [formValues, setFormValues] = useState<Record<string, unknown>>(() =>
+    buildFormValues(initialState, initialSectionId),
+  );
   const [expertQuotes, setExpertQuotes] = useState<ExpertQuote[]>(
-    getSectionFromLocalDraft("expert_voices")?.expertQuotes ??
-      initialState.expertQuotes,
+    initialState.expertQuotes,
   );
   const [timeline, setTimeline] = useState<TimelineSlide[]>(() =>
-    normalizeMissionTimeline(
-      getSectionFromLocalDraft("timeline")?.timeline ?? initialState.timeline,
-    ),
+    normalizeMissionTimeline(initialState.timeline),
   );
   const [softwareReviews, setSoftwareReviews] = useState<
     ContentEditorState["softwareReviews"]
-  >(() =>
-    mergeSoftwareReviews(
-      initialState.softwareReviews,
-      getSectionFromLocalDraft("learning_apps")?.softwareReviews,
-    ),
-  );
+  >(() => normalizeSoftwareReviews(initialState.softwareReviews));
   const [academicDatasets, setAcademicDatasets] = useState<AcademicDatasetCopy[]>(
-    () =>
-      mergeAcademicDatasetEditorState(
-        initialState.academicDatasets,
-        getSectionFromLocalDraft("academic_data")?.academicDatasets ??
-          getSectionFromLocalDraft("evidence_research")?.academicDatasets ??
-          getSectionFromLocalDraft("evidence_nebraska")?.academicDatasets ??
-          getSectionFromLocalDraft("evidence_district_66")?.academicDatasets,
-      ),
+    () => mergeAcademicDatasetEditorState(initialState.academicDatasets),
   );
   const [evidenceScores, setEvidenceScores] = useState<EditableScoreRow[]>([]);
   const [siteSettings, setSiteSettings] = useState(initialState.siteSettings);
@@ -275,6 +303,10 @@ export function ContentEditor({
   const academicDatasetsRef = useRef(academicDatasets);
   const activeSectionIdRef = useRef(activeSectionId);
   const hydratedSectionRef = useRef<string | null>(null);
+  const userEditedRef = useRef(false);
+  const syncedStateRef = useRef(
+    `${initialState.version}:${initialState.publishedAt}`,
+  );
 
   const evidenceScoresRef = useRef(evidenceScores);
   const siteSettingsRef = useRef(siteSettings);
@@ -325,20 +357,20 @@ export function ContentEditor({
 
   const loadSection = useCallback(
     (sectionId: string, serverState: ContentEditorState = state) => {
-      const local = getSectionFromLocalDraft(sectionId);
+      const session = getSectionFromLocalDraft(sectionId);
       setFormValues(
-        buildFormValues(serverState, sectionId, local?.content),
+        buildFormValues(serverState, sectionId, session?.content),
       );
 
       if (sectionId === "expert_voices") {
         setExpertQuotes(
-          local?.expertQuotes ?? serverState.expertQuotes,
+          session?.expertQuotes ?? serverState.expertQuotes,
         );
       }
 
       if (sectionId === "timeline") {
         setTimeline(
-          normalizeMissionTimeline(local?.timeline ?? serverState.timeline),
+          normalizeMissionTimeline(session?.timeline ?? serverState.timeline),
         );
       }
 
@@ -346,13 +378,12 @@ export function ContentEditor({
         setSoftwareReviews(
           mergeSoftwareReviews(
             serverState.softwareReviews,
-            local?.softwareReviews,
+            session?.softwareReviews,
           ),
         );
       }
 
       if (
-        sectionId === "academic_data" ||
         sectionId === "evidence_research" ||
         sectionId === "evidence_nebraska" ||
         sectionId === "evidence_district_66"
@@ -360,33 +391,85 @@ export function ContentEditor({
         setAcademicDatasets(
           mergeAcademicDatasetEditorState(
             serverState.academicDatasets,
-            local?.academicDatasets,
+            session?.academicDatasets,
           ),
         );
       }
 
       if (sectionId === "evidence_nebraska" || sectionId === "evidence_district_66") {
-        setEvidenceScores(local?.evidenceScores ?? []);
+        setEvidenceScores(session?.evidenceScores ?? []);
       }
 
       if (sectionId === "site_settings") {
-        setSiteSettings(local?.siteSettings ?? serverState.siteSettings);
+        setSiteSettings(session?.siteSettings ?? serverState.siteSettings);
       }
 
       if (sectionId === "navigation") {
-        setNavigation(local?.navigation ?? serverState.navigation);
+        setNavigation(session?.navigation ?? serverState.navigation);
       }
 
       if (sectionId === "research_library") {
-        setLibraryItems(local?.libraryItems ?? serverState.libraryItems);
+        setLibraryItems(session?.libraryItems ?? serverState.libraryItems);
       }
 
       if (sectionId === "device_opt_out") {
-        setOptOutSteps(local?.optOutSteps ?? serverState.optOutSteps);
+        setOptOutSteps(session?.optOutSteps ?? serverState.optOutSteps);
       }
     },
     [state],
   );
+
+  const applyServerState = useCallback(
+    (serverState: ContentEditorState, sectionId: string) => {
+      setState(serverState);
+      setExpertQuotes(serverState.expertQuotes);
+      setTimeline(normalizeMissionTimeline(serverState.timeline));
+      setSoftwareReviews(normalizeSoftwareReviews(serverState.softwareReviews));
+      setAcademicDatasets(
+        mergeAcademicDatasetEditorState(serverState.academicDatasets),
+      );
+      setEvidenceScores([]);
+      setSiteSettings(serverState.siteSettings);
+      setNavigation(serverState.navigation);
+      setLibraryItems(serverState.libraryItems);
+      setOptOutSteps(serverState.optOutSteps);
+      setFormValues(buildFormValues(serverState, sectionId));
+    },
+    [],
+  );
+
+  useEffect(() => {
+    const fingerprint = `${initialState.version}:${initialState.publishedAt}`;
+    if (syncedStateRef.current === fingerprint || userEditedRef.current) {
+      return;
+    }
+
+    syncedStateRef.current = fingerprint;
+    applyServerState(initialState, activeSectionIdRef.current);
+  }, [initialState, applyServerState]);
+
+  useEffect(() => {
+    clearLocalDraft();
+    userEditedRef.current = false;
+    router.refresh();
+
+    let cancelled = false;
+
+    void fetch("/api/admin/content", { cache: "no-store" })
+      .then(async (response) => {
+        if (!response.ok || cancelled || userEditedRef.current) return;
+        const fresh = (await response.json()) as ContentEditorState;
+        const fingerprint = `${fresh.version}:${fresh.publishedAt}`;
+        if (syncedStateRef.current === fingerprint) return;
+        syncedStateRef.current = fingerprint;
+        applyServerState(fresh, activeSectionIdRef.current);
+      })
+      .catch(() => undefined);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [applyServerState, router]);
 
   useEffect(() => {
     const sectionParam = searchParams.get("section");
@@ -436,6 +519,7 @@ export function ContentEditor({
     }
 
     const timeout = window.setTimeout(() => {
+      userEditedRef.current = true;
       markSectionDirty(activeSectionId);
       persistCurrentSection(activeSectionId);
       const draft = readLocalDraft() ?? { sections: {} };
@@ -479,6 +563,7 @@ export function ContentEditor({
 
           void fetch("/api/admin/content", {
             method: "PUT",
+            cache: "no-store",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               sectionId: "evidence_research",
@@ -530,6 +615,7 @@ export function ContentEditor({
 
       const publishResponse = await fetch("/api/admin/content", {
         method: "POST",
+        cache: "no-store",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           action: "publish",
@@ -544,6 +630,8 @@ export function ContentEditor({
 
       const latestState = (await publishResponse.json()) as ContentEditorState;
       clearLocalDraft();
+      userEditedRef.current = false;
+      syncedStateRef.current = `${latestState.version}:${latestState.publishedAt}`;
       setState(latestState);
       loadSection(activeSectionId, latestState);
       setPublishMessage({
@@ -668,16 +756,28 @@ export function ContentEditor({
                 <>
                   <SectionForm
                     title={activeSection.label}
-                    fields={activeSection.fields}
+                    fields={
+                      activeSection.id === "goal"
+                        ? activeSection.fields.filter(
+                            (field) => field.key !== "points",
+                          )
+                        : activeSection.fields
+                    }
                     values={formValues}
                     onChange={handleFieldChange}
                   />
 
-                  {activeSection.id === "academic_data" ? (
-                    <AcademicDatasetsEditor
-                      datasets={academicDatasets}
-                      onChange={setAcademicDatasets}
-                    />
+                  {activeSection.id === "goal" ? (
+                    <div className="mt-8 border-t border-navy-800/8 pt-8">
+                      <WhatToDoFindingsEditor
+                        value={
+                          Array.isArray(formValues.points)
+                            ? (formValues.points as string[])
+                            : []
+                        }
+                        onChange={(value) => handleFieldChange("points", value)}
+                      />
+                    </div>
                   ) : null}
 
                   {activeSection.id === "learning_apps" ? (
@@ -707,10 +807,6 @@ export function ContentEditor({
                   {activeSection.id === "research_library" ? (
                     <LibraryItemsEditor
                       items={libraryItems}
-                      categories={
-                        (formValues.categories as LibraryCategory[] | undefined) ??
-                        []
-                      }
                       onChange={setLibraryItems}
                     />
                   ) : null}

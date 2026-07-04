@@ -12,7 +12,7 @@ import {
   sectionPaddingX,
 } from "@/components/ui/Container";
 import { isFixedHeaderRoute } from "@/lib/legal/constants";
-import { resolveNavHref, scrollToSection } from "@/lib/navigation";
+import { handleNavLinkClick, resolveNavHref, scrollToSection } from "@/lib/navigation";
 import { useSiteContent } from "@/lib/cms/hooks";
 
 const SCROLL_THRESHOLD = 48;
@@ -87,12 +87,7 @@ export function Header() {
     event: React.MouseEvent<HTMLAnchorElement>,
     href: string,
   ) => {
-    if (!href.startsWith("#")) return;
-
-    event.preventDefault();
-    scrollToSection(href, lenis);
-    window.history.pushState(null, "", href);
-    setActiveHash(href);
+    handleNavLinkClick(event, href, pathname, lenis, setActiveHash);
   };
 
   useEffect(() => {

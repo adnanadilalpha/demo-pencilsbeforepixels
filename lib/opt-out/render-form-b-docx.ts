@@ -31,6 +31,7 @@ import {
   pickFormBLayoutScale,
   pointsToHalfPoints,
   pointsToTwips,
+  SIGNATURE_TOP_GAP_PT,
   type FormBLayoutScale,
 } from "@/lib/opt-out/form-b-layout";
 import {
@@ -42,7 +43,6 @@ import {
 import { parseDataUrl } from "@/lib/opt-out/embed-docx-image";
 import { formatPhoneNumber } from "@/lib/opt-out/format-phone";
 import {
-  SIGNATURE_ROW_HEIGHT_PT,
   signatureImagePixels,
 } from "@/lib/opt-out/signature-image-size";
 import type { OptOutDefaultAnswers, OptOutLetterForm } from "@/lib/opt-out/types";
@@ -169,7 +169,7 @@ function questionSection(label: string, answer: string, scale: FormBLayoutScale)
 
 async function signatureParagraph(form: OptOutLetterForm, scale: FormBLayoutScale) {
   const signatureMode = resolveSignatureMode(form);
-  const children: (TextRun | ImageRun)[] = [bodyRun("Signature:   ", scale)];
+  const children: (TextRun | ImageRun)[] = [bodyRun("Signature: ", scale)];
 
   if (signatureMode === "draw") {
     const png = form.signatureImage ? parseDataUrl(form.signatureImage) : null;
@@ -201,10 +201,10 @@ async function signatureParagraph(form: OptOutLetterForm, scale: FormBLayoutScal
   return new Paragraph({
     tabStops: [underlineTabStop(SIGNATURE_SPLIT_TWIPS), underlineTabStop(LINE_END_TWIPS)],
     spacing: {
-      before: pointsToTwips(scale.sectionGap),
-      after: 0,
-      line: pointsToTwips(SIGNATURE_ROW_HEIGHT_PT),
-      lineRule: LineRuleType.AT_LEAST,
+      before: pointsToTwips(scale.sectionGap + SIGNATURE_TOP_GAP_PT),
+      after: fieldRowAfterTwips(scale),
+      line: pointsToTwips(scale.fieldRowHeight),
+      lineRule: LineRuleType.EXACT,
     },
     children,
   });

@@ -1,11 +1,15 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useLenis } from "lenis/react";
 import { NewsletterFooterForm } from "@/components/newsletter/NewsletterFooterForm";
 import { Logo } from "@/components/layout/Logo";
 import { contentMaxWidthClass, sectionPaddingX } from "@/components/ui/Container";
 import { resolvePrivacyPolicyUrl, resolveTermsOfServiceUrl } from "@/lib/cms/settings-urls";
 import { useSection, useSiteContent } from "@/lib/cms/hooks";
+import { normalizePublicNavLinks } from "@/lib/cms/navigation";
+import { handleNavLinkClick } from "@/lib/navigation";
 
 type FooterProps = {
   paddingX?: string;
@@ -14,7 +18,9 @@ type FooterProps = {
 export function Footer({ paddingX = sectionPaddingX }: FooterProps) {
   const { navigation, settings } = useSiteContent();
   const footerSection = useSection("homepage.footer");
-  const footerLinks = navigation.footer;
+  const footerLinks = normalizePublicNavLinks(navigation.footer, "footer");
+  const pathname = usePathname();
+  const lenis = useLenis();
 
   const newsletterLabel =
     (footerSection.newsletterLabel as string) ?? "Newsletter";
@@ -32,7 +38,7 @@ export function Footer({ paddingX = sectionPaddingX }: FooterProps) {
                 <div className="flex flex-col gap-3">
                   <Logo variant="dark" />
                   {settings.footerTagline ? (
-                    <p className="max-w-sm text-sm text-black/70">
+                    <p className="max-w-sm text-base text-black/70">
                       {settings.footerTagline}
                     </p>
                   ) : null}
@@ -45,6 +51,9 @@ export function Footer({ paddingX = sectionPaddingX }: FooterProps) {
                     <Link
                       key={link.href}
                       href={link.href}
+                      onClick={(event) =>
+                        handleNavLinkClick(event, link.href, pathname, lenis)
+                      }
                       className="transition-opacity hover:opacity-70"
                     >
                       {link.label}
@@ -63,7 +72,7 @@ export function Footer({ paddingX = sectionPaddingX }: FooterProps) {
 
             <div className="flex w-full flex-col gap-8 max-lg:gap-6">
               <div className="h-px w-full bg-black" />
-              <div className="flex w-full flex-col gap-4 text-sm leading-none text-black lg:flex-row lg:items-center lg:justify-between">
+              <div className="flex w-full flex-col gap-4 text-base leading-relaxed text-black max-lg:gap-3 lg:flex-row lg:items-center lg:justify-between lg:leading-none">
                 <div className="flex flex-wrap gap-6">
                   {privacyPolicyUrl.startsWith("/") ? (
                     <Link

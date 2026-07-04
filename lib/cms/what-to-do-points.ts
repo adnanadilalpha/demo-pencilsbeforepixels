@@ -20,42 +20,13 @@ export type EvidenceSource =
   | "OECD"
   | "Research";
 
-export type EvidenceChapterId = "national" | "international" | "early-years";
+type EvidenceChapterId = "national" | "international" | "early-years";
 
 export type WhatToDoPoint = {
   stat: string;
   body: string;
   source: EvidenceSource;
   chapterId: EvidenceChapterId;
-};
-
-export type EvidenceStoryChapter = {
-  id: EvidenceChapterId;
-  number: string;
-  title: string;
-  lead: string;
-  points: WhatToDoPoint[];
-};
-
-const CHAPTER_META: Record<
-  EvidenceChapterId,
-  { number: string; title: string; lead: string }
-> = {
-  national: {
-    number: "01",
-    title: "Across America's Classrooms",
-    lead: "NAEP tracks the moment each state crossed into one-to-one devices — and what happened to scores after.",
-  },
-  international: {
-    number: "02",
-    title: "On the World Stage",
-    lead: "PISA, TIMSS, and PIRLS tell the same story across dozens of countries and subjects.",
-  },
-  "early-years": {
-    number: "03",
-    title: "Before Grade School",
-    lead: "Screen habits formed in early childhood predict reading and math outcomes years later.",
-  },
 };
 
 const DEFAULT_POINT_META: Array<{
@@ -100,28 +71,6 @@ export function parseWhatToDoPoint(
     source: inferEvidenceSource(body, stat) ?? fallback.source,
     chapterId: inferChapterId(body, stat) ?? fallback.chapterId,
   };
-}
-
-export function buildEvidenceStoryChapters(points: string[]): EvidenceStoryChapter[] {
-  const parsed = points.map((point, index) => parseWhatToDoPoint(point, index));
-  const chapterOrder: EvidenceChapterId[] = [
-    "national",
-    "international",
-    "early-years",
-  ];
-
-  return chapterOrder
-    .map((id) => {
-      const meta = CHAPTER_META[id];
-      return {
-        id,
-        number: meta.number,
-        title: meta.title,
-        lead: meta.lead,
-        points: parsed.filter((point) => point.chapterId === id),
-      };
-    })
-    .filter((chapter) => chapter.points.length > 0);
 }
 
 function inferEvidenceSource(body: string, stat: string): EvidenceSource | null {

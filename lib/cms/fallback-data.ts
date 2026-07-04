@@ -8,6 +8,7 @@ import type {
   NavLink,
   OptOutStep,
 } from "./types";
+import { FOOTER_NAV_LINKS, HEADER_NAV_LINKS } from "./navigation";
 
 export const LOCAL_ASSETS = {
   hero: { background: "/images/hero/child-writing.jpg" },
@@ -38,20 +39,9 @@ export const LOCAL_ASSETS = {
   },
 } as const;
 
-export const navLinks: NavLink[] = [
-  { label: "Nebraska Data", href: "/evidence" },
-  { label: "Research", href: "/research" },
-  { label: "Our Mission", href: "#mission" },
-  { label: "Resources", href: "#resources" },
-  { label: "Device Opt Out", href: "#opt-out" },
-];
+export const navLinks: NavLink[] = HEADER_NAV_LINKS.map((link) => ({ ...link }));
 
-export const footerLinks: NavLink[] = [
-  { label: "Nebraska Data", href: "/evidence" },
-  { label: "Research", href: "/research" },
-  { label: "Our Mission", href: "/#mission" },
-  { label: "Resources", href: "/#resources" },
-];
+export const footerLinks: NavLink[] = FOOTER_NAV_LINKS.map((link) => ({ ...link }));
 
 export const expertQuotes: ExpertQuote[] = [
   {
@@ -95,23 +85,25 @@ export const mentalHealthLegend = [
   { label: "Depressive symptoms", color: "#67e8f9" },
 ] as const;
 
-export const academicDatasets = [
-  "Worldwide Data (PISA)",
-  "USA Grade 4 NAEP",
-  "USA Grade 8 NAEP",
-  "Nebraska Mathematics",
-  "Nebraska Mathematics by Gender",
-  "Westside Mathematics by Gender",
-  "Nebraska English",
-  "State & Federal Testing",
-] as const;
-
 export const libraryCategories: LibraryCategory[] = [
   "Books",
   "Research Papers",
   "Videos",
-  "Parent Resources",
 ];
+
+export function resolvePublicLibraryCategories(
+  categories: LibraryCategory[] | undefined,
+): LibraryCategory[] {
+  const allowed = new Set(libraryCategories);
+  const fromCms = (categories ?? []).filter(
+    (category): category is LibraryCategory =>
+      typeof category === "string" &&
+      category.trim().length > 0 &&
+      allowed.has(category),
+  );
+
+  return fromCms.length > 0 ? fromCms : [...libraryCategories];
+}
 
 export const libraryContent: Record<LibraryCategory, LibraryItem[]> = {
   Books: [
@@ -191,7 +183,7 @@ export const optOutSteps: OptOutStep[] = [
   {
     number: "01",
     title: "Read the evidence",
-    description: "Explore the research and local data.",
+    description: "Browse the research and Nebraska data on this site.",
   },
   {
     number: "02",
@@ -214,6 +206,8 @@ export const epicReviewContent = {
   summary:
     "This review examines how Epic works, what behaviours it encourages, and how it compares with current research on reading comprehension and screen-based learning.",
   audioSrc: "/audio/Media1.mp3",
+  audioTitle: "Reading on Screens",
+  audioDescription: "",
 };
 
 export const ixlReviewContent = {

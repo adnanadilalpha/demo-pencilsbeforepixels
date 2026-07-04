@@ -1,20 +1,25 @@
 import "server-only";
 
 import { LOCAL_FAVICONS } from "@/lib/brand/favicon";
-import type { AcademicDataset } from "@/lib/academic-data/types";
-import { hydrateAcademicStaticDatasets } from "@/lib/academic-data/hydrate-static";
 import { mergeResearchWithFallback } from "@/lib/research/merge";
 import { hydrateSettingsBrand, resolveBrandForSiteContent } from "@/lib/admin/settings/brand-media";
 import { mergeStoredGeneral } from "@/lib/admin/settings/defaults";
 import type { ResearchChartsData } from "@/lib/research/types";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { normalizeYouTubeUrl } from "@/lib/youtube";
+import { resolvePublicLibraryCategories } from "@/lib/cms/fallback-data";
 import {
   inferLibraryFileKind,
   fileNameFromUrl,
 } from "@/lib/cms/library-file";
 import { buildFallbackSiteContent } from "./fallback";
+import { normalizeGoalSectionContent } from "./goal-section-content";
+import { normalizeResearchLibraryCategories } from "./research-library-content";
+import { resolveResearchPageCta } from "./site-ctas";
 import { navLinks as defaultNavLinks } from "./fallback-data";
+import {
+  normalizePublicNavLinks,
+} from "./navigation";
 import {
   createMissionTimelineSlides,
   normalizeMissionTimeline,
@@ -32,42 +37,15 @@ import type {
   TimelineSlide,
 } from "./types";
 
-function migrateEvidenceNavLabel(links: NavLink[]): NavLink[] {
-  return links.map((link) =>
-    link.href === "/evidence" &&
-    (link.label === "Evidence" || link.label === "Evidence Dashboard")
-      ? { ...link, label: "Nebraska Data" }
-      : link,
-  );
-}
-
-function withResearchNavLink(links: NavLink[]): NavLink[] {
-  if (links.some((link) => link.href === "/research")) {
-    return links;
-  }
-
-  const researchLink = { label: "Research", href: "/research" };
-  const evidenceIndex = links.findIndex((link) => link.href === "/evidence");
-  if (evidenceIndex >= 0) {
-    return [
-      ...links.slice(0, evidenceIndex + 1),
-      researchLink,
-      ...links.slice(evidenceIndex + 1),
-    ];
-  }
-
-  return [researchLink, ...links];
-}
-
 function resolveHeaderNav(links: NavLink[]): NavLink[] {
   const base = links.length > 0 ? links : defaultNavLinks.map((link) => ({ ...link }));
-  return withResearchNavLink(migrateEvidenceNavLabel(base));
+  return normalizePublicNavLinks(base, "header");
 }
 
 function resolveFooterNav(links: NavLink[]): NavLink[] {
   const fallback = buildFallbackSiteContent().navigation.footer;
   const base = links.length > 0 ? links : fallback.map((link) => ({ ...link }));
-  return withResearchNavLink(migrateEvidenceNavLabel(base));
+  return normalizePublicNavLinks(base, "footer");
 }
 
 type MediaRow = {
@@ -136,8 +114,6 @@ async function fetchSiteContentFromDb(): Promise<SiteContent | null> {
     optOutRes,
     softwareRes,
     researchRes,
-    academicRes,
-    insightsRes,
     settingsRes,
   ] = await Promise.all([
     supabase
@@ -187,14 +163,6 @@ async function fetchSiteContentFromDb(): Promise<SiteContent | null> {
       )
       .eq("visible", true),
     supabase.from("research_datasets").select("key, data").eq("key", "main"),
-    supabase
-      .from("academic_datasets")
-      .select("key, label, title, charts, description, sort_order")
-      .order("sort_order"),
-    supabase
-      .from("academic_dataset_insights")
-      .select("dataset_key, sort_order, text, emphasis")
-      .order("sort_order"),
     supabase.from("site_settings").select("key, value"),
   ]);
 
@@ -225,8 +193,30 @@ async function fetchSiteContentFromDb(): Promise<SiteContent | null> {
     >;
   }
 
+  sections["homepage.goal"] = normalizeGoalSectionContent(
+    sections["homepage.goal"],
+  );
+
+  if (sections["homepage.research_library"]) {
+    sections["homepage.research_library"] = {
+      ...sections["homepage.research_library"],
+      categories: normalizeResearchLibraryCategories(
+        sections["homepage.research_library"].categories,
+      ),
+    };
+  }
+
+  if (sections["homepage.mental_health"]) {
+    const mentalHealth = sections["homepage.mental_health"];
+    sections["homepage.mental_health"] = {
+      ...mentalHealth,
+      cta: resolveResearchPageCta(
+        mentalHealth.cta as { label?: string; href?: string } | undefined,
+      ),
+    };
+  }
+
   const mentalHealthSection = sections["homepage.mental_health"] ?? {};
-  const academicDataSection = sections["homepage.academic_data"] ?? {};
   const researchLibrarySection = sections["homepage.research_library"] ?? {};
 
   const settingsMap = new Map<string, unknown>();
@@ -268,10 +258,9 @@ async function fetchSiteContentFromDb(): Promise<SiteContent | null> {
     rawTimeline.length > 0 ? rawTimeline : createMissionTimelineSlides(),
   );
 
-  const libraryCategories: LibraryCategory[] =
-    (researchLibrarySection.categories as LibraryCategory[] | undefined)?.length
-      ? (researchLibrarySection.categories as LibraryCategory[])
-      : ["Books", "Research Papers", "Videos", "Parent Resources"];
+  const libraryCategories: LibraryCategory[] = resolvePublicLibraryCategories(
+    researchLibrarySection.categories as LibraryCategory[] | undefined,
+  );
   const libraryContent: Record<LibraryCategory, LibraryItem[]> = {
     Books: [],
     "Research Papers": [],
@@ -352,33 +341,30 @@ async function fetchSiteContentFromDb(): Promise<SiteContent | null> {
 
   const fallbackReviews = buildFallbackSiteContent().softwareReviews;
   softwareReviews.epic.audioSrc ??= fallbackReviews.epic.audioSrc;
+  softwareReviews.epic.audioTitle ??= fallbackReviews.epic.audioTitle;
+  softwareReviews.epic.audioDescription ??= fallbackReviews.epic.audioDescription;
+
+  const learningAppsSection = sections["homepage.learning_apps"];
+  if (learningAppsSection) {
+    if (
+      typeof learningAppsSection.audioTitle === "string" &&
+      learningAppsSection.audioTitle
+    ) {
+      softwareReviews.epic.audioTitle = learningAppsSection.audioTitle;
+    }
+    if (typeof learningAppsSection.audioDescription === "string") {
+      softwareReviews.epic.audioDescription = learningAppsSection.audioDescription;
+    }
+    if (
+      typeof learningAppsSection.audioSrc === "string" &&
+      learningAppsSection.audioSrc
+    ) {
+      softwareReviews.epic.audioSrc = learningAppsSection.audioSrc;
+    }
+  }
 
   const researchRow = researchRes.data?.[0];
   const research = researchRow?.data as ResearchChartsData | undefined;
-
-  const insightsByKey = new Map<
-    string,
-    { text: string; emphasis?: "white" | "gold" }[]
-  >();
-  for (const row of insightsRes.data ?? []) {
-    const list = insightsByKey.get(row.dataset_key) ?? [];
-    list.push({
-      text: row.text,
-      emphasis: (row.emphasis as "white" | "gold" | null) ?? undefined,
-    });
-    insightsByKey.set(row.dataset_key, list);
-  }
-
-  const academicStatic: AcademicDataset[] = hydrateAcademicStaticDatasets(
-    (academicRes.data ?? []).map((row) => ({
-      id: row.key,
-      label: row.label,
-      title: row.title,
-      charts: row.charts as AcademicDataset["charts"],
-      description: row.description,
-      insight: insightsByKey.get(row.key) ?? [],
-    })),
-  );
 
   const settingsRecord = (settingsMap.get("general") ?? {}) as Record<
     string,
@@ -428,23 +414,9 @@ async function fetchSiteContentFromDb(): Promise<SiteContent | null> {
     mentalHealthLegend:
       (mentalHealthSection.legend as SiteContent["mentalHealthLegend"]) ??
       buildFallbackSiteContent().mentalHealthLegend,
-    academicDatasets: (academicDataSection.datasets as string[]) ?? [
-        "Worldwide Data (PISA)",
-        "USA Grade 4 NAEP",
-        "USA Grade 8 NAEP",
-        "Nebraska Mathematics",
-        "Nebraska Mathematics by Gender",
-        "Westside Mathematics by Gender",
-        "Nebraska English",
-        "State & Federal Testing",
-      ],
     optOutSteps,
     softwareReviews,
     research: mergeResearchWithFallback(research),
-    academicStatic:
-      academicStatic.length > 0
-        ? academicStatic
-        : buildFallbackSiteContent().academicStatic,
   };
 }
 

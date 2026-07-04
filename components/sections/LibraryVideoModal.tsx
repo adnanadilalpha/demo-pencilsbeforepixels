@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import {
@@ -9,7 +9,7 @@ import {
 } from "@/lib/cms/library-video";
 import type { LibraryItem } from "@/lib/cms/types";
 import { lockBodyScroll, unlockBodyScroll } from "@/lib/modal/body-scroll-lock";
-import { youTubeEmbedUrl } from "@/lib/youtube";
+import { disableYouTubeCaptions, youTubeEmbedUrl } from "@/lib/youtube";
 import { cn } from "@/lib/utils";
 
 type LibraryVideoModalProps = {
@@ -25,15 +25,45 @@ function VideoPlayer({
   source: LibraryVideoSource;
   title: string;
 }) {
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const [origin, setOrigin] = useState("");
+
+  useEffect(() => {
+    setOrigin(window.location.origin);
+  }, []);
+
+  const enforceCaptionsOff = useCallback(() => {
+    const iframe = iframeRef.current;
+    if (!iframe) return;
+    disableYouTubeCaptions(iframe);
+  }, []);
+
+  useEffect(() => {
+    if (source.type !== "youtube") return;
+
+    enforceCaptionsOff();
+    const intervalId = window.setInterval(enforceCaptionsOff, 750);
+    const timeoutId = window.setTimeout(() => {
+      window.clearInterval(intervalId);
+    }, 8000);
+
+    return () => {
+      window.clearInterval(intervalId);
+      window.clearTimeout(timeoutId);
+    };
+  }, [enforceCaptionsOff, source]);
+
   if (source.type === "youtube") {
     return (
       <iframe
-        src={youTubeEmbedUrl(source.videoId)}
+        ref={iframeRef}
+        src={youTubeEmbedUrl(source.videoId, true, origin || undefined)}
         title={title}
         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
         referrerPolicy="strict-origin-when-cross-origin"
         allowFullScreen
         className="absolute inset-0 size-full border-0"
+        onLoad={enforceCaptionsOff}
       />
     );
   }

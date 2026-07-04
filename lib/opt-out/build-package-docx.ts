@@ -3,6 +3,8 @@ import "server-only";
 import { readFile } from "node:fs/promises";
 import { fillFormBDocx } from "@/lib/opt-out/fill-form-b-docx";
 import { fillCoverDocx } from "@/lib/opt-out/fill-cover-docx";
+import { formatCoverDocx } from "@/lib/opt-out/format-cover-docx";
+import { formatEssayDocx } from "@/lib/opt-out/format-essay-docx";
 import { mergeDocxBuffers } from "@/lib/opt-out/merge-docx";
 import { resolveTemplatePath } from "@/lib/opt-out/template-path";
 import type { OptOutFormConfig, OptOutLetterForm } from "@/lib/opt-out/types";
@@ -26,12 +28,15 @@ export async function buildOptOutPackageParts(
     form,
     config.defaultAnswers,
   );
-  const essay = await readFile(resolveTemplatePath(config.essayTemplatePath));
-  const cover = await fillCoverDocx(config.coverTemplatePath, {
-    schoolName: form.schoolName,
-    principalName: form.principalName,
-    principalEmail: form.principalEmail,
-  });
+  const essayTemplate = await readFile(resolveTemplatePath(config.essayTemplatePath));
+  const essay = formatEssayDocx(essayTemplate);
+  const cover = formatCoverDocx(
+    await fillCoverDocx(config.coverTemplatePath, {
+      schoolName: form.schoolName,
+      principalName: form.principalName,
+      principalEmail: form.principalEmail,
+    }),
+  );
 
   return [
     { kind: "cover", buffer: cover },

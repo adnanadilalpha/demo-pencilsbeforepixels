@@ -111,13 +111,3 @@ export function buildPisaAcademicCharts(): AcademicChart[] {
     },
   ];
 }
-
-export const PISA_RESEARCH_LEGEND_ITEMS = PISA_YEARS.map((year) => ({
-  year,
-  ...PISA_RESEARCH_STYLES[year],
-}));
-
-export const PISA_YEAR_LEGEND_ITEMS = PISA_YEARS.map((year) => ({
-  year,
-  ...PISA_ACADEMIC_STYLES[year],
-}));

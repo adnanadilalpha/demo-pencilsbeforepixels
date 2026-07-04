@@ -24,6 +24,37 @@ export function resolveNavHref(href: string, pathname: string) {
   return href;
 }
 
+export function parseNavHref(href: string): { path: string; hash: string | null } {
+  const hashIndex = href.indexOf("#");
+  if (hashIndex === -1) {
+    return { path: href || "/", hash: null };
+  }
+
+  const path = href.slice(0, hashIndex) || "/";
+  const hash = href.slice(hashIndex);
+
+  return { path: path === "" ? "/" : path, hash };
+}
+
+export function handleNavLinkClick(
+  event: { preventDefault: () => void },
+  href: string,
+  pathname: string,
+  lenis?: Lenis | null,
+  onHashScroll?: (hash: string) => void,
+): boolean {
+  const { path, hash } = parseNavHref(href);
+  if (!hash) return false;
+
+  if (pathname !== path) return false;
+
+  event.preventDefault();
+  scrollToSection(hash, lenis);
+  window.history.pushState(null, "", path === "/" ? hash : `${path}${hash}`);
+  onHashScroll?.(hash);
+  return true;
+}
+
 export function scrollToSection(hash: string, lenis?: Lenis | null) {
   if (!hash || hash === "#") return false;
 

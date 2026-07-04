@@ -9,6 +9,23 @@ import {
 import type { ContentSavePayload } from "@/lib/admin/content-editor-types";
 import { createClient } from "@/lib/supabase/server";
 
+export const dynamic = "force-dynamic";
+
+const NO_STORE_HEADERS = {
+  "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+  Pragma: "no-cache",
+} as const;
+
+function jsonNoStore<T>(data: T, init?: ResponseInit) {
+  return NextResponse.json(data, {
+    ...init,
+    headers: {
+      ...NO_STORE_HEADERS,
+      ...(init?.headers ?? {}),
+    },
+  });
+}
+
 function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : "Something went wrong.";
 }
@@ -32,7 +49,7 @@ export async function GET() {
   }
 
   const data = await fetchContentEditorState();
-  return NextResponse.json(data);
+  return jsonNoStore(data);
 }
 
 export async function PUT(request: Request) {
@@ -50,7 +67,7 @@ export async function PUT(request: Request) {
   try {
     const data = await saveContentDraft(payload);
     revalidateSiteContent();
-    return NextResponse.json(data);
+    return jsonNoStore(data);
   } catch (error) {
     console.error("Content save failed:", error);
     return NextResponse.json({ error: errorMessage(error) }, { status: 500 });
@@ -83,7 +100,7 @@ export async function POST(request: Request) {
         : await publishContent(user.id);
 
     revalidateSiteContent();
-    return NextResponse.json(data);
+    return jsonNoStore(data);
   } catch (error) {
     console.error("Content publish failed:", error);
     return NextResponse.json({ error: errorMessage(error) }, { status: 500 });

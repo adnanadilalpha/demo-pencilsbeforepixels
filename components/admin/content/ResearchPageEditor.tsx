@@ -19,26 +19,26 @@ type ResearchPageEditorProps = {
 
 const RESEARCH_ACADEMIC_KEYS = ["pisa", "naep-grade-4", "naep-grade-8"];
 
+const PAGE_HEADER_FIELDS = [
+  { key: "title", label: "Page title", type: "text" as const },
+  { key: "subtitle", label: "Page subtitle", type: "textarea" as const },
+];
+
 const INTRO_FIELDS = [
   { key: "label", label: "Intro label", type: "text" as const },
   { key: "body", label: "Intro body", type: "textarea" as const },
 ];
 
-const HEADER_FIELDS = [
-  { key: "title", label: "Tab title", type: "text" as const },
-  { key: "subtitle", label: "Tab subtitle", type: "textarea" as const },
-];
-
 type ResearchTab = {
   id: string;
   label: string;
-  kind: "intro" | "header" | "research" | "academic";
+  kind: "page_header" | "intro" | "research" | "academic";
   sectionId?: string;
 };
 
 const RESEARCH_TABS: ResearchTab[] = [
-  { id: "intro", label: "Intro", kind: "intro" },
-  { id: "header", label: "Page header", kind: "header" },
+  { id: "page_header", label: "Page header", kind: "page_header" },
+  { id: "intro", label: "Chart intro", kind: "intro" },
   ...researchEditorSections.map((section) => ({
     id: section.id,
     label: section.label,
@@ -55,15 +55,22 @@ export function ResearchPageEditor({
   academicDatasets,
   onAcademicDatasetsChange,
 }: ResearchPageEditorProps) {
-  const [activeTab, setActiveTab] = useState(RESEARCH_TABS[0]?.id ?? "intro");
+  const [activeTab, setActiveTab] = useState(RESEARCH_TABS[0]?.id ?? "page_header");
 
-  const introValues = useMemo(
-    () => state.sections["evidence.intro"] ?? {},
-    [state.sections],
+  const pageHeaderFormValues = useMemo(
+    () => ({
+      title: formValues.title,
+      subtitle: formValues.subtitle,
+    }),
+    [formValues.title, formValues.subtitle],
   );
-  const headerValues = useMemo(
-    () => state.sections["evidence.research_tab"] ?? {},
-    [state.sections],
+
+  const introFormValues = useMemo(
+    () => ({
+      label: formValues.label,
+      body: formValues.body,
+    }),
+    [formValues.label, formValues.body],
   );
 
   const researchValues = useMemo(() => {
@@ -116,22 +123,35 @@ export function ResearchPageEditor({
       </div>
 
       <div className="rounded-[14px] border border-navy-800/8 bg-white p-5 sm:p-6">
-        {active?.kind === "intro" ? (
-          <SectionForm
-            title="Research intro"
-            fields={INTRO_FIELDS}
-            values={{ ...introValues, ...formValues }}
-            onChange={onFormChange}
-          />
+        {active?.kind === "page_header" ? (
+          <div className="space-y-4">
+            <p className="text-xs text-body-muted">
+              Main heading and subtitle at the top of{" "}
+              <span className="font-medium text-navy-800">/research</span>, above
+              the chart content.
+            </p>
+            <SectionForm
+              title="Page header"
+              fields={PAGE_HEADER_FIELDS}
+              values={pageHeaderFormValues}
+              onChange={onFormChange}
+            />
+          </div>
         ) : null}
 
-        {active?.kind === "header" ? (
-          <SectionForm
-            title="Research page header"
-            fields={HEADER_FIELDS}
-            values={{ ...headerValues, ...formValues }}
-            onChange={onFormChange}
-          />
+        {active?.kind === "intro" ? (
+          <div className="space-y-4">
+            <p className="text-xs text-body-muted">
+              Label and paragraph above the charts inside the research content
+              area on <span className="font-medium text-navy-800">/research</span>.
+            </p>
+            <SectionForm
+              title="Chart intro"
+              fields={INTRO_FIELDS}
+              values={introFormValues}
+              onChange={onFormChange}
+            />
+          </div>
         ) : null}
 
         {active?.kind === "research" && active.sectionId ? (
@@ -154,9 +174,9 @@ export function ResearchPageEditor({
             <div>
               <h3 className="text-sm font-semibold text-navy-800">Academic charts</h3>
               <p className="mt-1 text-xs text-body-muted">
-                PISA and NAEP chart copy on the research tab. PARCC, screen time,
-                and other research charts are edited in their sections above —
-                chart data always comes from code.
+                PISA and NAEP chart copy on the research tab. Section intros,
+                chart titles, descriptions, and PDFs are edited in the tabs
+                above — chart data always comes from code.
               </p>
             </div>
             <AcademicDatasetsEditor

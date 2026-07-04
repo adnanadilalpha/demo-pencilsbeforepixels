@@ -6,7 +6,6 @@ import { useLenis } from "lenis/react";
 import { NewsletterTrigger } from "@/components/newsletter/NewsletterTrigger";
 import { ScrollIndicator } from "@/components/ui/ScrollIndicator";
 import { sectionPaddingX } from "@/components/ui/Container";
-import { TextLink } from "@/components/ui/TextLink";
 import { useSection, useSiteContent } from "@/lib/cms/hooks";
 import { prefersReducedMotion } from "@/lib/motion";
 
@@ -25,10 +24,6 @@ export function HeroSection() {
     (section.body as string) ??
     "Learning is built through reading, writing, conversation, curiosity and hands on experiences.";
   const primaryCta = (section.primaryCta as string) ?? "Join Newsletter";
-  const secondaryCta = (section.secondaryCta as { label: string; href: string }) ?? {
-    label: "Explore Nebraska Data",
-    href: "/evidence",
-  };
   const backgroundImage =
     (section.backgroundImage as string) ?? media.hero.background;
   const backgroundAlt =
@@ -87,14 +82,14 @@ export function HeroSection() {
 
         <div
           ref={contentRef}
-          className={`relative z-10 mt-auto flex w-full flex-col gap-8 pb-12 will-change-[opacity,transform] max-lg:gap-6 max-lg:pb-16 lg:pb-16 ${sectionPaddingX}`}
+          className={`relative z-10 mt-auto flex w-full flex-col gap-6 pb-[max(3rem,env(safe-area-inset-bottom))] will-change-[opacity,transform] max-lg:gap-5 lg:gap-8 lg:pb-16 ${sectionPaddingX}`}
         >
           <div
             className={`flex items-center gap-3 ${entered ? "hero-enter" : "opacity-0"}`}
             style={{ animationDelay: "0.05s" }}
           >
             <span className="h-0.5 w-8 shrink-0 bg-gold-500" aria-hidden />
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-gold-500 lg:text-base">
+            <p className="text-base font-semibold uppercase tracking-[0.18em] text-gold-500 max-lg:tracking-[0.14em] lg:text-base">
               {eyebrow}
             </p>
           </div>
@@ -119,13 +114,10 @@ export function HeroSection() {
           </div>
 
           <div
-            className={`flex flex-wrap items-center gap-x-8 gap-y-4 ${
-              entered ? "hero-enter" : "opacity-0"
-            }`}
+            className={entered ? "hero-enter" : "opacity-0"}
             style={{ animationDelay: "0.4s" }}
           >
             <NewsletterTrigger source="hero">{primaryCta}</NewsletterTrigger>
-            <TextLink href={secondaryCta.href}>{secondaryCta.label}</TextLink>
           </div>
         </div>
 

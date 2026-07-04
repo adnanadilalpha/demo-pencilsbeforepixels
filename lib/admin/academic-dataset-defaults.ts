@@ -66,7 +66,7 @@ const DYNAMIC_DEFAULTS: AcademicDatasetCopy[] = [
   },
 ];
 
-export function getAcademicDatasetDefaults(): AcademicDatasetCopy[] {
+function getAcademicDatasetDefaults(): AcademicDatasetCopy[] {
   const staticCopies: AcademicDatasetCopy[] = staticAcademicDatasets.map(
     (dataset) => ({
       key: dataset.id,
@@ -117,7 +117,3 @@ export function mergeAcademicDatasetEditorState(
     };
   });
 }
-
-export const HOMEPAGE_ACADEMIC_DATASET_KEYS = getAcademicDatasetDefaults().map(
-  (dataset) => dataset.key,
-);

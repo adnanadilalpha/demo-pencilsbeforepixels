@@ -87,10 +87,10 @@ function mergePublishPayloads(payloads: ContentSavePayload[]): MergedPublishPayl
       };
 
       const introContent: SectionDraft = {};
-      const headerContent: SectionDraft = {};
+      const pageHeaderContent: SectionDraft = {};
       for (const [key, value] of Object.entries(payload.content)) {
         if (key === "label" || key === "body") introContent[key] = value;
-        if (key === "title" || key === "subtitle") headerContent[key] = value;
+        if (key === "title" || key === "subtitle") pageHeaderContent[key] = value;
       }
       if (Object.keys(introContent).length > 0) {
         sectionMap.set("evidence.intro", {
@@ -98,9 +98,9 @@ function mergePublishPayloads(payloads: ContentSavePayload[]): MergedPublishPayl
           page: "research",
         });
       }
-      if (Object.keys(headerContent).length > 0) {
+      if (Object.keys(pageHeaderContent).length > 0) {
         sectionMap.set("evidence.research_tab", {
-          content: headerContent,
+          content: pageHeaderContent,
           page: "research",
         });
       }
@@ -331,22 +331,32 @@ async function saveNavigationLinksBatch(
       location: "footer" as const,
       sort_order: index,
     })),
-  ].filter((link) => link.id);
+  ];
 
   await Promise.all(
-    links.map((link) =>
-      supabase
-        .from("navigation_links")
-        .update({
-          label: link.label,
-          href: link.href,
-          sort_order: link.sort_order,
-        })
-        .eq("id", link.id!)
-        .then(({ error }) => {
-          assertNoError(error, `Failed to update navigation link ${link.label}`);
-        }),
-    ),
+    links.map(async (link) => {
+      const row = {
+        label: link.label,
+        href: link.href,
+        location: link.location,
+        sort_order: link.sort_order,
+        visible: true,
+      };
+
+      if (link.id) {
+        const { error } = await supabase
+          .from("navigation_links")
+          .update(row)
+          .eq("id", link.id);
+
+        assertNoError(error, `Failed to update navigation link ${link.label}`);
+        return;
+      }
+
+      const { error } = await supabase.from("navigation_links").insert(row);
+
+      assertNoError(error, `Failed to create navigation link ${link.label}`);
+    }),
   );
 }
 

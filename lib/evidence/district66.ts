@@ -7,7 +7,7 @@ import {
 } from "./builders";
 import { DISTRICT_66_AVG_LABEL } from "./district66-constants";
 import { getYear, weightedAvg, type EvidenceScoreRow } from "./chart-utils";
-import { normalizeSchoolName } from "./school-names";
+import { formatSchoolDisplayName, normalizeSchoolName } from "./school-names";
 import type {
   DistrictOption,
   EquityScatterPanelData,
@@ -66,7 +66,7 @@ function mapSchoolOptions(names: string[]): DistrictOption[] {
     .sort(([left], [right]) => left.localeCompare(right))
     .map(([id, label], index) => ({
       id,
-      name: label,
+      name: formatSchoolDisplayName(label),
       color: colorForDistrictIndex(index),
     }));
 }
@@ -149,7 +149,7 @@ function buildDistrict66ChartInputs(options: {
   const schools = filterSchoolRows(options.schoolRows, options.schoolIds);
   const schoolEntities = options.schoolIds.map((id, index) => ({
     id: normalizeSchoolName(id),
-    name: normalizeSchoolName(id),
+    name: formatSchoolDisplayName(id),
     color: colorForDistrictIndex(index),
   }));
 
@@ -172,11 +172,13 @@ function buildDistrict66ChartInputs(options: {
   };
 }
 
-function fuzzyMatchSchoolFrl(
+function fuzzyMatchSchoolFrlEntry<
+  T extends { pct: number; countFrl: number | null },
+>(
   scoreName: string,
-  frlMap: Record<string, number>,
-) {
-  if (frlMap[scoreName] != null) return frlMap[scoreName];
+  frlMap: Record<string, T>,
+): T | undefined {
+  if (frlMap[scoreName]) return frlMap[scoreName];
 
   const frlNames = Object.keys(frlMap);
   const scoreWords = scoreName.toLowerCase().split(" ").filter(Boolean);
@@ -235,25 +237,33 @@ function buildDistrict66SchoolFrl(rows: FrlRow[], schoolYear: string) {
     }
   });
 
-  const rawMap: Record<string, number> = {};
+  const rawMap: Record<string, { pct: number; countFrl: number | null }> = {};
 
   Object.entries(accum).forEach(([name, { weighted, pctOnly }]) => {
     const hasWeighted = weighted.total > 0;
     const hasPctOnly = pctOnly.length > 0;
 
     if (hasWeighted && !hasPctOnly) {
-      rawMap[name] = (weighted.countFrl / weighted.total) * 100;
+      rawMap[name] = {
+        pct: (weighted.countFrl / weighted.total) * 100,
+        countFrl: Math.round(weighted.countFrl),
+      };
     } else if (hasWeighted && hasPctOnly) {
       const weightedPct = (weighted.countFrl / weighted.total) * 100;
       const simplePct =
         pctOnly.reduce((sum, value) => sum + value, 0) / pctOnly.length;
       const totalYears = weighted.yearCount + pctOnly.length;
-      rawMap[name] =
-        (weightedPct * weighted.yearCount + simplePct * pctOnly.length) /
-        totalYears;
+      rawMap[name] = {
+        pct:
+          (weightedPct * weighted.yearCount + simplePct * pctOnly.length) /
+          totalYears,
+        countFrl: Math.round(weighted.countFrl),
+      };
     } else if (hasPctOnly) {
-      rawMap[name] =
-        pctOnly.reduce((sum, value) => sum + value, 0) / pctOnly.length;
+      rawMap[name] = {
+        pct: pctOnly.reduce((sum, value) => sum + value, 0) / pctOnly.length,
+        countFrl: null,
+      };
     }
   });
 
@@ -266,7 +276,10 @@ function buildDistrict66SchoolScores(
   schoolYear: string,
 ) {
   const gradeSet = new Set(grades);
-  const bySchool: Record<string, { scores: number[]; counts: number[] }> = {};
+  const bySchool: Record<
+    string,
+    { scores: number[]; counts: number[]; grades: Set<string> }
+  > = {};
 
   rows.forEach((row) => {
     if (!row.agency_name || !gradeSet.has(row.grade.padStart(2, "0"))) return;
@@ -280,19 +293,31 @@ function buildDistrict66SchoolScores(
     const name = normalizeSchoolName(row.agency_name);
 
     if (!bySchool[name]) {
-      bySchool[name] = { scores: [], counts: [] };
+      bySchool[name] = { scores: [], counts: [], grades: new Set() };
     }
 
     bySchool[name].scores.push(score);
     bySchool[name].counts.push(count);
+    bySchool[name].grades.add(row.grade);
   });
 
-  const result: Record<string, number> = {};
-  Object.entries(bySchool).forEach(([name, { scores, counts }]) => {
+  const result: Record<
+    string,
+    { score: number; gradesPresent: string; totalTested: number }
+  > = {};
+
+  Object.entries(bySchool).forEach(([name, { scores, counts, grades: used }]) => {
     const score = weightedAvg(scores, counts);
-    if (Number.isFinite(score)) {
-      result[name] = score;
-    }
+    if (!Number.isFinite(score)) return;
+
+    result[name] = {
+      score,
+      gradesPresent: [...used]
+        .sort()
+        .map((grade) => parseInt(grade, 10).toString())
+        .join(", "),
+      totalTested: Math.round(counts.reduce((sum, count) => sum + count, 0)),
+    };
   });
 
   return result;
@@ -471,22 +496,19 @@ export async function getDistrict66EquityPanelData(options: {
   const districtScores = Object.fromEntries(
     Object.keys(schoolScores)
       .sort()
-      .map((name) => {
-        const frlPct = fuzzyMatchSchoolFrl(name, schoolFrl);
-        const score = schoolScores[name];
-        if (frlPct == null || Number.isNaN(frlPct) || score <= 0) return null;
-        return [name, { score, gradesPresent: "" }];
-      })
-      .filter((entry): entry is [string, { score: number; gradesPresent: string }] =>
-        entry !== null,
-      ),
+      .filter((name) => fuzzyMatchSchoolFrlEntry(name, schoolFrl))
+      .map((name) => [name, schoolScores[name]!]),
   );
 
   const districtFrl = Object.fromEntries(
-    Object.keys(districtScores).map((name) => [
-      name,
-      fuzzyMatchSchoolFrl(name, schoolFrl) as number,
-    ]),
+    Object.keys(districtScores)
+      .map((name) => {
+        const entry = fuzzyMatchSchoolFrlEntry(name, schoolFrl);
+        return entry ? [name, entry] as const : null;
+      })
+      .filter((entry): entry is [string, { pct: number; countFrl: number | null }] =>
+        entry !== null,
+      ),
   );
 
   const { buildEquityScatterPanel } = await import("./equity-scatter");
@@ -517,7 +539,7 @@ export async function getDistrict66EquityPanelData(options: {
       "Each school is plotted by its poverty rate vs. average score. Schools above the line are outperforming expectations; those below warrant attention.",
     availableDistricts: Object.keys(districtScores).map((name, index) => ({
       id: name,
-      name,
+      name: formatSchoolDisplayName(name),
       color: colorForDistrictIndex(index),
     })),
     highlightedDistricts: [],

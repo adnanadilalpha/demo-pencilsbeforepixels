@@ -51,12 +51,6 @@ export const homepageSections: EditorSection[] = [
       { key: "body", label: "Body copy", type: "textarea" },
       { key: "primaryCta", label: "CTA text", type: "text" },
       {
-        key: "secondaryCta",
-        label: "Secondary CTA",
-        type: "cta",
-        ctaKeys: { label: "label", href: "href" },
-      },
-      {
         key: "backgroundImage",
         label: "Background image",
         type: "image",
@@ -82,36 +76,32 @@ export const homepageSections: EditorSection[] = [
   },
   {
     id: "goal",
-    label: "Evidence Snapshot",
+    label: "What To Do",
     page: "homepage",
     sectionKey: "homepage.goal",
     fields: [
       { key: "label", label: "Section label", type: "text" },
-      { key: "tagline", label: "Story headline", type: "textarea" },
+      { key: "tagline", label: "Headline", type: "textarea" },
+      {
+        key: "body",
+        label: "Intro copy",
+        type: "textarea",
+        placeholder:
+          "Short paragraph below the headline — e.g. how many findings and where they come from.",
+      },
       {
         key: "points",
-        label: "Key findings",
+        label: "Bullet points (10 items)",
         type: "stringList",
         placeholder:
           "Stat — supporting detail (e.g. −1.45 pts/yr — NAEP Grade 4 math decline…)",
       },
-    ],
-  },
-  {
-    id: "academic_data",
-    label: "Academic Data",
-    page: "homepage",
-    sectionKey: "homepage.academic_data",
-    fields: [
-      { key: "label", label: "Label", type: "text" },
-      { key: "headline", label: "Headline", type: "text" },
-      { key: "body", label: "Body copy", type: "textarea" },
       {
         key: "_note",
-        label: "Dataset tabs",
+        label: "How bullet points work",
         type: "text",
         placeholder:
-          "Eight homepage tabs: PISA, NAEP Grade 4/8, Nebraska Math, Nebraska Math by Gender, Westside Math by Gender, Nebraska English, State & Federal Testing (PARCC ELA). Chart data is code-managed; edit copy below.",
+          "One bullet point per line. Use an em dash between the headline stat and body.",
       },
     ],
   },
@@ -138,7 +128,6 @@ export const homepageSections: EditorSection[] = [
     page: "homepage",
     sectionKey: "homepage.mental_health",
     fields: [
-      { key: "label", label: "Label", type: "text" },
       { key: "headline", label: "Headline", type: "text" },
       { key: "body", label: "Body copy", type: "textarea" },
       {
@@ -154,11 +143,6 @@ export const homepageSections: EditorSection[] = [
         mediaFolder: "charts",
         mediaFilename: "mental-health.png",
       },
-      {
-        key: "points",
-        label: "Bullet points",
-        type: "stringList",
-      },
     ],
   },
   {
@@ -169,12 +153,6 @@ export const homepageSections: EditorSection[] = [
     fields: [
       { key: "headline", label: "Headline", type: "text" },
       { key: "body", label: "Body copy", type: "textarea" },
-      {
-        key: "categories",
-        label: "Resource categories",
-        type: "stringList",
-        placeholder: "Category label",
-      },
     ],
   },
   {
@@ -193,12 +171,6 @@ export const homepageSections: EditorSection[] = [
       { key: "headline", label: "Headline", type: "text" },
       { key: "body", label: "Body copy", type: "textarea" },
       { key: "primaryCta", label: "Primary CTA", type: "text" },
-      {
-        key: "secondaryCta",
-        label: "Secondary CTA",
-        type: "cta",
-        ctaKeys: { label: "label", href: "href" },
-      },
       {
         key: "letterPreviewImage",
         label: "Letter preview image",
@@ -259,9 +231,6 @@ export const researchPageSections: EditorSection[] = [
   },
 ];
 
-/** @deprecated Use nebraskaDataSections + researchPageSections */
-export const evidenceSections = [...nebraskaDataSections, ...researchPageSections];
-
 export const siteSections: EditorSection[] = [
   {
     id: "site_settings",
@@ -293,7 +262,8 @@ export const siteSections: EditorSection[] = [
 
 export const allEditorSections = [
   ...homepageSections,
-  ...evidenceSections,
+  ...nebraskaDataSections,
+  ...researchPageSections,
   ...siteSections,
 ];
 

@@ -1,8 +1,13 @@
 import { NextResponse } from "next/server";
+import { normalizeAnalyticsPath } from "@/lib/analytics/normalize-path";
 import { createAdminClient } from "@/lib/supabase/admin";
+
+const DEDUPE_WINDOW_MS = 10_000;
+const ID_PATTERN = /^[a-z0-9-]{16,64}$/i;
 
 type PageViewBody = {
   sessionId?: string;
+  visitorId?: string;
   path?: string;
   pageTitle?: string;
   referrer?: string;
@@ -10,6 +15,10 @@ type PageViewBody = {
   isBounce?: boolean;
   viewId?: string;
 };
+
+function isValidId(value: string | undefined): value is string {
+  return typeof value === "string" && ID_PATTERN.test(value);
+}
 
 export async function POST(request: Request) {
   let body: PageViewBody;
@@ -20,23 +29,46 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid request body." }, { status: 400 });
   }
 
-  const { sessionId, path, pageTitle, referrer, durationSeconds, isBounce } =
+  const { sessionId, visitorId, path, pageTitle, referrer, durationSeconds, isBounce } =
     body;
 
-  if (!sessionId || !path) {
+  if (!isValidId(sessionId) || !path) {
     return NextResponse.json({ error: "Missing session or path." }, { status: 400 });
   }
 
-  if (path.startsWith("/admin")) {
+  const normalizedPath = normalizeAnalyticsPath(path);
+
+  if (normalizedPath.startsWith("/admin")) {
     return NextResponse.json({ ok: true, skipped: true });
   }
 
   const supabase = createAdminClient();
+  const dedupeSince = new Date(Date.now() - DEDUPE_WINDOW_MS).toISOString();
+
+  const { data: recentRows, error: recentError } = await supabase
+    .from("page_views")
+    .select("id")
+    .eq("session_id", sessionId)
+    .eq("path", normalizedPath)
+    .gte("created_at", dedupeSince)
+    .order("created_at", { ascending: false })
+    .limit(1);
+
+  if (recentError) {
+    return NextResponse.json({ error: recentError.message }, { status: 500 });
+  }
+
+  const recent = recentRows?.[0];
+  if (recent?.id) {
+    return NextResponse.json({ ok: true, id: recent.id, deduped: true });
+  }
+
   const { data, error } = await supabase
     .from("page_views")
     .insert({
       session_id: sessionId,
-      path,
+      visitor_id: isValidId(visitorId) ? visitorId : null,
+      path: normalizedPath,
       page_title: pageTitle ?? null,
       referrer: referrer ?? null,
       duration_seconds:
@@ -64,7 +96,7 @@ export async function PATCH(request: Request) {
 
   const { viewId, durationSeconds, isBounce } = body;
 
-  if (!viewId) {
+  if (!isValidId(viewId)) {
     return NextResponse.json({ error: "Missing view id." }, { status: 400 });
   }
 

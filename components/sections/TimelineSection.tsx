@@ -400,7 +400,7 @@ export function TimelineSection() {
             return (
               <article
                 key={slide.number}
-                className={`flex h-full min-h-0 shrink-0 flex-col items-center gap-4 ${sectionPaddingX} lg:flex-row lg:gap-12`}
+                className={`flex h-full min-h-0 shrink-0 flex-col items-center gap-5 py-8 max-lg:justify-center max-lg:gap-6 max-lg:py-10 lg:flex-row lg:gap-12 lg:py-0 ${sectionPaddingX}`}
                 style={{
                   width: `${slideShare}%`,
                   backgroundColor: slide.background,
@@ -410,17 +410,17 @@ export function TimelineSection() {
                   ref={(node) => {
                     copyRefs.current[index] = node;
                   }}
-                  className={`timeline-slide-copy flex min-h-0 w-full flex-1 flex-col justify-center gap-3 lg:gap-6 ${
-                    slide.indentContent ? "pl-8 lg:pl-32" : ""
+                  className={`timeline-slide-copy flex min-h-0 w-full flex-1 flex-col justify-center gap-3 max-lg:max-w-xl max-lg:gap-4 lg:gap-6 ${
+                    slide.indentContent ? "pl-4 max-lg:pl-5 sm:pl-6 lg:pl-32" : ""
                   }`}
                 >
                   <p
                     className={
                       slide.eraStyle === "large"
-                        ? `font-sans text-sm font-medium uppercase leading-none sm:text-base lg:text-base ${
+                        ? `font-sans text-base font-medium uppercase leading-none lg:text-base ${
                             isLight ? "text-slate-50" : "text-navy-800"
                           }`
-                        : `font-sans text-xs font-medium uppercase tracking-[0.15em] leading-none sm:text-sm lg:text-base ${
+                        : `font-sans text-base font-medium uppercase tracking-[0.12em] leading-none max-lg:tracking-[0.1em] lg:text-base lg:tracking-[0.15em] ${
                             isLight ? "text-slate-50" : "text-navy-800"
                           }`
                     }
@@ -442,7 +442,7 @@ export function TimelineSection() {
                     {slide.title}
                   </h2>
                   <p
-                    className={`max-w-xl text-sm leading-[1.4] sm:text-base lg:text-2xl ${
+                    className={`max-w-xl text-base leading-[1.55] max-lg:leading-[1.5] lg:text-2xl lg:leading-[1.4] ${
                       isLight ? "text-slate-200" : "text-hero-dark"
                     }`}
                   >
@@ -454,7 +454,7 @@ export function TimelineSection() {
                   ref={(node) => {
                     mediaRefs.current[index] = node;
                   }}
-                  className={`timeline-slide-media relative h-[min(32vh,240px)] w-full shrink-0 overflow-hidden rounded-sm shadow-[0_28px_90px_rgba(10,22,40,0.22)] lg:h-[min(72vh,560px)] lg:flex-1 ${
+                  className={`timeline-slide-media relative h-[min(38vh,280px)] w-full max-w-xl shrink-0 overflow-hidden rounded-sm shadow-[0_28px_90px_rgba(10,22,40,0.22)] sm:h-[min(42vh,320px)] lg:h-[min(72vh,560px)] lg:max-w-none lg:flex-1 ${
                     isLight ? "ring-1 ring-white/15" : "ring-1 ring-navy-800/10"
                   }`}
                 >
@@ -473,18 +473,18 @@ export function TimelineSection() {
         </div>
 
         <div
-          className={`pointer-events-none absolute inset-x-0 top-24 z-20 ${sectionPaddingX}`}
+          className={`pointer-events-none absolute inset-x-0 top-20 z-20 max-lg:top-16 sm:top-24 ${sectionPaddingX}`}
           aria-hidden
         >
           <div className="flex items-end justify-between gap-8">
             <p
-              className={`font-sans text-[10px] font-medium uppercase tracking-[0.24em] lg:text-base ${paginationColors.muted}`}
+              className={`font-sans text-sm font-medium uppercase tracking-[0.18em] max-lg:tracking-[0.14em] lg:text-base lg:tracking-[0.24em] ${paginationColors.muted}`}
             >
               Our Mission
             </p>
             <span
               ref={eraLabelRef}
-              className={`font-sans text-[10px] font-medium uppercase tracking-[0.24em] transition-colors duration-500 lg:text-base ${paginationColors.label}`}
+              className={`font-sans text-sm font-medium uppercase tracking-[0.18em] transition-colors duration-500 max-lg:tracking-[0.14em] lg:text-base lg:tracking-[0.24em] ${paginationColors.label}`}
             >
               {timelineSlides[0].era}
             </span>
@@ -510,7 +510,7 @@ export function TimelineSection() {
         />
 
         <div
-          className={`pointer-events-none absolute inset-x-0 bottom-8 z-20 flex items-center justify-end gap-2.5 ${sectionPaddingX}`}
+          className={`pointer-events-none absolute inset-x-0 bottom-6 z-20 flex items-center justify-end gap-2.5 max-lg:bottom-5 sm:bottom-8 ${sectionPaddingX}`}
           aria-hidden
         >
           {timelineSlides.map((slide, index) => (

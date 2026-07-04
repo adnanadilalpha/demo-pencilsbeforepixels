@@ -1,94 +1,90 @@
 "use client";
 
-import { ContentImage } from "@/components/ui/ContentImage";
-import { Container } from "@/components/ui/Container";
+import { ResearchMentalHealthChart } from "@/components/evidence/research/ResearchMentalHealthChart";
+import { Container, sectionSubtextClass } from "@/components/ui/Container";
 import { DisplayHeading } from "@/components/ui/DisplayHeading";
 import { TextLink } from "@/components/ui/TextLink";
 import { ScrollReveal } from "@/components/motion/ScrollReveal";
 import { useSection, useSiteContent } from "@/lib/cms/hooks";
+import { mergeResearchWithFallback } from "@/lib/research/merge";
+import { resolveResearchPageCta } from "@/lib/cms/site-ctas";
+import type { MentalHealthSeries } from "@/lib/research/types";
+
+function applyLegendColors(
+  series: MentalHealthSeries[],
+  legend: { label: string; color: string }[],
+): MentalHealthSeries[] {
+  return series.map((entry) => {
+    const match = legend.find(
+      (item) => item.label.toLowerCase() === entry.label.toLowerCase(),
+    );
+    return match ? { ...entry, color: match.color } : entry;
+  });
+}
 
 export function MentalHealthSection() {
   const section = useSection("homepage.mental_health");
-  const { mentalHealthPoints, mentalHealthLegend, media } = useSiteContent();
+  const { mentalHealthLegend, research } = useSiteContent();
+  const chartSeries = applyLegendColors(
+    mergeResearchWithFallback(research).mentalHealth.series,
+    mentalHealthLegend,
+  );
 
-  const label = (section.label as string) ?? "Behaviour & Mental Health";
-  const headline = (section.headline as string) ?? label;
+  const headline =
+    (section.headline as string) ?? "Behaviour & Mental Health";
   const body =
     (section.body as string) ??
     "Researchers continue to study how increased screen exposure may influence attention, behaviour and emotional wellbeing.";
-  const cta = (section.cta as { label: string; href: string }) ?? {
-    label: "Explore Nebraska Data",
-    href: "/evidence",
-  };
+  const cta = resolveResearchPageCta(
+    section.cta as { label?: string; href?: string } | undefined,
+  );
 
   return (
-    <section className="w-full bg-[#0b1e2e] py-24 max-lg:py-16">
-      <Container className="flex flex-col items-center gap-12 max-lg:gap-8">
-        <ScrollReveal className="flex flex-col items-center gap-6 text-center max-lg:gap-6">
-          <p className="text-base font-medium uppercase leading-none text-gold-accent max-lg:text-sm">
-            {label}
-          </p>
-          <DisplayHeading as="h2" className="text-white">
+    <section className="w-full bg-[#0b1e2e] py-16 max-lg:py-16 lg:py-24">
+      <Container className="flex flex-col gap-10 max-lg:gap-8 lg:gap-12">
+        <ScrollReveal className="mx-auto flex w-full max-w-3xl flex-col items-center gap-5 text-center max-lg:gap-4 lg:gap-6">
+          <DisplayHeading as="h2" className="text-gold-accent">
             {headline}
           </DisplayHeading>
-          <p className="max-w-[724px] text-base leading-[1.4] text-white/70 sm:text-lg">
+          <p className={`${sectionSubtextClass} text-white/70 sm:leading-[1.6]`}>
             {body}
           </p>
         </ScrollReveal>
 
-        <ScrollReveal delay={0.12} offset={32} className="flex w-full flex-col gap-16 max-lg:gap-12">
-          <div className="flex flex-col gap-6">
-            <div className="flex flex-wrap gap-x-8 gap-y-3">
+        <ScrollReveal delay={0.12} offset={32} className="flex w-full flex-col gap-12 max-lg:gap-10 lg:gap-16">
+          <div className="flex flex-col gap-5 max-lg:gap-4 lg:gap-6">
+            <div className="flex flex-wrap gap-x-6 gap-y-3 max-lg:gap-x-5 sm:gap-x-8">
               {mentalHealthLegend.map((item) => (
-                <div key={item.label} className="flex items-center gap-2">
+                <div key={item.label} className="flex min-w-[9rem] items-center gap-2 sm:min-w-0">
                   <span
-                    className="h-0.5 w-6"
+                    className="h-0.5 w-6 shrink-0"
                     style={{ backgroundColor: item.color }}
                     aria-hidden
                   />
-                  <span className="text-[11px] leading-normal text-white/40 sm:text-sm lg:text-base">
+                  <span className="text-base leading-snug text-white/55 max-lg:text-base lg:text-base">
                     {item.label}
                   </span>
                 </div>
               ))}
             </div>
 
-            <div className="relative w-full overflow-hidden pt-5">
-              <ContentImage
-                src={media.charts.mentalHealth}
-                alt="Line chart showing rising mental health indicators from 2012 to 2018"
-                width={2000}
-                height={800}
-                className="h-auto w-full"
-                unoptimized
+            <div className="relative w-full overflow-x-auto pt-2 max-lg:-mx-1 max-lg:px-1 lg:overflow-hidden lg:pt-5">
+              <ResearchMentalHealthChart
+                series={chartSeries}
+                variant="home"
+                showLegend={false}
               />
             </div>
           </div>
-
-          <div className="grid w-full grid-cols-1 gap-8 md:grid-cols-2 md:gap-8">
-            {mentalHealthPoints.map((point, index) => (
-              <div
-                key={point}
-                className={`flex flex-col items-start gap-3 border-b border-white/6 pb-6 md:flex-row md:items-center md:gap-8 md:pb-1 ${
-                  index === mentalHealthPoints.length - 1
-                    ? "md:col-span-2 lg:col-span-1"
-                    : ""
-                }`}
-              >
-                <span className="font-sans text-3xl font-medium leading-none text-paper-300 md:text-4xl lg:text-[56px]">
-                  {String(index + 1).padStart(2, "0")}
-                </span>
-                <p className="text-lg font-semibold leading-[1.4] text-white/82 md:flex-1 md:text-xl lg:text-[32px]">
-                  {point}
-                </p>
-              </div>
-            ))}
-          </div>
         </ScrollReveal>
 
-        <ScrollReveal delay={0.2}>
-          <div className="rounded-full bg-navy-50 px-6 py-3">
-            <TextLink href={cta.href} variant="dark">
+        <ScrollReveal delay={0.2} className="flex justify-center max-lg:px-2">
+          <div className="inline-flex rounded-full bg-navy-50 px-4 py-2 lg:px-6 lg:py-3">
+            <TextLink
+              href={cta.href}
+              variant="dark"
+              className="text-sm lg:text-base"
+            >
               {cta.label}
             </TextLink>
           </div>

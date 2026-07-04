@@ -1,8 +1,6 @@
 import { resolvePrivacyPolicyUrl, resolveTermsOfServiceUrl } from "./settings-urls";
-import { staticAcademicDatasets } from "@/lib/academic-data/static";
 import { researchChartsData } from "@/lib/research/data";
 import {
-  academicDatasets,
   epicReviewContent,
   expertQuotes,
   footerLinks,
@@ -61,22 +59,13 @@ export function buildFallbackSiteContent(): SiteContent {
         backgroundImage: LOCAL_ASSETS.hero.background,
         backgroundAlt: "Children writing in a classroom",
       },
-      "homepage.problem": {
-        label: "The Problem",
-        headline: "The Classroom Has Changed.",
-        body: "Instinctively, many parents and teachers feel something has changed. Children struggle to focus, teachers are increasingly overwhelmed and academic performance continues to decline. Over the past fifteen years, classrooms have rapidly transitioned to one to one digital devices while researchers have continued studying their impact on learning.",
-      },
       "homepage.goal": {
-        label: "The Evidence",
+        label: "What To Do",
         tagline:
-          "From NAEP to PISA, the pattern is consistent — more classroom screen time, weaker outcomes.",
+          "Focus over distraction and cognitive friction over swiping.",
+        body:
+          "Ten findings from national assessments and international studies — grouped so you can follow the story from U.S. classrooms to OECD nations and back to early childhood.",
         points: [...whatToDoPoints],
-      },
-      "homepage.academic_data": {
-        label: "Academic Data",
-        headline: "Academic Data",
-        body: "Explore international, national, state and district data through interactive charts and supporting research.",
-        datasets: academicDatasets,
       },
       "homepage.learning_apps": {
         headline: "Epic Reading Platform",
@@ -91,7 +80,7 @@ export function buildFallbackSiteContent(): SiteContent {
         body: "Researchers continue to study how increased screen exposure may influence attention, behaviour and emotional wellbeing.",
         points: mentalHealthPoints,
         legend: mentalHealthLegend,
-        cta: { label: "Explore Nebraska Data", href: "/evidence" },
+        cta: { label: "View research page", href: "/research" },
       },
       "homepage.research_library": {
         headline: "Research Library",
@@ -113,6 +102,11 @@ export function buildFallbackSiteContent(): SiteContent {
         label: "Nebraska in a National Context",
         body: "How does Nebraska's trend compare to the broader national pattern?",
       },
+      "evidence.research_tab": {
+        title: "Research",
+        subtitle:
+          "Findings from NAEP, PISA, TIMSS, PIRLS and peer-reviewed research — documenting the relationship between digital device use and academic performance across the United States and internationally.",
+      },
       "evidence.nebraska": {
         title: "Nebraska",
         subtitle:
@@ -125,11 +119,6 @@ export function buildFallbackSiteContent(): SiteContent {
           "Westside Community Schools performance trends by grade and student group",
         viewDescription:
           "Compare individual school trends against district and state averages over time.",
-      },
-      "evidence.research_tab": {
-        title: "Research Charts",
-        subtitle:
-          "Findings from NAEP, PISA, TIMSS, PIRLS and peer-reviewed research — documenting the relationship between digital device use and academic performance across the United States and internationally.",
       },
     },
     expertQuotes: expertQuotes.map((q) => ({ ...q })),
@@ -145,7 +134,6 @@ export function buildFallbackSiteContent(): SiteContent {
     },
     mentalHealthPoints: [...mentalHealthPoints],
     mentalHealthLegend: mentalHealthLegend.map((l) => ({ ...l })),
-    academicDatasets: [...academicDatasets],
     optOutSteps: optOutSteps.map((s) => ({ ...s })),
     softwareReviews: {
       epic: {
@@ -154,6 +142,8 @@ export function buildFallbackSiteContent(): SiteContent {
         summary: epicReviewContent.summary,
         youtubeId: "https://www.youtube.com/watch?v=iybQw1jlPEs",
         audioSrc: epicReviewContent.audioSrc,
+        audioTitle: epicReviewContent.audioTitle,
+        audioDescription: epicReviewContent.audioDescription,
       },
       ixl: {
         slug: "ixl",
@@ -164,6 +154,5 @@ export function buildFallbackSiteContent(): SiteContent {
       },
     },
     research: researchChartsData,
-    academicStatic: staticAcademicDatasets.map((d) => ({ ...d })),
   };
 }

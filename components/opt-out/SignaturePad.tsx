@@ -10,6 +10,60 @@ type SignaturePadProps = {
   className?: string;
 };
 
+function trimCanvas(canvas: HTMLCanvasElement): HTMLCanvasElement {
+  const context = canvas.getContext("2d");
+  if (!context) return canvas;
+
+  const { width, height } = canvas;
+  const { data } = context.getImageData(0, 0, width, height);
+  let top = height;
+  let left = width;
+  let right = 0;
+  let bottom = 0;
+
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      const alpha = data[(y * width + x) * 4 + 3];
+      if (alpha === 0) continue;
+      if (y < top) top = y;
+      if (y > bottom) bottom = y;
+      if (x < left) left = x;
+      if (x > right) right = x;
+    }
+  }
+
+  if (right < left || bottom < top) return canvas;
+
+  const padding = 4;
+  const cropLeft = Math.max(0, left - padding);
+  const cropTop = Math.max(0, top - padding);
+  const cropRight = Math.min(width - 1, right + padding);
+  const cropBottom = Math.min(height - 1, bottom + padding);
+  const cropWidth = cropRight - cropLeft + 1;
+  const cropHeight = cropBottom - cropTop + 1;
+
+  const trimmed = document.createElement("canvas");
+  trimmed.width = cropWidth;
+  trimmed.height = cropHeight;
+
+  const trimmedContext = trimmed.getContext("2d");
+  if (!trimmedContext) return canvas;
+
+  trimmedContext.drawImage(
+    canvas,
+    cropLeft,
+    cropTop,
+    cropWidth,
+    cropHeight,
+    0,
+    0,
+    cropWidth,
+    cropHeight,
+  );
+
+  return trimmed;
+}
+
 export function SignaturePad({ id, value, onChange, className }: SignaturePadProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const drawingRef = useRef(false);
@@ -135,8 +189,9 @@ export function SignaturePad({ id, value, onChange, className }: SignaturePadPro
     const canvas = canvasRef.current;
     if (!canvas) return;
 
+    const trimmed = trimCanvas(canvas);
     skipNextValueSyncRef.current = true;
-    onChange(canvas.toDataURL("image/png"));
+    onChange(trimmed.toDataURL("image/png"));
   };
 
   const finishDrawing = (event: React.PointerEvent<HTMLCanvasElement>) => {

@@ -110,8 +110,17 @@ export type DeviceTimeSection = {
 
 export type ResearchChartsData = {
   nationalSlopes: SlopeStat[];
+  naepNarrative: {
+    heading: string;
+    body: string;
+    footnote: string;
+  };
   grade4: NaepGradeSection;
   grade8: NaepGradeSection;
+  internationalNarrative: {
+    heading: string;
+    body: string;
+  };
   pisa: {
     title: string;
     description: string;

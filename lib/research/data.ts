@@ -26,8 +26,20 @@ const screenTimeRows = (
 
 export const researchChartsData: ResearchChartsData = {
   nationalSlopes: [...NAEP_NATIONAL_SLOPES],
+  naepNarrative: {
+    heading: "The NAEP Evidence: When Digital Adoption Aligns with Score Decline",
+    body:
+      "Nebraska's assessment trends don't exist in isolation. Nationally, researchers have documented a striking pattern: across all 50 states, NAEP scores in Math and Reading rose steadily for years — then plateaued and declined in alignment with each state's large-scale digital adoption, not with a single calendar year. This staggered policy adoption design provides strong evidence that the timing of digital lock-in, not external factors, drives the shift.\n\nThe charts below show national NAEP averages aligned to each state's digital inflection point (Year 0). These results cannot be attributed to COVID because Year 0 for every state occurred before the pandemic and 2022 data was excluded entirely. Unlike most \"standardized\" educational assessments that periodically reset their scoring scales, NAEP has remained anchored to its original 1992 scale, meaning these declines reflect genuine losses in student learning, not adjustments to the test.",
+    footnote:
+      'Note: The national charts utilize a "Year 0" alignment strategy where Year 0 represents the specific year each state reached a threshold of digital device saturation in classrooms. Data via NAEP (National Assessment of Educational Progress).',
+  },
   grade4: NAEP_GRADE_4,
   grade8: NAEP_GRADE_8,
+  internationalNarrative: {
+    heading: "International Research: Screen Time & Academic Performance",
+    body:
+      "Beyond national trends, a robust body of international research has examined the relationship between digital device use and academic performance. Below are key charts summarizing findings from PISA and OECD data, revealing consistent patterns of negative associations between screen time and student achievement across multiple countries and subjects.",
+  },
   pisa: {
     title: PISA_CHART_LABELS.title,
     description: PISA_CHART_LABELS.description,

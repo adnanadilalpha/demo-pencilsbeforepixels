@@ -4,6 +4,9 @@ import { ContentEditor } from "@/components/admin/content/ContentEditor";
 import { normalizeContentPageId } from "@/lib/admin/content-config";
 import { fetchContentEditorState } from "@/lib/admin/fetch-content-editor";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export const metadata: Metadata = { title: "Content" };
 
 function parseRoutePage(value: string | undefined) {

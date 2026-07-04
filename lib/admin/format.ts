@@ -55,11 +55,3 @@ export function getTodayStartIso(): string {
   now.setHours(0, 0, 0, 0);
   return now.toISOString();
 }
-
-export function getMonthStartIso(monthsAgo: number): string {
-  const date = new Date();
-  date.setDate(1);
-  date.setHours(0, 0, 0, 0);
-  date.setMonth(date.getMonth() - monthsAgo);
-  return date.toISOString();
-}

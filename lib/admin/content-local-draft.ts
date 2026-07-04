@@ -4,7 +4,11 @@ import type { AcademicDatasetCopy } from "@/lib/admin/academic-dataset-defaults"
 import type { ExpertQuote, OptOutStep, TimelineSlide, SoftwareReview, SiteSettings } from "@/lib/cms/types";
 import { allEditorSections, normalizeContentPageId, type ContentPageId } from "@/lib/admin/content-config";
 
-const STORAGE_KEY = "pbp-admin-content-draft";
+/**
+ * In-memory scratch pad for the current admin editing session only.
+ * Never persisted to localStorage — a refresh always reloads published data.
+ */
+let sessionDraft: ContentLocalDraft = { sections: {} };
 
 const VALID_SECTION_IDS = new Set(allEditorSections.map((section) => section.id));
 
@@ -20,9 +24,7 @@ function dedupeSharedPublishDrafts(
   );
 
   const academicOwner =
-    result.find(([id]) => id === "academic_data")?.[0] ??
-    result.find(([id]) => id === "evidence_research")?.[0] ??
-    null;
+    result.find(([id]) => id === "evidence_research")?.[0] ?? null;
 
   const scoresOwner =
     result.find(([id]) => id === "evidence_nebraska")?.[0] ??
@@ -124,52 +126,49 @@ export type ContentLocalDraft = {
   dirtySections?: string[];
 };
 
-export function readLocalDraft(): ContentLocalDraft | null {
-  if (typeof window === "undefined") return null;
+function hasSessionDraftData(draft: ContentLocalDraft): boolean {
+  return (
+    Object.keys(draft.sections).length > 0 ||
+    (draft.dirtySections?.length ?? 0) > 0
+  );
+}
 
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) return null;
-    return sanitizeLocalDraft(JSON.parse(raw) as ContentLocalDraft);
-  } catch {
-    return null;
-  }
+export function readLocalDraft(): ContentLocalDraft | null {
+  return hasSessionDraftData(sessionDraft) ? sessionDraft : null;
 }
 
 export function writeLocalDraft(draft: ContentLocalDraft): void {
-  if (typeof window === "undefined") return;
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(draft));
+  sessionDraft = sanitizeLocalDraft(draft);
 }
 
 export function clearLocalDraft(): void {
-  if (typeof window === "undefined") return;
-  window.localStorage.removeItem(STORAGE_KEY);
+  sessionDraft = { sections: {} };
+
+  if (typeof window !== "undefined") {
+    window.localStorage.removeItem("pbp-admin-content-draft");
+  }
 }
 
 export function markSectionDirty(sectionId: string): void {
-  if (typeof window === "undefined") return;
-
-  const current = readLocalDraft() ?? { sections: {} };
-  const dirty = new Set(current.dirtySections ?? []);
+  const dirty = new Set(sessionDraft.dirtySections ?? []);
   dirty.add(sectionId);
 
-  writeLocalDraft({
-    ...current,
+  sessionDraft = {
+    ...sessionDraft,
     dirtySections: [...dirty],
-  });
+  };
 }
 
 export function upsertSectionInLocalDraft(
   sectionId: string,
   patch: SectionLocalDraft,
 ): ContentLocalDraft {
-  const current = readLocalDraft() ?? { sections: {} };
-  const existing = current.sections[sectionId] ?? { content: {} };
+  const existing = sessionDraft.sections[sectionId] ?? { content: {} };
 
-  const next: ContentLocalDraft = {
-    ...current,
+  sessionDraft = {
+    ...sessionDraft,
     sections: {
-      ...current.sections,
+      ...sessionDraft.sections,
       [sectionId]: {
         content: { ...existing.content, ...patch.content },
         expertQuotes: patch.expertQuotes ?? existing.expertQuotes,
@@ -185,13 +184,11 @@ export function upsertSectionInLocalDraft(
     },
   };
 
-  writeLocalDraft(next);
-  return next;
+  return sessionDraft;
 }
 
 export function getSectionFromLocalDraft(
   sectionId: string,
 ): SectionLocalDraft | null {
-  const draft = readLocalDraft();
-  return draft?.sections[sectionId] ?? null;
+  return sessionDraft.sections[sectionId] ?? null;
 }

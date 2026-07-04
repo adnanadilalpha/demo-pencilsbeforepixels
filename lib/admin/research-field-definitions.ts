@@ -27,6 +27,15 @@ const pdf = (key: string, label: string): ContentField => ({
 
 export const researchEditorSections: ResearchEditorSection[] = [
   {
+    id: "research_naep_narrative",
+    label: "NAEP narrative",
+    fields: [
+      text("research.naepNarrative.heading", "Section heading"),
+      area("research.naepNarrative.body", "Body copy"),
+      area("research.naepNarrative.footnote", "Footnote"),
+    ],
+  },
+  {
     id: "research_national",
     label: "National Trends",
     fields: [
@@ -38,6 +47,14 @@ export const researchEditorSections: ResearchEditorSection[] = [
       text("research.nationalSlopes.2.slope", "Grade 8 Math slope"),
       text("research.nationalSlopes.3.label", "Grade 8 Reading label"),
       text("research.nationalSlopes.3.slope", "Grade 8 Reading slope"),
+    ],
+  },
+  {
+    id: "research_international",
+    label: "International intro",
+    fields: [
+      text("research.internationalNarrative.heading", "Section heading"),
+      area("research.internationalNarrative.body", "Body copy"),
     ],
   },
   {
@@ -80,6 +97,7 @@ export const researchEditorSections: ResearchEditorSection[] = [
     fields: [
       text("research.pirls.title", "Title"),
       area("research.pirls.description", "Description"),
+      text("research.pirls.subtitle", "Subtitle"),
       text("research.pirls.xLabel", "X-axis label"),
       text("research.pirls.yLabel", "Y-axis label"),
       pdf("research.pirls.pdfUrl", "Chart PDF"),
@@ -112,16 +130,6 @@ export const researchEditorSections: ResearchEditorSection[] = [
       area("research.screenTime.howToRead", "How to read"),
       area("research.screenTime.statisticalNote", "Statistical note"),
       pdf("research.screenTime.pdfUrl", "Chart PDF"),
-    ],
-  },
-  {
-    id: "research_mental_health",
-    label: "Mental Health Research",
-    fields: [
-      text("research.mentalHealth.title", "Title"),
-      area("research.mentalHealth.description", "Description"),
-      area("research.mentalHealth.callout", "Callout"),
-      pdf("research.mentalHealth.pdfUrl", "Chart PDF"),
     ],
   },
   {

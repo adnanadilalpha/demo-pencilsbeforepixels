@@ -1,8 +1,10 @@
 "use client";
 
 import type { SoftwareReview } from "@/lib/cms/types";
+import { epicReviewContent } from "@/lib/cms/fallback-data";
 import { formatYouTubeLinkForEditor, normalizeYouTubeUrl } from "@/lib/youtube";
 import { adminInputClass, adminLabelClass } from "@/components/admin/admin-styles";
+import { FileUploadField } from "@/components/admin/resources/FileUploadField";
 
 type SoftwareReviewsEditorProps = {
   reviews: SoftwareReview[];
@@ -27,7 +29,7 @@ export function SoftwareReviewsEditor({
   if (!epic) return null;
 
   return (
-    <div className="mt-6 space-y-4 border-t border-navy-800/6 pt-4">
+    <div className="mt-6 space-y-6 border-t border-navy-800/6 pt-4">
       <div>
         <p className="text-sm font-semibold text-navy-800">Epic video review</p>
         <p className="mt-1 text-xs text-body-muted">
@@ -57,17 +59,59 @@ export function SoftwareReviewsEditor({
           />
         </div>
         <Field
-          label="Audio file path"
-          hint="Public path to the MP3, e.g. /audio/Media1.mp3"
-          value={epic.audioSrc ?? ""}
-          placeholder="/audio/Media1.mp3"
-          onChange={(value) => updateEpic({ audioSrc: value })}
-        />
-        <Field
           label="Summary"
           value={epic.summary ?? ""}
           multiline
           onChange={(value) => updateEpic({ summary: value })}
+        />
+      </div>
+
+      <div>
+        <p className="text-sm font-semibold text-navy-800">Audio clip</p>
+        <p className="mt-1 text-xs text-body-muted">
+          Featured audio player below the video review on the homepage.
+        </p>
+      </div>
+
+      <div className="space-y-3 rounded-[10px] border border-navy-800/10 bg-paper-50 p-4">
+        <Field
+          label="Clip title"
+          hint='Shown as the audio section heading, e.g. "Reading on Screens".'
+          value={epic.audioTitle ?? epicReviewContent.audioTitle}
+          placeholder={epicReviewContent.audioTitle}
+          onChange={(value) => updateEpic({ audioTitle: value })}
+        />
+
+        <div className="max-w-xl">
+          <FileUploadField
+            label="Audio file"
+            folder="audio"
+            accept="audio/*"
+            valueUrl={epic.audioSrc ?? null}
+            compact
+            onUploaded={(result) =>
+              updateEpic({ audioSrc: result?.publicUrl ?? "" })
+            }
+          />
+          <p className="mt-1.5 text-xs text-body-muted">
+            Upload an MP3 or other audio file. You can also paste a public path
+            below if the file is already hosted.
+          </p>
+          <input
+            className={`${adminInputClass} mt-2`}
+            value={epic.audioSrc ?? ""}
+            placeholder="/audio/Media1.mp3"
+            onChange={(event) => updateEpic({ audioSrc: event.target.value })}
+          />
+        </div>
+
+        <Field
+          label="About this clip"
+          hint='Shown inside the audio card beside the player. If left empty, the video "Summary" is used instead.'
+          value={epic.audioDescription ?? ""}
+          multiline
+          placeholder="Describe what listeners will hear in this audio clip…"
+          onChange={(value) => updateEpic({ audioDescription: value })}
         />
       </div>
     </div>

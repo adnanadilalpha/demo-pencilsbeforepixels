@@ -3,9 +3,8 @@
 import { ContentImage } from "@/components/ui/ContentImage";
 import { Button } from "@/components/ui/Button";
 import { useOptOut } from "@/components/opt-out/OptOutProvider";
-import { Container } from "@/components/ui/Container";
+import { Container, sectionSubtextClass } from "@/components/ui/Container";
 import { DisplayHeading } from "@/components/ui/DisplayHeading";
-import { TextLink } from "@/components/ui/TextLink";
 import { ScrollReveal } from "@/components/motion/ScrollReveal";
 import { useSection, useSiteContent } from "@/lib/cms/hooks";
 
@@ -19,21 +18,17 @@ export function DeviceOptOutSection() {
     (section.body as string) ??
     "Parents should have access to clear information and the ability to make informed decisions regarding classroom technology.";
   const primaryCta = (section.primaryCta as string) ?? "Sign Opt Out Letter";
-  const secondaryCta = (section.secondaryCta as { label: string; href: string }) ?? {
-    label: "Explore Nebraska Data",
-    href: "/evidence",
-  };
 
   return (
-    <section id="opt-out" className="w-full bg-navy-700 py-24 max-lg:py-16">
+    <section id="opt-out" className="w-full bg-navy-700 py-16 max-lg:py-16 lg:py-24">
       <Container>
-        <div className="flex w-full flex-col items-start justify-between gap-12 max-lg:gap-8 lg:flex-row">
-          <div className="flex flex-1 flex-col gap-8">
-            <ScrollReveal className="flex flex-col gap-6 text-slate-50">
+        <div className="flex w-full flex-col items-start justify-between gap-10 max-lg:gap-10 lg:flex-row lg:gap-12">
+          <div className="flex flex-1 flex-col gap-8 max-lg:gap-7 lg:gap-8">
+            <ScrollReveal className="flex flex-col gap-5 text-slate-50 max-lg:gap-4 lg:gap-6">
               <DisplayHeading as="h2" className="text-slate-50">
                 {headline}
               </DisplayHeading>
-              <p className="text-base leading-[1.4] sm:text-lg">{body}</p>
+              <p className={sectionSubtextClass}>{body}</p>
             </ScrollReveal>
 
             <ol className="flex flex-col">
@@ -43,35 +38,34 @@ export function DeviceOptOutSection() {
                   as="li"
                   delay={0.08 + index * 0.1}
                   offset={20}
-                  className={`flex gap-8 py-6 ${
+                  className={`flex gap-4 py-5 max-lg:gap-4 sm:gap-6 sm:py-6 ${
                     index < optOutSteps.length - 1
                       ? "border-b border-[#e9e6df]"
                       : ""
                   }`}
                 >
-                  <span className="font-sans text-base font-medium leading-none text-gold-accent">
+                  <span className="w-6 shrink-0 font-sans text-base font-medium leading-none text-gold-accent">
                     {step.number}
                   </span>
-                  <div className="flex flex-col gap-2 text-slate-50">
-                    <p className="text-lg font-semibold leading-display">
+                  <div className="flex min-w-0 flex-1 flex-col gap-1.5 text-slate-50 sm:gap-2">
+                    <p className="text-base font-semibold leading-snug sm:text-lg sm:leading-display">
                       {step.title}
                     </p>
-                    <p className="text-sm leading-snug lg:text-base">{step.description}</p>
+                    <p className="text-base leading-relaxed sm:leading-snug lg:text-base">
+                      {step.description}
+                    </p>
                   </div>
                 </ScrollReveal>
               ))}
             </ol>
 
             <ScrollReveal delay={0.35}>
-              <div className="flex flex-wrap items-center gap-x-8 gap-y-8">
-                <Button onClick={openOptOut}>{primaryCta}</Button>
-                <TextLink href={secondaryCta.href}>{secondaryCta.label}</TextLink>
-              </div>
+              <Button onClick={openOptOut}>{primaryCta}</Button>
             </ScrollReveal>
           </div>
 
           <ScrollReveal delay={0.15} offset={40} className="w-full max-lg:order-last lg:w-[42%]">
-            <div className="relative aspect-4/5 w-full shrink-0 overflow-hidden rounded-lg">
+            <div className="relative mx-auto aspect-4/5 w-full max-w-md shrink-0 overflow-hidden rounded-lg max-lg:max-w-none lg:max-w-none">
               <ContentImage
                 src={media.optOut.letterPreview}
                 alt="Sample opt-out letter preview"

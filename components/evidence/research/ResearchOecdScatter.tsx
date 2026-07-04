@@ -1,7 +1,11 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { ChartTooltip } from "@/components/charts/ChartTooltip";
+import {
+  ChartZoomResetButton,
+  ChartZoomSelection,
+} from "@/components/charts/ChartZoomUi";
 import {
   researchChartAxisLabelMutedDark,
   researchChartCategoryLabelCompactDark,
@@ -14,15 +18,19 @@ import {
   formatScore,
   useDismissChartTooltip,
 } from "@/lib/charts/tooltip";
+import {
+  generateZoomYTicks,
+  useChartZoom,
+} from "@/lib/charts/use-chart-zoom";
 import type { OecdScatterChart } from "@/lib/research/types";
 
 const OECD_CHART_HEIGHT =
   "h-[360px] min-h-[360px] md:h-[440px] md:min-h-[440px] lg:h-[520px] lg:min-h-[520px]";
 
-const PADDING_DESKTOP = { top: 52, right: 28, bottom: 72, left: 68 };
-const PADDING_COMPACT = { top: 44, right: 12, bottom: 64, left: 52 };
+const PADDING_DESKTOP = { top: 52, right: 28, bottom: 88, left: 68 };
+const PADDING_COMPACT = { top: 44, right: 12, bottom: 76, left: 52 };
 
-const DOMAIN = {
+const FULL_DOMAIN = {
   xMin: 0,
   xMax: 10.5,
   yMin: -42,
@@ -86,27 +94,13 @@ function countryLabelLayout(
   }
 }
 
-function generateYTicks(yMin: number, yMax: number): number[] {
-  const range = yMax - yMin;
-  const step =
-    range <= 12 ? 3 : range <= 24 ? 5 : range <= 50 ? 10 : 15;
-  const start = Math.ceil(yMin / step) * step;
-  const ticks: number[] = [];
-  for (let value = start; value <= yMax; value += step) {
-    ticks.push(value);
-  }
-  if (ticks.length < 2) {
-    return [yMin, yMax];
-  }
-  return ticks;
-}
-
 type ResearchOecdScatterProps = {
   chart: OecdScatterChart;
 };
 
 export function ResearchOecdScatter({ chart }: ResearchOecdScatterProps) {
   const plotRef = useRef<HTMLDivElement>(null);
+  const clipId = useId();
   const [size, setSize] = useState({ width: 0, height: 0 });
   const [tooltip, setTooltip] = useState<ChartTooltipState>(null);
   const [activeCountry, setActiveCountry] = useState<string | null>(null);
@@ -130,24 +124,36 @@ export function ResearchOecdScatter({ chart }: ResearchOecdScatterProps) {
   const PADDING = isResearchDesktopWidth(width)
     ? PADDING_DESKTOP
     : PADDING_COMPACT;
-  const plotWidth = Math.max(width - PADDING.left - PADDING.right, 0);
-  const plotHeight = Math.max(height - PADDING.top - PADDING.bottom, 0);
+  const plotBounds = useMemo(
+    () => ({
+      left: PADDING.left,
+      right: width - PADDING.right,
+      top: PADDING.top,
+      bottom: height - PADDING.bottom,
+    }),
+    [PADDING.bottom, PADDING.left, PADDING.right, PADDING.top, height, width],
+  );
 
-  const toX = (value: number) =>
-    PADDING.left +
-    ((value - DOMAIN.xMin) / (DOMAIN.xMax - DOMAIN.xMin || 1)) * plotWidth;
+  const {
+    viewDomain,
+    isZoomed,
+    resetZoom,
+    dataToPixelX,
+    dataToPixelY,
+    selectionRect,
+    onOverlayPointerDown,
+    onOverlayPointerMove,
+    onOverlayPointerUp,
+    onOverlayDoubleClick,
+  } = useChartZoom({
+    enabled: width > 0 && height > 0,
+    fullDomain: FULL_DOMAIN,
+    plotBounds,
+    containerRef: plotRef,
+  });
 
-  const toY = (value: number) =>
-    PADDING.top +
-    plotHeight -
-    ((value - DOMAIN.yMin) / (DOMAIN.yMax - DOMAIN.yMin || 1)) * plotHeight;
-
-  const plotBounds = {
-    left: PADDING.left,
-    right: width - PADDING.right,
-    top: PADDING.top,
-    bottom: height - PADDING.bottom,
-  };
+  const toX = (value: number) => dataToPixelX(value);
+  const toY = (value: number) => dataToPixelY(value);
 
   const clearTooltip = () => {
     setTooltip(null);
@@ -164,7 +170,13 @@ export function ResearchOecdScatter({ chart }: ResearchOecdScatterProps) {
     })
     .join(" ");
 
-  const yTicks = generateYTicks(DOMAIN.yMin, DOMAIN.yMax);
+  const yTicks = isZoomed
+    ? generateZoomYTicks(viewDomain.yMin, viewDomain.yMax)
+    : generateZoomYTicks(FULL_DOMAIN.yMin, FULL_DOMAIN.yMax);
+
+  const zeroY = toY(0);
+  const showZeroLine =
+    zeroY >= plotBounds.top && zeroY <= plotBounds.bottom;
 
   return (
     <div
@@ -181,25 +193,38 @@ export function ResearchOecdScatter({ chart }: ResearchOecdScatterProps) {
           role="img"
           aria-label={chart.title}
         >
+          <defs>
+            <clipPath id={clipId}>
+              <rect
+                x={plotBounds.left}
+                y={plotBounds.top}
+                width={plotBounds.right - plotBounds.left}
+                height={plotBounds.bottom - plotBounds.top}
+              />
+            </clipPath>
+          </defs>
+
           <text
             x={width / 2}
             y={20}
             textAnchor="middle"
-            className="fill-[#374151] font-sans text-[10px] font-semibold uppercase tracking-wide md:text-[11px] lg:text-sm"
+            className="fill-[#374151] font-sans text-xs font-semibold uppercase tracking-wide lg:text-sm"
             pointerEvents="none"
           >
             OECD Countries
           </text>
 
-          <g pointerEvents="none">
-            <line
-              x1={plotBounds.left}
-              x2={plotBounds.right}
-              y1={toY(0)}
-              y2={toY(0)}
-              stroke="#9ca3af"
-              strokeWidth={1.5}
-            />
+          <g clipPath={`url(#${clipId})`} pointerEvents="none">
+            {showZeroLine ? (
+              <line
+                x1={plotBounds.left}
+                x2={plotBounds.right}
+                y1={zeroY}
+                y2={zeroY}
+                stroke="#9ca3af"
+                strokeWidth={1.5}
+              />
+            ) : null}
 
             {yTicks.map((tick) => (
               <line
@@ -221,65 +246,82 @@ export function ResearchOecdScatter({ chart }: ResearchOecdScatterProps) {
             />
           </g>
 
-          {chart.points.map((point) => {
-            const x = toX(point.x);
-            const y = toY(point.y);
-            const isActive = activeCountry === point.country;
-            const label = countryLabelLayout(
-              OECD_LABEL_POSITIONS[point.country] ?? "top right",
-            );
+          <rect
+            x={plotBounds.left}
+            y={plotBounds.top}
+            width={plotBounds.right - plotBounds.left}
+            height={plotBounds.bottom - plotBounds.top}
+            fill="transparent"
+            className="cursor-crosshair"
+            onPointerDown={onOverlayPointerDown}
+            onPointerMove={onOverlayPointerMove}
+            onPointerUp={onOverlayPointerUp}
+            onDoubleClick={onOverlayDoubleClick}
+          />
 
-            return (
-              <g key={point.country}>
-                <circle
-                  cx={x}
-                  cy={y}
-                  r={14}
-                  fill="transparent"
-                  className="cursor-pointer"
-                  {...bindChartHitTarget({
-                    isActive,
-                    onActivate: () => {
-                      setActiveCountry(point.country);
-                      setTooltip({
-                        x,
-                        y,
-                        title: point.country,
-                        accent: "#0f1f3d",
-                        lines: [
-                          {
-                            label: "Score change",
-                            value: formatScore(point.y),
-                          },
-                        ],
-                      });
-                    },
-                    onClear: clearTooltip,
-                  })}
-                />
-                <circle
-                  cx={x}
-                  cy={y}
-                  r={isActive ? 6.5 : 5}
-                  fill="#0f1f3d"
-                  opacity={isActive ? 1 : 0.8}
-                  className="transition-all duration-150"
-                />
-                <text
-                  x={x + label.dx}
-                  y={y + label.dy}
-                  textAnchor={label.anchor}
-                      className={`pointer-events-none font-sans transition-colors ${
-                        isActive
-                          ? "fill-navy-800 font-semibold text-[9px] md:text-[10px] lg:text-[11px]"
-                          : `${researchChartCategoryLabelCompactDark} text-[9px] md:text-[10px] lg:text-[11px]`
-                      }`}
-                >
-                  {point.country}
-                </text>
-              </g>
-            );
-          })}
+          <ChartZoomSelection rect={selectionRect} />
+
+          <g clipPath={`url(#${clipId})`}>
+            {chart.points.map((point) => {
+              const x = toX(point.x);
+              const y = toY(point.y);
+              const isActive = activeCountry === point.country;
+              const label = countryLabelLayout(
+                OECD_LABEL_POSITIONS[point.country] ?? "top right",
+              );
+
+              return (
+                <g key={point.country}>
+                  <circle
+                    cx={x}
+                    cy={y}
+                    r={14}
+                    fill="transparent"
+                    className="cursor-pointer"
+                    {...bindChartHitTarget({
+                      isActive,
+                      onActivate: () => {
+                        setActiveCountry(point.country);
+                        setTooltip({
+                          x,
+                          y,
+                          title: point.country,
+                          accent: "#0f1f3d",
+                          lines: [
+                            {
+                              label: "Score change",
+                              value: formatScore(point.y),
+                            },
+                          ],
+                        });
+                      },
+                      onClear: clearTooltip,
+                    })}
+                  />
+                  <circle
+                    cx={x}
+                    cy={y}
+                    r={isActive ? 6.5 : 5}
+                    fill="#0f1f3d"
+                    opacity={isActive ? 1 : 0.8}
+                    className="transition-all duration-150"
+                  />
+                  <text
+                    x={x + label.dx}
+                    y={y + label.dy}
+                    textAnchor={label.anchor}
+                    className={`pointer-events-none font-sans transition-colors ${
+                      isActive
+                        ? "fill-navy-800 font-semibold text-xs lg:text-sm"
+                        : researchChartCategoryLabelCompactDark
+                    }`}
+                  >
+                    {point.country}
+                  </text>
+                </g>
+              );
+            })}
+          </g>
 
           {yTicks.map((tick) => (
             <text
@@ -307,7 +349,7 @@ export function ResearchOecdScatter({ chart }: ResearchOecdScatterProps) {
 
           <text
             x={width / 2}
-            y={height - 20}
+            y={height - 14}
             textAnchor="middle"
             className={researchChartAxisLabelMutedDark}
             pointerEvents="none"
@@ -317,12 +359,14 @@ export function ResearchOecdScatter({ chart }: ResearchOecdScatterProps) {
         </svg>
       )}
 
-        <ChartTooltip
-          tooltip={tooltip}
-          containerWidth={width}
-          containerHeight={height}
-          onDismiss={clearTooltip}
-        />
+      {isZoomed ? <ChartZoomResetButton onReset={resetZoom} /> : null}
+
+      <ChartTooltip
+        tooltip={tooltip}
+        containerWidth={width}
+        containerHeight={height}
+        onDismiss={clearTooltip}
+      />
     </div>
   );
 }

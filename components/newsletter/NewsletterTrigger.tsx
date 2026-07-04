@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/Button";
 import { useNewsletter } from "@/components/newsletter/newsletter-context";
 
 type NewsletterTriggerProps = Omit<ComponentProps<typeof Button>, "onClick"> & {
-  source: "hero" | "header" | "mobile-nav" | "academic-data" | "footer";
+  source: "hero" | "header" | "mobile-nav" | "footer";
   onTriggered?: () => void;
 };
 

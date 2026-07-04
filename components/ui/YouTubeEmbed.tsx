@@ -1,9 +1,10 @@
 "use client";
 
 import { ContentImage } from "@/components/ui/ContentImage";
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useSiteContent } from "@/lib/cms/hooks";
 import { cn } from "@/lib/utils";
+import { disableYouTubeCaptions, youTubeEmbedUrl } from "@/lib/youtube";
 
 type YouTubeEmbedProps = {
   videoId: string;
@@ -17,18 +18,6 @@ const THUMBNAIL_QUALITIES = [
   "sddefault",
   "hqdefault",
 ] as const;
-
-function embedUrl(videoId: string) {
-  const params = new URLSearchParams({
-    autoplay: "1",
-    rel: "0",
-    modestbranding: "1",
-    playsinline: "1",
-    cc_load_policy: "0",
-  });
-
-  return `https://www.youtube-nocookie.com/embed/${videoId}?${params.toString()}`;
-}
 
 function posterUrl(
   videoId: string,
@@ -44,8 +33,14 @@ export function YouTubeEmbed({
   className,
 }: YouTubeEmbedProps) {
   const { media } = useSiteContent();
+  const iframeRef = useRef<HTMLIFrameElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [qualityIndex, setQualityIndex] = useState(0);
+  const [origin, setOrigin] = useState("");
+
+  useEffect(() => {
+    setOrigin(window.location.origin);
+  }, []);
 
   const quality = THUMBNAIL_QUALITIES[qualityIndex];
   const frameClass = cn(
@@ -54,17 +49,40 @@ export function YouTubeEmbed({
     className,
   );
 
+  const enforceCaptionsOff = useCallback(() => {
+    const iframe = iframeRef.current;
+    if (!iframe) return;
+    disableYouTubeCaptions(iframe);
+  }, []);
+
+  useEffect(() => {
+    if (!isPlaying) return;
+
+    enforceCaptionsOff();
+    const intervalId = window.setInterval(enforceCaptionsOff, 750);
+    const timeoutId = window.setTimeout(() => {
+      window.clearInterval(intervalId);
+    }, 8000);
+
+    return () => {
+      window.clearInterval(intervalId);
+      window.clearTimeout(timeoutId);
+    };
+  }, [enforceCaptionsOff, isPlaying, videoId]);
+
   if (isPlaying) {
     return (
       <div className={frameClass}>
         <iframe
-          src={embedUrl(videoId)}
+          ref={iframeRef}
+          src={youTubeEmbedUrl(videoId, true, origin || undefined)}
           title={title}
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
           referrerPolicy="strict-origin-when-cross-origin"
           allowFullScreen
           loading="lazy"
           className="absolute inset-0 size-full border-0"
+          onLoad={enforceCaptionsOff}
         />
       </div>
     );
@@ -83,7 +101,7 @@ export function YouTubeEmbed({
         fill
         unoptimized
         className="object-cover transition-transform duration-300 group-hover:scale-[1.02]"
-        sizes="(max-width: 1024px) 100vw, 50vw"
+        sizes="(max-width: 1024px) 100vw, 100vw"
         onError={() => {
           setQualityIndex((current) =>
             Math.min(current + 1, THUMBNAIL_QUALITIES.length - 1),

@@ -1,7 +1,11 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { ChartCrosshair, ChartTooltip } from "@/components/charts/ChartTooltip";
+import {
+  ChartZoomResetButton,
+  ChartZoomSelection,
+} from "@/components/charts/ChartZoomUi";
 import {
   CHART_RESEARCH_MARGIN,
   CHART_RESEARCH_MARGIN_COMPACT,
@@ -16,6 +20,7 @@ import {
   chartTickDark,
   chartTitleDark,
   researchChartAxisLabelDark,
+  researchChartCategoryLabelDark,
   researchChartTickDark,
   researchChartTitleDark,
   RESEARCH_CHART_PLOT_HEIGHT,
@@ -30,6 +35,10 @@ import {
   bindChartHitTarget,
   useDismissChartTooltip,
 } from "@/lib/charts/tooltip";
+import {
+  generateZoomYTicks,
+  useChartZoom,
+} from "@/lib/charts/use-chart-zoom";
 
 import { PISA_CPU_MINUTES } from "@/lib/charts/pisa-data";
 import type {
@@ -40,25 +49,22 @@ import type {
 type EvidenceLineChartProps = {
   chart: AcademicChart;
   empty?: boolean;
-  /** @deprecated Use `research` for the evidence research tab. */
-  compact?: boolean;
   research?: boolean;
   hideTitle?: boolean;
   showTooltip?: boolean;
+  enableZoom?: boolean;
+  hiddenSeries?: ReadonlySet<string>;
 };
 
 function buildPath(
   values: number[],
-  min: number,
-  max: number,
-  layout: ReturnType<typeof getChartLayout>,
-  step: number,
-  dataPlotLeft: number,
+  toX: (index: number) => number,
+  toY: (value: number) => number,
 ) {
   return values
     .map((value, index) => {
-      const x = dataPlotLeft + index * step;
-      const y = scaleToPlotY(value, min, max, layout);
+      const x = toX(index);
+      const y = toY(value);
       return `${index === 0 ? "M" : "L"} ${x} ${y}`;
     })
     .join(" ");
@@ -102,12 +108,15 @@ function renderMarker(
 export function EvidenceLineChart({
   chart,
   empty = false,
-  compact = false,
   research = false,
   hideTitle = true,
   showTooltip = false,
+  enableZoom: enableZoomProp,
+  hiddenSeries,
 }: EvidenceLineChartProps) {
+  const enableZoom = enableZoomProp ?? (showTooltip && research);
   const plotRef = useRef<HTMLDivElement>(null);
+  const clipId = useId();
   const [size, setSize] = useState({ width: 0, height: 0 });
   const [tooltip, setTooltip] = useState<ChartTooltipState>(null);
   const [activePoint, setActivePoint] = useState<string | null>(null);
@@ -135,23 +144,83 @@ export function EvidenceLineChart({
     research && !isResearchDesktopWidth(width)
       ? CHART_RESEARCH_MARGIN_COMPACT
       : CHART_RESEARCH_MARGIN;
+  const crowdedCategories = research && chart.categories.length > 5;
+  const margin = research
+    ? {
+        ...researchMargin,
+        ...(crowdedCategories
+          ? {
+              tickBand: researchMargin.tickBand + 24,
+              xLabel: researchMargin.xLabel + 6,
+            }
+          : {}),
+      }
+    : undefined;
   const layout = getChartLayout(
     width,
     height,
-    research ? researchMargin : undefined,
+    research ? margin : undefined,
   );
   const tickClass = research ? researchChartTickDark : chartTickDark;
   const axisLabelClass = research
     ? researchChartAxisLabelDark
     : chartAxisLabelDark;
+  const categoryLabelClass = research
+    ? researchChartCategoryLabelDark
+    : tickClass;
   const titleClass = research ? researchChartTitleDark : chartTitleDark;
   const yMin = chart.yMin ?? chart.yTicks[0];
   const yMax = chart.yMax ?? chart.yTicks[chart.yTicks.length - 1];
   const { dataPlotLeft, dataPlotWidth } = getDataPlotBounds(layout);
-  const step =
-    chart.categories.length > 1
-      ? dataPlotWidth / (chart.categories.length - 1)
-      : 0;
+  const categoryCount = Math.max(chart.categories.length, 1);
+  const fullDomain = useMemo(
+    () => ({
+      xMin: 0,
+      xMax: Math.max(categoryCount - 1, 1),
+      yMin,
+      yMax,
+    }),
+    [categoryCount, yMin, yMax],
+  );
+  const plotBounds = useMemo(
+    () => ({
+      left: dataPlotLeft,
+      right: dataPlotLeft + dataPlotWidth,
+      top: layout.plotTop,
+      bottom: layout.plotBottom,
+    }),
+    [dataPlotLeft, dataPlotWidth, layout.plotBottom, layout.plotTop],
+  );
+  const {
+    viewDomain,
+    isZoomed,
+    resetZoom,
+    dataToPixelX,
+    dataToPixelY,
+    selectionRect,
+    onOverlayPointerDown,
+    onOverlayPointerMove,
+    onOverlayPointerUp,
+    onOverlayDoubleClick,
+  } = useChartZoom({
+    enabled: enableZoom && width > 0 && height > 0,
+    fullDomain,
+    plotBounds,
+    containerRef: plotRef,
+  });
+  const viewYMin = enableZoom ? viewDomain.yMin : yMin;
+  const viewYMax = enableZoom ? viewDomain.yMax : yMax;
+  const yTicks = enableZoom && isZoomed
+    ? generateZoomYTicks(viewYMin, viewYMax)
+    : chart.yTicks;
+  const indexToX = (index: number) =>
+    enableZoom
+      ? dataToPixelX(index)
+      : getCategoryTickX(index, chart.categories.length, layout);
+  const valueToY = (value: number) =>
+    enableZoom
+      ? dataToPixelY(value)
+      : scaleToPlotY(value, viewYMin, viewYMax, layout);
 
   const titleUpper = chart.title.toUpperCase();
   const isPisaMath = titleUpper === "MATH";
@@ -236,18 +305,34 @@ export function EvidenceLineChart({
     }
 
     if (isPerformance) {
+      const meta = series.pointMeta?.[index];
+      const isStateSeries =
+        series.label.includes("State Average") ||
+        series.label.startsWith("State —");
+      const lines = [
+        { label: "School Year", value: category },
+        {
+          label: chart.yLabel,
+          value: formatChartTooltipValue(value, { yLabel: chart.yLabel }),
+        },
+      ];
+
+      if (meta?.grades && !isStateSeries) {
+        lines.push({ label: "Grades", value: meta.grades });
+      }
+      if (meta?.studentsTested && !isStateSeries) {
+        lines.push({
+          label: "Students Tested",
+          value: meta.studentsTested.toLocaleString(),
+        });
+      }
+
       return {
         x,
         y,
         title: formatSeriesTooltipTitle(series.label),
         accent: series.color,
-        lines: [
-          { label: "School Year", value: category },
-          {
-            label: chart.yLabel,
-            value: formatChartTooltipValue(value, { yLabel: chart.yLabel }),
-          },
-        ],
+        lines,
       };
     }
 
@@ -274,9 +359,7 @@ export function EvidenceLineChart({
 
   const wrapperClass = research
     ? "flex w-full flex-col gap-3 md:gap-4 lg:gap-6"
-    : compact
-      ? "flex h-[220px] w-full flex-col"
-      : "flex h-[220px] min-h-[220px] w-full flex-col sm:h-[320px] sm:min-h-[320px] lg:h-auto lg:min-h-[400px] lg:flex-1";
+    : "flex h-[220px] min-h-[220px] w-full flex-col sm:h-[320px] sm:min-h-[320px] lg:h-auto lg:min-h-[400px] lg:flex-1";
 
   const plotClass = research
     ? `relative w-full ${RESEARCH_CHART_PLOT_HEIGHT}`
@@ -309,8 +392,19 @@ export function EvidenceLineChart({
             aria-hidden={empty}
             aria-label={empty ? undefined : `${chart.title} line chart`}
           >
-            {chart.yTicks.map((tick) => {
-              const y = scaleToPlotY(tick, yMin, yMax, layout);
+            <defs>
+              <clipPath id={clipId}>
+                <rect
+                  x={layout.plotLeft}
+                  y={layout.plotTop}
+                  width={layout.plotWidth}
+                  height={layout.plotHeight}
+                />
+              </clipPath>
+            </defs>
+
+            {yTicks.map((tick) => {
+              const y = valueToY(tick);
               return (
                 <g key={tick}>
                   <line
@@ -352,22 +446,53 @@ export function EvidenceLineChart({
               {chart.yLabel}
             </text>
 
+            {enableZoom ? (
+              <rect
+                x={plotBounds.left}
+                y={plotBounds.top}
+                width={plotBounds.right - plotBounds.left}
+                height={plotBounds.bottom - plotBounds.top}
+                fill="transparent"
+                className="cursor-crosshair"
+                onPointerDown={onOverlayPointerDown}
+                onPointerMove={onOverlayPointerMove}
+                onPointerUp={onOverlayPointerUp}
+                onDoubleClick={onOverlayDoubleClick}
+              />
+            ) : null}
+
+            <ChartZoomSelection rect={selectionRect} />
+
             {chart.categories.map((category, index) => {
-              const x = getCategoryTickX(
-                index,
-                chart.categories.length,
-                layout,
-              );
+              if (
+                enableZoom &&
+                (index < viewDomain.xMin - 0.05 ||
+                  index > viewDomain.xMax + 0.05)
+              ) {
+                return null;
+              }
+
+              const x = indexToX(index);
+              const tickY = crowdedCategories ? layout.tickY + 2 : layout.tickY;
               return (
                 <text
                   key={`${category}-${index}`}
                   x={x}
-                  y={layout.tickY}
-                  textAnchor={getCategoryTickTextAnchor(
-                    index,
-                    chart.categories.length,
-                  )}
-                  className={tickClass}
+                  y={tickY}
+                  textAnchor={
+                    crowdedCategories
+                      ? "end"
+                      : getCategoryTickTextAnchor(
+                          index,
+                          chart.categories.length,
+                        )
+                  }
+                  transform={
+                    crowdedCategories
+                      ? `rotate(-38 ${x} ${tickY})`
+                      : undefined
+                  }
+                  className={categoryLabelClass}
                 >
                   {category}
                 </text>
@@ -393,16 +518,12 @@ export function EvidenceLineChart({
               />
             )}
 
+            <g clipPath={enableZoom ? `url(#${clipId})` : undefined}>
             {!empty &&
-              chart.series.map((series) => {
-                const path = buildPath(
-                  series.values,
-                  yMin,
-                  yMax,
-                  layout,
-                  step,
-                  dataPlotLeft,
-                );
+              chart.series
+                .filter((series) => !hiddenSeries?.has(series.label))
+                .map((series) => {
+                const path = buildPath(series.values, indexToX, valueToY);
                 const markerShape = series.markerShape ?? "circle";
                 const markerSize = markerShape === "circle" ? 8 : 7;
 
@@ -420,8 +541,8 @@ export function EvidenceLineChart({
                     {series.values.map((value, index) => {
                       if (!Number.isFinite(value)) return null;
 
-                      const x = dataPlotLeft + index * step;
-                      const y = scaleToPlotY(value, yMin, yMax, layout);
+                      const x = indexToX(index);
+                      const y = valueToY(value);
                       const pointId = `${series.label}-${index}`;
                       const isActive = activePoint === pointId;
 
@@ -474,8 +595,13 @@ export function EvidenceLineChart({
                   </g>
                 );
               })}
+            </g>
           </svg>
         )}
+
+        {enableZoom && isZoomed ? (
+          <ChartZoomResetButton onReset={resetZoom} />
+        ) : null}
 
         {showTooltip && (
           <ChartTooltip

@@ -28,6 +28,9 @@ export const FORM_B_FOOTER_RESERVE_PT = 52;
 export const FORM_B_FOOTER_GAP_ABOVE_PT = 32;
 export const FORM_B_FOOTER_SIZE_PT = 12;
 
+/** Extra breathing room above the signature / date row (below question 4). */
+export const SIGNATURE_TOP_GAP_PT = 12;
+
 export const FORM_B_LAYOUT_SCALES: FormBLayoutScale[] = [
   {
     bodySize: 11,
@@ -126,7 +129,7 @@ export function estimateFormBLayoutHeightPt(
     height += scale.questionGap;
   }
 
-  height += SIGNATURE_ROW_HEIGHT_PT + scale.sectionGap / 2;
+  height += SIGNATURE_TOP_GAP_PT + SIGNATURE_ROW_HEIGHT_PT + scale.sectionGap / 2;
   height += FORM_B_FOOTER_GAP_ABOVE_PT + FORM_B_FOOTER_SIZE_PT;
 
   return height;

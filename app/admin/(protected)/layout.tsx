@@ -3,6 +3,9 @@ import { AdminShell } from "@/components/admin/AdminShell";
 import { fetchAdminUser } from "@/lib/admin/fetch-user";
 import { createClient } from "@/lib/supabase/server";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export default async function ProtectedAdminLayout({
   children,
 }: {

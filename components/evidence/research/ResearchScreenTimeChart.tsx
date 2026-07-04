@@ -136,7 +136,7 @@ function ScreenTimeTooltip({
           />
           <p className={`pr-4 ${chartTooltipTitle}`}>{row.label}</p>
         </div>
-        <div className="space-y-1.5 px-3.5 py-3 font-sans text-[11px] leading-snug text-slate-50/85 md:text-xs lg:text-sm">
+        <div className="space-y-1.5 px-3.5 py-3 font-sans text-xs leading-snug text-slate-50/85 lg:text-sm">
           <p className="whitespace-nowrap text-slate-50">{dropText}</p>
           <p className="whitespace-nowrap">
             {row.sig ? "✓ Confirmed finding" : "✗ Result may be due to chance"}
@@ -341,7 +341,7 @@ export function ResearchScreenTimeChart({ data }: ResearchScreenTimeChartProps) 
             key={pill.value}
             className="rounded-xl border border-navy-50 bg-navy-50 px-3 py-2.5 text-center md:px-4 md:py-3"
           >
-            <p className="text-sm font-semibold text-navy-800 md:text-base lg:text-lg">
+            <p className="text-sm font-semibold text-navy-800 md:text-base">
               {pill.value}
             </p>
             <p className={`mt-1 leading-snug ${researchChartCaptionMutedDark}`}>

@@ -2,14 +2,14 @@
 
 import { useMemo, useState } from "react";
 import type { EditableLibraryItem } from "@/lib/admin/cms-entity-types";
-import type { LibraryCategory } from "@/lib/cms/types";
 import { adminInputClass, adminLabelClass } from "@/components/admin/admin-styles";
+import { libraryCategories } from "@/lib/cms/fallback-data";
+import type { LibraryCategory } from "@/lib/cms/types";
 import { MediaField } from "@/components/admin/content/MediaField";
 import { cn } from "@/lib/utils";
 
 type LibraryItemsEditorProps = {
   items: EditableLibraryItem[];
-  categories: LibraryCategory[];
   onChange: (items: EditableLibraryItem[]) => void;
 };
 
@@ -22,12 +22,9 @@ const KIND_LABELS: Record<EditableLibraryItem["kind"], string> = {
 
 export function LibraryItemsEditor({
   items,
-  categories,
   onChange,
 }: LibraryItemsEditorProps) {
-  const activeCategories = categories.length
-    ? categories
-    : (["Books", "Research Papers", "Videos", "Parent Resources"] as LibraryCategory[]);
+  const activeCategories = libraryCategories;
   const [activeCategory, setActiveCategory] = useState<LibraryCategory>(
     activeCategories[0] ?? "Books",
   );

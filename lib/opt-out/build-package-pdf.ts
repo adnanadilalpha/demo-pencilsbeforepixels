@@ -9,7 +9,7 @@ import {
   extractDocxRenderBlocks,
   type DocxRenderBlock,
 } from "@/lib/opt-out/docx-render-blocks";
-import { embedPackageFont } from "@/lib/opt-out/pdf-font";
+import { embedPackageFonts } from "@/lib/opt-out/pdf-font";
 import { wrapPdfText } from "@/lib/opt-out/pdf-layout";
 import { renderFormBPdf } from "@/lib/opt-out/render-form-b-pdf";
 import type { OptOutFormConfig, OptOutLetterForm } from "@/lib/opt-out/types";
@@ -44,7 +44,7 @@ async function renderBlocksToPdf(
   pageBreakBefore: boolean,
 ): Promise<PDFDocument> {
   const pdf = await PDFDocument.create();
-  const font = await embedPackageFont(pdf);
+  const fonts = await embedPackageFonts(pdf);
   const { fontSize, lineHeight, blockGap } = options;
   const maxWidth = PAGE_WIDTH - MARGIN * 2;
 
@@ -90,6 +90,8 @@ async function renderBlocksToPdf(
       continue;
     }
 
+    const font = block.bold ? fonts.bold : fonts.regular;
+
     for (const line of wrapPdfText(block.text, font, fontSize, maxWidth)) {
       startPage(false);
 
@@ -97,8 +99,14 @@ async function renderBlocksToPdf(
         startPage(true);
       }
 
+      const lineWidth = font.widthOfTextAtSize(line, fontSize);
+      const x =
+        block.align === "center"
+          ? MARGIN + Math.max(0, (maxWidth - lineWidth) / 2)
+          : MARGIN;
+
       page!.drawText(line, {
-        x: MARGIN,
+        x,
         y,
         size: fontSize,
         font,

@@ -8,6 +8,7 @@ import {
   weightedAvg,
   type EvidenceScoreRow,
 } from "./chart-utils";
+import { formatSchoolDisplayName, normalizeSchoolName } from "./school-names";
 
 const DISTRICT_COLORS = [
   "#0065F4",
@@ -51,6 +52,22 @@ function valuesForYears(
   });
 }
 
+function pointMetaForYears(
+  yearMap: ReturnType<typeof buildSchoolYearMap>,
+  years: string[],
+) {
+  return years.map((year) => {
+    const bucket = yearMap[year];
+    if (!bucket) return {};
+    return {
+      grades: bucket.grades.join(", "),
+      studentsTested: Math.round(
+        bucket.counts.reduce((sum, count) => sum + count, 0),
+      ),
+    };
+  });
+}
+
 function entityKeyForRow(row: EvidenceScoreRow): string {
   const level = row.level ?? "";
   const name =
@@ -82,7 +99,9 @@ export function buildPerformanceChart(
 
   districts.forEach((district) => {
     const rows = districtRows.filter(
-      (row) => row.agency_name === district.name,
+      (row) =>
+        normalizeSchoolName(row.agency_name ?? "") ===
+        normalizeSchoolName(district.id),
     );
     const yearMap = buildSchoolYearMap(rows);
     const values = valuesForYears(yearMap, years).map((value) =>
@@ -94,6 +113,7 @@ export function buildPerformanceChart(
       color: district.color,
       values,
       markerShape: "circle",
+      pointMeta: pointMetaForYears(yearMap, years),
     });
   });
 
@@ -150,7 +170,10 @@ export function buildGenderPerformanceChart(
 
     const color = isState
       ? STATE_COLOR
-      : districts.find((district) => district.name === name)?.color ?? "#64748B";
+      : districts.find(
+          (district) =>
+            normalizeSchoolName(district.id) === normalizeSchoolName(name),
+        )?.color ?? "#64748B";
 
     const entityRows = rowsForEntityKey(rows, key);
     const maleRows = entityRows.filter((row) => row.subgroup_desc === "Male");
@@ -160,22 +183,24 @@ export function buildGenderPerformanceChart(
 
     const maleMap = buildSchoolYearMap(maleRows);
     const femaleMap = buildSchoolYearMap(femaleRows);
+    const displayName = formatSchoolDisplayName(name);
 
     if (maleRows.length > 0) {
       series.push({
-        label: isState ? "State — Male" : `${name} — Male`,
+        label: isState ? "State — Male" : `${displayName} — Male`,
         color,
         values: valuesForYears(maleMap, years).map((value) =>
           Number.isFinite(value) ? value : 0,
         ),
         markerShape: "circle",
         strokeWidth: isState ? 2.5 : 2,
+        ...(isState ? {} : { pointMeta: pointMetaForYears(maleMap, years) }),
       });
     }
 
     if (femaleRows.length > 0) {
       series.push({
-        label: isState ? "State — Female" : `${name} — Female`,
+        label: isState ? "State — Female" : `${displayName} — Female`,
         color,
         values: valuesForYears(femaleMap, years).map((value) =>
           Number.isFinite(value) ? value : 0,
@@ -183,6 +208,7 @@ export function buildGenderPerformanceChart(
         dashArray: "2 4",
         markerShape: "diamond",
         strokeWidth: isState ? 2.5 : 2,
+        ...(isState ? {} : { pointMeta: pointMetaForYears(femaleMap, years) }),
       });
     }
 
@@ -198,8 +224,26 @@ export function buildGenderPerformanceChart(
         );
       });
 
+      const combinedMeta = years.map((year) => {
+        const maleBucket = maleMap[year];
+        const femaleBucket = femaleMap[year];
+        if (!maleBucket || !femaleBucket) return {};
+        const grades = [
+          ...new Set([...maleBucket.grades, ...femaleBucket.grades]),
+        ];
+        return {
+          grades: grades.join(", "),
+          studentsTested: Math.round(
+            [...maleBucket.counts, ...femaleBucket.counts].reduce(
+              (sum, count) => sum + count,
+              0,
+            ),
+          ),
+        };
+      });
+
       series.push({
-        label: isState ? "State — M+F Combined" : `${name} — M+F Combined`,
+        label: isState ? "State — M+F Combined" : `${displayName} — M+F Combined`,
         color,
         values: combinedValues.map((value) =>
           Number.isFinite(value) ? value : 0,
@@ -208,6 +252,7 @@ export function buildGenderPerformanceChart(
         markerShape: "square",
         opacity: 0.65,
         strokeWidth: isState ? 2.5 : 2,
+        ...(isState ? {} : { pointMeta: combinedMeta }),
       });
     }
   });

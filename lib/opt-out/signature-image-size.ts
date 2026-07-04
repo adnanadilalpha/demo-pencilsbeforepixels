@@ -1,5 +1,5 @@
 export const SIGNATURE_MAX_WIDTH_PT = 200;
-export const SIGNATURE_MAX_HEIGHT_PT = 36;
+export const SIGNATURE_MAX_HEIGHT_PT = 24;
 export const SIGNATURE_ROW_HEIGHT_PT = 34;
 
 export function readPngDimensions(buffer: Buffer): { width: number; height: number } | null {

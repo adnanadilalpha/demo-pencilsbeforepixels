@@ -58,13 +58,42 @@ export function formatYouTubeLinkForEditor(
   return normalizeYouTubeUrl(stored);
 }
 
-export function youTubeEmbedUrl(videoId: string, autoplay = true): string {
-  const params = new URLSearchParams({
+export function youTubeEmbedParams(autoplay = true): URLSearchParams {
+  return new URLSearchParams({
     autoplay: autoplay ? "1" : "0",
     rel: "0",
     modestbranding: "1",
     playsinline: "1",
+    cc_load_policy: "0",
+    iv_load_policy: "3",
+    enablejsapi: "1",
   });
+}
+
+export function youTubeEmbedUrl(
+  videoId: string,
+  autoplay = true,
+  origin?: string,
+): string {
+  const params = youTubeEmbedParams(autoplay);
+  if (origin) {
+    params.set("origin", origin);
+  }
 
   return `https://www.youtube-nocookie.com/embed/${videoId}?${params.toString()}`;
+}
+
+export function disableYouTubeCaptions(iframe: HTMLIFrameElement) {
+  const commands = [
+    { func: "unloadModule", args: ["captions"] },
+    { func: "setOption", args: ["captions", "track", {}] },
+    { func: "setOption", args: ["captions", "reload", true] },
+  ] as const;
+
+  for (const { func, args } of commands) {
+    iframe.contentWindow?.postMessage(
+      JSON.stringify({ event: "command", func, args }),
+      "*",
+    );
+  }
 }

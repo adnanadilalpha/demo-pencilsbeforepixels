@@ -32,7 +32,7 @@ function SlopeCard({
     >
       <p className={researchChartCaptionMutedDark}>{label}</p>
       <p
-        className={`mt-1 text-sm font-semibold md:text-base lg:text-lg ${
+        className={`mt-1 text-sm font-semibold md:text-base ${
           tone === "pre" ? "text-navy-800" : "text-red-900"
         }`}
       >

@@ -1,7 +1,6 @@
 import type {
   SettingsBrand,
   SettingsGeneral,
-  SettingsPageData,
   SettingsSecurity,
 } from "@/lib/admin/settings/types";
 
@@ -101,19 +100,5 @@ export function defaultGeneral(partial?: Partial<SettingsGeneral>): SettingsGene
     privacyPolicyUrl: "/privacy",
     termsOfServiceUrl: "/terms",
     ...omitUndefined(partial ?? {}),
-  };
-}
-
-export function defaultSettingsPageData(
-  partial?: Partial<SettingsPageData>,
-): SettingsPageData {
-  return {
-    general: defaultGeneral(partial?.general),
-    security: {
-      passwordPolicy: {
-        ...DEFAULT_PASSWORD_POLICY,
-        ...partial?.security?.passwordPolicy,
-      },
-    },
   };
 }

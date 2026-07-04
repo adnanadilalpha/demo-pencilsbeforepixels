@@ -50,6 +50,7 @@ import type {
 import { colorForDistrictIndex } from "@/lib/evidence/builders";
 import { formatSchoolYear } from "@/lib/evidence/chart-utils";
 import { DISTRICT_66_AVG_LABEL } from "@/lib/evidence/district66-constants";
+import { formatSchoolDisplayName } from "@/lib/evidence/school-names";
 import {
   fetchCachedDistricts,
   fetchCachedEvidencePanel,
@@ -352,7 +353,7 @@ export function EvidenceExplorer({ bootstrap }: { bootstrap: EvidenceBootstrap }
       linePanel?.selectedDistricts ??
       selectedSchoolIds.map((id, index) => ({
         id,
-        name: id,
+        name: formatSchoolDisplayName(id),
         color: colorForDistrictIndex(index),
       })),
     [linePanel?.selectedDistricts, selectedSchoolIds],
@@ -690,7 +691,9 @@ export function EvidenceExplorer({ bootstrap }: { bootstrap: EvidenceBootstrap }
                 {linePanel?.subtitle}
               </p>
             </div>
-            {linePanel && <EvidenceLineChart chart={linePanel.chart} />}
+            {linePanel && (
+              <EvidenceLineChart chart={linePanel.chart} showTooltip />
+            )}
           </div>
 
           <aside className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:flex xl:w-[320px] xl:shrink-0 xl:flex-col xl:gap-8">

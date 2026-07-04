@@ -1,4 +1,3 @@
-import type { AcademicDataset } from "@/lib/academic-data/types";
 import type { ResearchChartsData } from "@/lib/research/types";
 import type { LibraryFileKind } from "./library-file";
 
@@ -9,10 +8,7 @@ export type NavLink = {
 
 export type SectionKey =
   | "homepage.hero"
-  | "homepage.problem"
-  | "homepage.statement"
   | "homepage.goal"
-  | "homepage.academic_data"
   | "homepage.learning_apps"
   | "homepage.expert_voices"
   | "homepage.mental_health"
@@ -20,9 +16,9 @@ export type SectionKey =
   | "homepage.device_opt_out"
   | "homepage.footer"
   | "evidence.intro"
+  | "evidence.research_tab"
   | "evidence.nebraska"
-  | "evidence.district_66"
-  | "evidence.research_tab";
+  | "evidence.district_66";
 
 export type SectionContent = Record<string, unknown>;
 
@@ -84,6 +80,8 @@ export type SoftwareReview = {
   summary?: string;
   youtubeId?: string;
   audioSrc?: string;
+  audioTitle?: string;
+  audioDescription?: string;
   vendorResearch?: ResearchNote;
   independentResearch?: ResearchNote;
   referencesNote?: string;
@@ -141,14 +139,12 @@ export type SiteContent = {
   libraryContent: Record<LibraryCategory, LibraryItem[]>;
   mentalHealthPoints: string[];
   mentalHealthLegend: { label: string; color: string }[];
-  academicDatasets: string[];
   optOutSteps: OptOutStep[];
   softwareReviews: {
     epic: SoftwareReview;
     ixl: SoftwareReview;
   };
   research: ResearchChartsData;
-  academicStatic: AcademicDataset[];
 };
 
 export type ContentVersion = {

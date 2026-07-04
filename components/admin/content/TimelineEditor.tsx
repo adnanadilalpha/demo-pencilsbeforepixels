@@ -36,18 +36,11 @@ export function TimelineEditor({ slides, onChange }: TimelineEditorProps) {
               <p className="text-sm font-semibold text-navy-800">
                 {MISSION_SLIDE_LABELS[index] ?? `Slide ${index + 1}`}
               </p>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <Field
-                  label="Label"
-                  value={slide.era}
-                  onChange={(value) => updateSlide(index, { era: value })}
-                />
-                <Field
-                  label="Number"
-                  value={slide.number}
-                  onChange={(value) => updateSlide(index, { number: value })}
-                />
-              </div>
+              <Field
+                label="Number"
+                value={slide.number}
+                onChange={(value) => updateSlide(index, { number: value })}
+              />
               <Field
                 label="Title"
                 value={slide.title}

@@ -17,9 +17,9 @@ type ContentToolbarProps = {
 
 const PAGE_TABS: { id: ContentPageId; label: string }[] = [
   { id: "homepage", label: "Homepage" },
-  { id: "site", label: "Site" },
-  { id: "nebraska", label: "Nebraska Data" },
   { id: "research", label: "Research" },
+  { id: "nebraska", label: "Nebraska Data" },
+  { id: "site", label: "Site" },
 ];
 
 export function ContentToolbar({

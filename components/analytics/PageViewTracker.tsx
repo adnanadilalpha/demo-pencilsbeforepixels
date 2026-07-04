@@ -1,30 +1,55 @@
 "use client";
 
+import {
+  getOrRefreshSession,
+  PAGE_VIEW_DEDUPE_MS,
+  touchSession,
+} from "@/lib/analytics/client-session";
+import { normalizeAnalyticsPath } from "@/lib/analytics/normalize-path";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef } from "react";
 
-const SESSION_KEY = "pbp.analytics.session";
 const VIEW_KEY = "pbp.analytics.view";
+const LAST_TRACK_KEY = "pbp.analytics.last-track";
 
-function getSessionId(): string {
-  const existing = sessionStorage.getItem(SESSION_KEY);
-  if (existing) return existing;
+type LastTrack = {
+  path: string;
+  at: number;
+};
 
-  const sessionId =
-    typeof crypto !== "undefined" && "randomUUID" in crypto
-      ? crypto.randomUUID()
-      : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+function readLastTrack(): LastTrack | null {
+  try {
+    const raw = sessionStorage.getItem(LAST_TRACK_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as LastTrack;
+    if (typeof parsed.path === "string" && typeof parsed.at === "number") {
+      return parsed;
+    }
+  } catch {
+    // ignore
+  }
+  return null;
+}
 
-  sessionStorage.setItem(SESSION_KEY, sessionId);
-  return sessionId;
+function writeLastTrack(track: LastTrack) {
+  sessionStorage.setItem(LAST_TRACK_KEY, JSON.stringify(track));
+}
+
+function shouldSkipDuplicate(path: string, now: number) {
+  const last = readLastTrack();
+  return (
+    last?.path === path && now - last.at < PAGE_VIEW_DEDUPE_MS
+  );
 }
 
 async function trackPageView(path: string) {
+  const session = getOrRefreshSession();
   const response = await fetch("/api/analytics/page-view", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      sessionId: getSessionId(),
+      sessionId: session.id,
+      visitorId: session.visitorId,
       path,
       pageTitle: document.title,
       referrer: document.referrer || null,
@@ -38,6 +63,9 @@ async function trackPageView(path: string) {
   if (payload.id) {
     sessionStorage.setItem(VIEW_KEY, payload.id);
   }
+
+  writeLastTrack({ path, at: Date.now() });
+  touchSession();
 }
 
 async function updateDuration(startedAt: number, isBounce: boolean) {
@@ -56,16 +84,31 @@ async function updateDuration(startedAt: number, isBounce: boolean) {
     }),
     keepalive: true,
   });
+
+  touchSession();
 }
 
 export function PageViewTracker() {
   const pathname = usePathname();
   const startedAtRef = useRef(Date.now());
+  const trackingRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!pathname || pathname.startsWith("/admin")) {
       return;
     }
+
+    const path = normalizeAnalyticsPath(pathname);
+    const now = Date.now();
+
+    if (shouldSkipDuplicate(path, now)) {
+      return;
+    }
+
+    if (trackingRef.current === path) {
+      return;
+    }
+    trackingRef.current = path;
 
     const previousStartedAt = startedAtRef.current;
     const hasPreviousView = sessionStorage.getItem(VIEW_KEY);
@@ -74,8 +117,12 @@ export function PageViewTracker() {
       void updateDuration(previousStartedAt, false);
     }
 
-    startedAtRef.current = Date.now();
-    void trackPageView(pathname);
+    startedAtRef.current = now;
+    void trackPageView(path).finally(() => {
+      if (trackingRef.current === path) {
+        trackingRef.current = null;
+      }
+    });
 
     const handlePageHide = () => {
       void updateDuration(startedAtRef.current, true);

@@ -2,6 +2,11 @@ import type { NaepGradeKey } from "@/lib/charts/naep-data";
 
 export type ChartMarkerShape = "circle" | "diamond" | "square";
 
+export type ChartPointMeta = {
+  grades?: string;
+  studentsTested?: number;
+};
+
 export type ChartSeries = {
   label: string;
   color: string;
@@ -10,6 +15,8 @@ export type ChartSeries = {
   markerShape?: ChartMarkerShape;
   opacity?: number;
   strokeWidth?: number;
+  /** Per-category tooltip metadata aligned with `values`. */
+  pointMeta?: ChartPointMeta[];
 };
 
 export type AcademicChart = {

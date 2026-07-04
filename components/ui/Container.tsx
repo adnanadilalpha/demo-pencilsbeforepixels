@@ -6,6 +6,10 @@ export const sectionPaddingX = "px-4 sm:px-8 lg:px-16 xl:px-24";
 
 export const contentMaxWidthClass = "mx-auto w-full max-w-[1440px]";
 
+/** Standard intro / body copy width (~768px) for section subtext. */
+export const sectionSubtextClass =
+  "w-full max-w-3xl text-base leading-[1.55] sm:text-lg sm:leading-[1.6]";
+
 type PageFrameProps = {
   children: ReactNode;
   className?: string;

@@ -35,13 +35,10 @@ function naepChartFromPoints(
 export const NAEP_GRADE_CHART_IMAGES = {
   grade4: {
     src: "/images/research/gradeFour.jpg",
-    /** White margins removed; use on Academic Data with a padded white chart well. */
-    academicSrc: "/images/research/gradeFour-transparent.png",
     alt: "Grade 4 Math and Reading NAEP trends relative to digital adoption",
   },
   grade8: {
     src: "/images/research/gradeEight.jpg",
-    academicSrc: "/images/research/gradeEight-transparent.png",
     alt: "Grade 8 Math and Reading NAEP trends relative to digital adoption",
   },
 } as const;
@@ -98,11 +95,6 @@ export const NAEP_GRADE_8: NaepGradeSection = {
     "Reading — Pre-adoption",
     "Reading — Post-adoption",
   ),
-};
-
-export const NAEP_GRADE_SECTIONS: Record<NaepGradeKey, NaepGradeSection> = {
-  grade4: NAEP_GRADE_4,
-  grade8: NAEP_GRADE_8,
 };
 
 export const NAEP_NATIONAL_SLOPES = [

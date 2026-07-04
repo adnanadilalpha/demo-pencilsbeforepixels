@@ -13,8 +13,8 @@ export const CHART_RESEARCH_MARGIN = {
   top: 32,
   right: 24,
   left: 68,
-  tickBand: 76,
-  xLabel: 28,
+  tickBand: 92,
+  xLabel: 36,
 } as const;
 
 /** Tighter margins for research charts on mobile and tablet. */
@@ -22,8 +22,8 @@ export const CHART_RESEARCH_MARGIN_COMPACT = {
   top: 24,
   right: 18,
   left: 44,
-  tickBand: 58,
-  xLabel: 20,
+  tickBand: 72,
+  xLabel: 28,
 } as const;
 
 /** Horizontal inset so end points and x labels are not clipped. */
@@ -61,7 +61,8 @@ export function getChartLayout(
   const plotBottom = height - margin.tickBand - margin.xLabel;
   const plotWidth = Math.max(plotRight - plotLeft, 0);
   const plotHeight = Math.max(plotBottom - plotTop, 0);
-  const tickOffset = Math.round(margin.tickBand * 0.5);
+  const tickY = plotBottom + Math.round(margin.tickBand * 0.4);
+  const xLabelY = height - Math.round(margin.xLabel * 0.55);
 
   return {
     plotLeft,
@@ -70,8 +71,8 @@ export function getChartLayout(
     plotBottom,
     plotWidth,
     plotHeight,
-    tickY: plotBottom + tickOffset,
-    xLabelY: height - Math.round(margin.xLabel / 2),
+    tickY,
+    xLabelY,
     yAxisLabelY: plotTop + plotHeight / 2,
     crosshairBottom: height - plotBottom,
   };

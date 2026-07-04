@@ -10,6 +10,7 @@ import { formatCount, formatDuration, formatPercentChange } from "@/lib/admin/fo
 
 export type PageViewRow = {
   session_id: string;
+  visitor_id?: string | null;
   path: string;
   duration_seconds: number | null;
   is_bounce: boolean;
@@ -161,10 +162,48 @@ function metricValue(
   metric: AnalyticsMetric,
 ): number {
   if (metric === "sessions") {
-    return new Set(views.map((view) => view.session_id)).size;
+    return countUniqueSessions(views);
   }
 
   return views.length;
+}
+
+function countUniqueSessions(views: PageViewRow[]): number {
+  return new Set(views.map((view) => view.session_id)).size;
+}
+
+function countUniqueVisitors(views: PageViewRow[]): number {
+  const ids = new Set<string>();
+
+  for (const view of views) {
+    if (view.visitor_id) {
+      ids.add(view.visitor_id);
+      continue;
+    }
+    ids.add(`session:${view.session_id}`);
+  }
+
+  return ids.size;
+}
+
+function computeAvgSessionDuration(views: PageViewRow[]): number {
+  const sessionTotals = new Map<string, number>();
+
+  for (const view of views) {
+    if (typeof view.duration_seconds !== "number" || view.duration_seconds <= 0) {
+      continue;
+    }
+
+    sessionTotals.set(
+      view.session_id,
+      (sessionTotals.get(view.session_id) ?? 0) + view.duration_seconds,
+    );
+  }
+
+  const totals = [...sessionTotals.values()];
+  if (totals.length === 0) return 0;
+
+  return totals.reduce((sum, value) => sum + value, 0) / totals.length;
 }
 
 export function buildVisitorsOverTime(
@@ -253,28 +292,20 @@ export function buildAnalyticsSummary(
   const previousStart = getPreviousRangeStart(range, reference);
   const previousViews = filterViewsBetween(allViews, previousStart, currentStart);
 
-  const totalVisitors = currentViews.length;
-  const uniqueSessions = new Set(currentViews.map((view) => view.session_id)).size;
-  const previousSessions = new Set(previousViews.map((view) => view.session_id)).size;
+  const totalVisitors = countUniqueVisitors(currentViews);
+  const previousVisitors = countUniqueVisitors(previousViews);
+  const uniqueSessions = countUniqueSessions(currentViews);
+  const previousSessions = countUniqueSessions(previousViews);
   const sessionTrend = formatPercentChange(uniqueSessions, previousSessions);
-
-  const durations = currentViews
-    .map((view) => view.duration_seconds)
-    .filter((value): value is number => typeof value === "number" && value > 0);
-  const avgDuration =
-    durations.length > 0
-      ? durations.reduce((sum, value) => sum + value, 0) / durations.length
-      : 0;
-
-  const previousTotal = previousViews.length;
-  const visitorTrend = formatPercentChange(totalVisitors, previousTotal);
+  const visitorTrend = formatPercentChange(totalVisitors, previousVisitors);
+  const avgDuration = computeAvgSessionDuration(currentViews);
 
   return {
     totalVisitors: {
-      label: "Total Visitors",
+      label: "Unique Visitors",
       value: formatCount(totalVisitors),
       trend: `${visitorTrend} vs prior period`,
-      trendPositive: totalVisitors >= previousTotal,
+      trendPositive: totalVisitors >= previousVisitors,
     },
     uniqueSessions: {
       label: "Unique Sessions",
