@@ -20,7 +20,7 @@ type LibraryItemFormModalProps = {
   onClose: () => void;
   onSaved: () => Promise<void>;
   initial?: AdminLibraryItem | null;
-  saveType: "research-papers" | "parent-resources";
+  saveType: "walled-garden" | "research-papers" | "parent-resources";
 };
 
 const DOCUMENT_ACCEPT =
@@ -44,12 +44,22 @@ function modalCopy(saveType: LibraryItemFormModalProps["saveType"], editing: boo
     };
   }
 
+  if (saveType === "walled-garden") {
+    return {
+      title: editing ? "Edit Walled Garden article" : "Add Walled Garden article",
+      saveLabel: editing ? "Save changes" : "Save article",
+      subtitleLabel: "Source / Organisation",
+      subtitlePlaceholder: "e.g. ACER",
+      fileLabel: "PDF file",
+    };
+  }
+
   return {
     title: editing ? "Edit research paper" : "Add research paper",
     saveLabel: editing ? "Save changes" : "Save paper",
-    subtitleLabel: "Source / Organisation",
-    subtitlePlaceholder: "e.g. ACER",
-    fileLabel: "Paper file",
+    subtitleLabel: "Source / Journal",
+    subtitlePlaceholder: "e.g. Journal of Educational Psychology",
+    fileLabel: "PDF file",
   };
 }
 
@@ -179,7 +189,9 @@ export function LibraryItemFormModal({
           folder={
             saveType === "parent-resources"
               ? "resources/parent"
-              : "resources/research"
+              : saveType === "walled-garden"
+                ? "resources/walled-garden"
+                : "resources/research-papers"
           }
           accept={DOCUMENT_ACCEPT}
           valueUrl={fileUrl}

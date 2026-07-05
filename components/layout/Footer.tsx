@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useLenis } from "lenis/react";
 import { NewsletterFooterForm } from "@/components/newsletter/NewsletterFooterForm";
 import { Logo } from "@/components/layout/Logo";
+import { FooterSocialLinks } from "@/components/layout/FooterSocialLinks";
 import { contentMaxWidthClass, sectionPaddingX } from "@/components/ui/Container";
 import { resolvePrivacyPolicyUrl, resolveTermsOfServiceUrl } from "@/lib/cms/settings-urls";
 import { useSection, useSiteContent } from "@/lib/cms/hooks";
@@ -21,30 +22,34 @@ export function Footer({ paddingX = sectionPaddingX }: FooterProps) {
   const footerLinks = normalizePublicNavLinks(navigation.footer, "footer");
   const pathname = usePathname();
   const lenis = useLenis();
+  const hasSocialLinks = settings.socialLinks.length > 0;
 
   const newsletterLabel =
     (footerSection.newsletterLabel as string) ?? "Newsletter";
+  const socialLinksLabel =
+    (footerSection.socialLinksLabel as string)?.trim() || "Follow us";
 
   const privacyPolicyUrl = resolvePrivacyPolicyUrl(settings.privacyPolicyUrl);
   const termsOfServiceUrl = resolveTermsOfServiceUrl(settings.termsOfServiceUrl);
 
   return (
-    <footer className="w-full bg-paper-300 py-16 max-lg:py-16">
+    <footer className="w-full bg-paper-200 py-16 max-lg:py-12">
       <div className={paddingX}>
         <div className={contentMaxWidthClass}>
-          <div className="flex w-full flex-col gap-12 max-lg:gap-8">
-            <div className="flex w-full flex-col gap-10 max-lg:gap-12 lg:flex-row lg:items-start lg:justify-between">
-              <div className="order-2 flex flex-col gap-8 max-lg:gap-8 lg:order-1">
+          <div className="flex w-full flex-col gap-10 max-lg:gap-8 lg:gap-12">
+            <div className="grid w-full grid-cols-1 gap-10 max-lg:gap-8 lg:grid-cols-[minmax(0,1fr)_400px] lg:items-start lg:gap-x-16 lg:gap-y-0">
+              <div className="flex min-w-0 flex-col gap-8">
                 <div className="flex flex-col gap-3">
                   <Logo variant="dark" />
                   {settings.footerTagline ? (
-                    <p className="max-w-sm text-base text-black/70">
+                    <p className="max-w-md text-base text-black/70">
                       {settings.footerTagline}
                     </p>
                   ) : null}
                 </div>
+
                 <nav
-                  className="flex flex-wrap gap-8 text-base font-semibold leading-none text-black max-lg:gap-8"
+                  className="flex flex-wrap gap-x-8 gap-y-4 text-base font-semibold leading-none text-black"
                   aria-label="Footer navigation"
                 >
                   {footerLinks.map((link) => (
@@ -62,18 +67,29 @@ export function Footer({ paddingX = sectionPaddingX }: FooterProps) {
                 </nav>
               </div>
 
-              <div className="order-1 flex w-full min-w-0 flex-col gap-4 lg:order-2 lg:w-[400px] lg:shrink-0">
-                <p className="text-base font-semibold leading-none text-black">
-                  {newsletterLabel}
-                </p>
-                <NewsletterFooterForm />
+              <div className="flex min-w-0 flex-col gap-6 lg:gap-8">
+                <div className="flex w-full flex-col gap-4">
+                  <p className="text-base font-semibold leading-none text-black">
+                    {newsletterLabel}
+                  </p>
+                  <NewsletterFooterForm />
+                </div>
+
+                {hasSocialLinks ? (
+                  <div className="flex flex-col gap-3 border-t border-black/10 pt-6 max-lg:pt-5">
+                    <p className="text-sm font-semibold leading-none text-black/80">
+                      {socialLinksLabel}
+                    </p>
+                    <FooterSocialLinks links={settings.socialLinks} />
+                  </div>
+                ) : null}
               </div>
             </div>
 
-            <div className="flex w-full flex-col gap-8 max-lg:gap-6">
+            <div className="flex w-full flex-col gap-6 max-lg:gap-5">
               <div className="h-px w-full bg-black" />
-              <div className="flex w-full flex-col gap-4 text-base leading-relaxed text-black max-lg:gap-3 lg:flex-row lg:items-center lg:justify-between lg:leading-none">
-                <div className="flex flex-wrap gap-6">
+              <div className="flex w-full flex-col gap-4 text-base leading-relaxed text-black max-lg:gap-3 sm:flex-row sm:items-center sm:justify-between sm:leading-none">
+                <div className="flex flex-wrap gap-x-6 gap-y-2">
                   {privacyPolicyUrl.startsWith("/") ? (
                     <Link
                       href={privacyPolicyUrl}
@@ -105,7 +121,7 @@ export function Footer({ paddingX = sectionPaddingX }: FooterProps) {
                     </a>
                   )}
                 </div>
-                <p>{settings.copyright}</p>
+                <p className="max-w-prose sm:text-right">{settings.copyright}</p>
               </div>
             </div>
           </div>

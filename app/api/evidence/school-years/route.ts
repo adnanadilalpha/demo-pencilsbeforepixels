@@ -1,12 +1,13 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
+import { getApiCacheHeaders } from "@/lib/cache/server";
 import { getDistrict66SchoolYears } from "@/lib/evidence/district66";
 import { getSchoolYears } from "@/lib/evidence/fetch";
 import type { EvidenceSubject, EvidenceTab } from "@/lib/evidence/types";
 
-export async function GET(request: NextRequest) {
-  const subject = (request.nextUrl.searchParams.get("subject") ??
+export async function GET(request: Request) {
+  const subject = (new URL(request.url).searchParams.get("subject") ??
     "math") as EvidenceSubject;
-  const tab = (request.nextUrl.searchParams.get("tab") ??
+  const tab = (new URL(request.url).searchParams.get("tab") ??
     "nebraska") as EvidenceTab;
 
   try {
@@ -14,7 +15,9 @@ export async function GET(request: NextRequest) {
       tab === "district-66"
         ? await getDistrict66SchoolYears()
         : await getSchoolYears(subject);
-    return NextResponse.json(schoolYears);
+    return NextResponse.json(schoolYears, {
+      headers: await getApiCacheHeaders("evidence-data"),
+    });
   } catch (error) {
     console.error("School years API error:", error);
     return NextResponse.json(

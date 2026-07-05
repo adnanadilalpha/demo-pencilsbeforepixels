@@ -1,5 +1,12 @@
 import { NextResponse } from "next/server";
-import { uploadMediaAsset } from "@/lib/admin/media-storage";
+import {
+  parseBookCoverProcessOptions,
+} from "@/lib/admin/book-cover-process";
+import {
+  reprocessBookCoverMedia,
+  uploadMediaAsset,
+} from "@/lib/admin/media-storage";
+import { touchAssetsRevision } from "@/lib/cms/assets-revision";
 import { createClient } from "@/lib/supabase/server";
 
 export async function POST(request: Request) {
@@ -13,32 +20,51 @@ export async function POST(request: Request) {
   }
 
   const formData = await request.formData();
-  const file = formData.get("file");
-
-  if (!(file instanceof File)) {
-    return NextResponse.json({ error: "File is required." }, { status: 400 });
-  }
-
-  const folder = formData.get("folder");
-  if (typeof folder !== "string" || !folder.trim()) {
+  const folderValue = formData.get("folder");
+  if (typeof folderValue !== "string" || !folderValue.trim()) {
     return NextResponse.json({ error: "Folder is required." }, { status: 400 });
   }
 
+  const folder = folderValue.trim();
   const filename = formData.get("filename");
   const replaceStoragePath = formData.get("replaceStoragePath");
   const altText = formData.get("altText");
   const title = formData.get("title");
+  const reprocessUrl = formData.get("reprocessUrl");
+  const bookCover = parseBookCoverProcessOptions(formData, folder);
 
   try {
-    const media = await uploadMediaAsset(file, {
-      folder: folder.trim(),
-      filename: typeof filename === "string" ? filename : undefined,
-      replaceStoragePath:
-        typeof replaceStoragePath === "string" ? replaceStoragePath : undefined,
-      altText: typeof altText === "string" ? altText : undefined,
-      title: typeof title === "string" ? title : undefined,
-      userId: user.id,
-    });
+    const media =
+      typeof reprocessUrl === "string" && reprocessUrl.trim()
+        ? await reprocessBookCoverMedia(reprocessUrl.trim(), {
+            folder,
+            filename: typeof filename === "string" ? filename : undefined,
+            replaceStoragePath:
+              typeof replaceStoragePath === "string" ? replaceStoragePath : undefined,
+            altText: typeof altText === "string" ? altText : undefined,
+            title: typeof title === "string" ? title : undefined,
+            userId: user.id,
+            bookCover,
+          })
+        : await (async () => {
+            const file = formData.get("file");
+            if (!(file instanceof File)) {
+              throw new Error("File is required.");
+            }
+
+            return uploadMediaAsset(file, {
+              folder,
+              filename: typeof filename === "string" ? filename : undefined,
+              replaceStoragePath:
+                typeof replaceStoragePath === "string" ? replaceStoragePath : undefined,
+              altText: typeof altText === "string" ? altText : undefined,
+              title: typeof title === "string" ? title : undefined,
+              userId: user.id,
+              bookCover,
+            });
+          })();
+
+    await touchAssetsRevision();
 
     return NextResponse.json(media);
   } catch (error) {

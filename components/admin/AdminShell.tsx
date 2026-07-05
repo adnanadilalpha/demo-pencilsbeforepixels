@@ -9,10 +9,11 @@ import { cn } from "@/lib/utils";
 
 type AdminShellProps = {
   user: AdminUserSummary;
+  logoSrc: string;
   children: React.ReactNode;
 };
 
-export function AdminShell({ user, children }: AdminShellProps) {
+export function AdminShell({ user, logoSrc, children }: AdminShellProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
 
@@ -40,6 +41,7 @@ export function AdminShell({ user, children }: AdminShellProps) {
       ) : null}
 
       <AdminSidebar
+        logoSrc={logoSrc}
         mobileOpen={mobileOpen}
         onNavigate={() => setMobileOpen(false)}
       />

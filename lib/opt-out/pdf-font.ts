@@ -9,7 +9,9 @@ export type PackageFonts = {
   regular: PDFFont;
   bold: PDFFont;
   boldItalic: PDFFont;
+  signature: PDFFont;
   family: string;
+  signatureFamily: string;
 };
 
 const fontDir = join(process.cwd(), "lib/opt-out/fonts");
@@ -37,6 +39,8 @@ const BOLD_ITALIC_CANDIDATES = [
   { file: "NotoSans-BoldItalic.ttf", family: "Noto Sans" },
 ] as const;
 
+const SIGNATURE_CANDIDATES = [{ file: "DancingScript-Regular.ttf", family: "Dancing Script" }] as const;
+
 const cache = new Map<string, Buffer>();
 
 async function loadFirstAvailable(
@@ -61,17 +65,20 @@ async function loadFirstAvailable(
 export async function embedPackageFonts(pdf: PDFDocument): Promise<PackageFonts> {
   pdf.registerFontkit(fontkit);
 
-  const [regular, bold, boldItalic] = await Promise.all([
+  const [regular, bold, boldItalic, signature] = await Promise.all([
     loadFirstAvailable(REGULAR_CANDIDATES),
     loadFirstAvailable(BOLD_CANDIDATES),
     loadFirstAvailable(BOLD_ITALIC_CANDIDATES),
+    loadFirstAvailable(SIGNATURE_CANDIDATES),
   ]);
 
   return {
     regular: await pdf.embedFont(regular.bytes),
     bold: await pdf.embedFont(bold.bytes),
     boldItalic: await pdf.embedFont(boldItalic.bytes),
+    signature: await pdf.embedFont(signature.bytes),
     family: regular.family,
+    signatureFamily: signature.family,
   };
 }
 

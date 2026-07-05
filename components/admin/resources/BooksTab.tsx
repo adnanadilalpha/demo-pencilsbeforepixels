@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { Plus, Trash2 } from "lucide-react";
 import { ToggleField } from "@/components/admin/content/ToggleField";
 import type { AdminBook } from "@/lib/admin/resources/types";
@@ -13,6 +12,25 @@ type BooksTabProps = {
   onDelete: (item: AdminBook) => void;
   onToggleVisible: (item: AdminBook, visible: boolean) => void;
 };
+
+function BookCoverPreview({ book }: { book: AdminBook }) {
+  if (!book.coverUrl) {
+    return (
+      <div className="flex size-full items-center justify-center text-sm text-white/60">
+        No cover
+      </div>
+    );
+  }
+
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={book.coverUrl}
+      alt={book.title}
+      className="absolute inset-0 size-full object-cover object-center"
+    />
+  );
+}
 
 export function BooksTab({
   items,
@@ -31,21 +49,9 @@ export function BooksTab({
           <button
             type="button"
             onClick={() => onEdit(book)}
-            className="relative block h-36 w-full bg-paper-50"
+            className="relative block h-36 w-full bg-[#18263a]"
           >
-            {book.coverUrl ? (
-              <Image
-                src={book.coverUrl}
-                alt=""
-                fill
-                className="object-contain p-2"
-                unoptimized
-              />
-            ) : (
-              <div className="flex size-full items-center justify-center text-sm text-body-muted">
-                No cover
-              </div>
-            )}
+            <BookCoverPreview book={book} />
           </button>
 
           <div className="space-y-3 p-4">

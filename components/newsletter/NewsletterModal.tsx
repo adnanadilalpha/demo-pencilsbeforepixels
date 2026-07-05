@@ -138,7 +138,7 @@ export function NewsletterModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        aria-describedby={descId}
+        aria-describedby={phase === "success" ? descId : undefined}
         tabIndex={-1}
         data-lenis-prevent
         className={cn(
@@ -173,13 +173,10 @@ export function NewsletterModal({
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-              <div className="flex flex-col gap-1.5 pr-6">
+              <div className="pr-6">
                 <h2 id={titleId} className="text-lg font-semibold text-navy-800">
-                  Newsletter
+                  Registration
                 </h2>
-                <p id={descId} className="text-sm leading-relaxed text-navy-800/70">
-                  Get research summaries, district data, and opt-out resources.
-                </p>
               </div>
 
               <div className="flex flex-col gap-1.5">

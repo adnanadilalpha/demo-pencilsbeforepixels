@@ -3,6 +3,10 @@ import type {
   SettingsGeneral,
   SettingsSecurity,
 } from "@/lib/admin/settings/types";
+import {
+  mergeSocialLinks,
+  normalizeSocialLinks,
+} from "@/lib/site/social-links";
 
 export const DEFAULT_PASSWORD_POLICY: SettingsSecurity["passwordPolicy"] = {
   minLength: true,
@@ -12,11 +16,8 @@ export const DEFAULT_PASSWORD_POLICY: SettingsSecurity["passwordPolicy"] = {
 };
 
 const EMPTY_BRAND: SettingsBrand = {
-  logoMark: "",
-  logoWordmark: "",
-  logoMarkFooter: "",
-  logoWordmarkFooter: "",
-  divider: "",
+  logoLight: "",
+  logoDark: "",
 };
 
 function omitUndefined<T extends Record<string, unknown>>(
@@ -29,25 +30,15 @@ function omitUndefined<T extends Record<string, unknown>>(
 
 function mergeBrand(value: unknown, partial?: Partial<SettingsBrand>): SettingsBrand {
   const record = asRecord(value);
+  const legacyLogo = typeof record.logo === "string" ? record.logo : "";
 
   return {
-    logoMark:
-      partial?.logoMark ??
-      (typeof record.logoMark === "string" ? record.logoMark : ""),
-    logoWordmark:
-      partial?.logoWordmark ??
-      (typeof record.logoWordmark === "string" ? record.logoWordmark : ""),
-    logoMarkFooter:
-      partial?.logoMarkFooter ??
-      (typeof record.logoMarkFooter === "string" ? record.logoMarkFooter : ""),
-    logoWordmarkFooter:
-      partial?.logoWordmarkFooter ??
-      (typeof record.logoWordmarkFooter === "string"
-        ? record.logoWordmarkFooter
-        : ""),
-    divider:
-      partial?.divider ??
-      (typeof record.divider === "string" ? record.divider : ""),
+    logoLight:
+      partial?.logoLight ??
+      (typeof record.logoLight === "string" ? record.logoLight : legacyLogo),
+    logoDark:
+      partial?.logoDark ??
+      (typeof record.logoDark === "string" ? record.logoDark : legacyLogo),
   };
 }
 
@@ -71,6 +62,7 @@ export function mergeStoredGeneral(
     ...strings,
     ...omitUndefined(partial ?? {}),
     brand: mergeBrand(existing.brand, partial?.brand),
+    socialLinks: mergeSocialLinks(existing.socialLinks, partial?.socialLinks),
   });
 
   if (!merged.metaTitle?.trim()) {
@@ -99,6 +91,9 @@ export function defaultGeneral(partial?: Partial<SettingsGeneral>): SettingsGene
       "Evidence-based resources helping parents understand learning in today's classrooms.",
     privacyPolicyUrl: "/privacy",
     termsOfServiceUrl: "/terms",
+    socialLinks: normalizeSocialLinks(partial?.socialLinks, {
+      useDefaultsWhenMissing: partial?.socialLinks === undefined,
+    }),
     ...omitUndefined(partial ?? {}),
   };
 }

@@ -1,11 +1,10 @@
 import { NextResponse } from "next/server";
+import { getApiCacheHeaders } from "@/lib/cache/server";
 import { getEvidenceVersion } from "@/lib/evidence/cached";
 
 export async function GET() {
   const version = await getEvidenceVersion();
   return NextResponse.json(version, {
-    headers: {
-      "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300",
-    },
+    headers: await getApiCacheHeaders("evidence-version"),
   });
 }

@@ -1,5 +1,6 @@
 import { createDefaultGoalFindings } from "./goal-section-content";
 import { resolvePrivacyPolicyUrl, resolveTermsOfServiceUrl } from "./settings-urls";
+import { DEFAULT_SOCIAL_LINKS } from "@/lib/site/social-links";
 import { researchChartsData } from "@/lib/research/data";
 import {
   epicReviewContent,
@@ -16,6 +17,7 @@ import {
   timelineSlides,
 } from "./fallback-data";
 import { normalizeMissionTimeline } from "./mission-slides";
+import { mergeSiteCacheSettings } from "@/lib/cache/settings";
 import type { SiteContent } from "./types";
 
 const FALLBACK_VERSION = "local-fallback";
@@ -24,6 +26,8 @@ export function buildFallbackSiteContent(): SiteContent {
   return {
     version: FALLBACK_VERSION,
     publishedAt: new Date().toISOString(),
+    assetsRevision: "0",
+    cache: mergeSiteCacheSettings(undefined),
     settings: {
       siteName: "Pencils Before Pixels",
       description:
@@ -37,6 +41,7 @@ export function buildFallbackSiteContent(): SiteContent {
       termsOfServiceUrl: resolveTermsOfServiceUrl("/terms"),
       copyright:
         "© 2026 Pencils Before Pixels. A Research-Driven Editorial for District 66 Parents.",
+      socialLinks: DEFAULT_SOCIAL_LINKS.map((link) => ({ ...link })),
     },
     media: {
       hero: { background: LOCAL_ASSETS.hero.background },
@@ -60,7 +65,6 @@ export function buildFallbackSiteContent(): SiteContent {
         backgroundAlt: "Children writing in a classroom",
       },
       "homepage.goal": {
-        label: "10 Facts",
         tagline:
           "Focus over distraction and cognitive friction over swiping.",
         body:
@@ -87,6 +91,18 @@ export function buildFallbackSiteContent(): SiteContent {
         body: "Essential reading and viewing for the modern parent.",
         categories: libraryCategories,
       },
+      "homepage.before_opt_out": {
+        reflectionTitle: "Before You Decide, Ask Yourself:",
+        reflectionQuestions: [
+          "Do you believe your child will be smarter with more screen time?",
+          "Do you believe your child will develop stronger social skills with more screen time?",
+          "Do you believe your child will be physically and mentally healthier with more screen time?",
+        ],
+        reflectionConclusion:
+          "If the answer to all three is no — then less screen time, not more, is the direction worth choosing.",
+        reflectionCallToAction:
+          "You have the right to make that choice for your child. The form below lets you do it.",
+      },
       "homepage.device_opt_out": {
         headline: "1 to 1 Device Opt Out",
         body: "Parents should have access to clear information and the ability to make informed decisions regarding classroom technology.",
@@ -97,6 +113,7 @@ export function buildFallbackSiteContent(): SiteContent {
         newsletterLabel: "Newsletter",
         newsletterPlaceholder: "Enter your email",
         newsletterCta: "Join Newsletter",
+        socialLinksLabel: "Follow us",
       },
       "evidence.intro": {
         label: "Nebraska in a National Context",
@@ -126,6 +143,7 @@ export function buildFallbackSiteContent(): SiteContent {
     libraryCategories: [...libraryCategories],
     libraryContent: {
       Books: libraryContent.Books.map((i) => ({ ...i })),
+      "Walled Garden": libraryContent["Walled Garden"].map((i) => ({ ...i })),
       "Research Papers": libraryContent["Research Papers"].map((i) => ({ ...i })),
       Videos: libraryContent.Videos.map((i) => ({ ...i })),
       "Parent Resources": libraryContent["Parent Resources"].map((i) => ({

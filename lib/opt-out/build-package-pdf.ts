@@ -30,6 +30,8 @@ const DEFAULT_RENDER: RenderOptions = {
   blockGap: 14,
 };
 
+const COVER_TOP_MARGIN_PT = 36;
+
 async function embedDocxImage(pdf: PDFDocument, data: Buffer) {
   try {
     return await pdf.embedPng(data);
@@ -42,26 +44,31 @@ async function renderBlocksToPdf(
   blocks: DocxRenderBlock[],
   options: RenderOptions,
   pageBreakBefore: boolean,
-): Promise<PDFDocument> {
+  topMarginPt = MARGIN,
+) {
   const pdf = await PDFDocument.create();
   const fonts = await embedPackageFonts(pdf);
   const { fontSize, lineHeight, blockGap } = options;
   const maxWidth = PAGE_WIDTH - MARGIN * 2;
 
   let page: ReturnType<PDFDocument["addPage"]> | null = null;
-  let y = PAGE_HEIGHT - MARGIN;
+  let y = PAGE_HEIGHT - topMarginPt;
 
   const startPage = (forceNew: boolean) => {
     if (!page || forceNew) {
       page = pdf.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
-      y = PAGE_HEIGHT - MARGIN;
+      y = PAGE_HEIGHT - topMarginPt;
     }
   };
 
   startPage(pageBreakBefore);
 
+  let atPageTop = true;
   for (const block of blocks) {
     if (block.type === "spacer") {
+      if (atPageTop) {
+        continue;
+      }
       startPage(false);
       y -= blockGap;
       continue;
@@ -78,15 +85,20 @@ async function renderBlocksToPdf(
       const scale = Math.min(1, maxWidth / block.widthPt);
       const width = block.widthPt * scale;
       const height = block.heightPt * scale;
+      const x =
+        block.align === "center"
+          ? MARGIN + Math.max(0, (maxWidth - width) / 2)
+          : MARGIN;
 
       page!.drawImage(image, {
-        x: MARGIN,
+        x,
         y: y - height,
         width,
         height,
       });
 
       y -= height + blockGap;
+      atPageTop = false;
       continue;
     }
 
@@ -116,6 +128,7 @@ async function renderBlocksToPdf(
     }
 
     y -= blockGap;
+    atPageTop = false;
   }
 
   if (!page) {
@@ -137,7 +150,8 @@ async function renderPartToPdf(
   }
 
   const blocks = extractDocxRenderBlocks(buffer);
-  return renderBlocksToPdf(blocks, DEFAULT_RENDER, pageBreakBefore);
+  const topMarginPt = kind === "cover" ? COVER_TOP_MARGIN_PT : MARGIN;
+  return renderBlocksToPdf(blocks, DEFAULT_RENDER, pageBreakBefore, topMarginPt);
 }
 
 async function buildPdfFromParts(

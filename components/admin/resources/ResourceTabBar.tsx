@@ -5,9 +5,9 @@ import type { ResourceTab } from "@/lib/admin/resources/types";
 
 const TABS: { id: ResourceTab; label: string }[] = [
   { id: "books", label: "Books" },
+  { id: "walled-garden", label: "Walled Garden" },
   { id: "research-papers", label: "Research Papers" },
   { id: "videos", label: "Videos" },
-  { id: "parent-resources", label: "Parent Resources" },
 ];
 
 type ResourceTabBarProps = {
@@ -41,19 +41,20 @@ export function getAddLabel(tab: ResourceTab): string {
   switch (tab) {
     case "books":
       return "Add book";
+    case "walled-garden":
+      return "Add Walled Garden article";
     case "research-papers":
       return "Add research paper";
     case "videos":
       return "Add video";
-    case "parent-resources":
-      return "Add parent resource";
   }
 }
 
 export function parseResourceTab(value: string | null): ResourceTab {
   if (value === "books") return "books";
   if (value === "videos") return "videos";
-  if (value === "parent-resources" || value === "pdfs") return "parent-resources";
+  if (value === "walled-garden") return "walled-garden";
   if (value === "research-papers" || value === "research") return "research-papers";
+  if (value === "parent-resources" || value === "pdfs") return "books";
   return "books";
 }

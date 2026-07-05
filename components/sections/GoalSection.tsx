@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import { Container, sectionSubtextClass } from "@/components/ui/Container";
-import { SectionLabel } from "@/components/ui/SectionLabel";
+import { DisplayHeading } from "@/components/ui/DisplayHeading";
 import { TextLink } from "@/components/ui/TextLink";
 import { RESEARCH_PAGE_CTA } from "@/lib/cms/site-ctas";
 import {
@@ -54,7 +54,7 @@ function FindingChip({
 
 export function GoalSection() {
   const rawSection = useSection("homepage.goal");
-  const { label, tagline, body, findings: rawFindings } =
+  const { tagline, body, findings: rawFindings } =
     normalizeGoalSectionContent(rawSection);
   const findings = resolveGoalFindingItems(rawFindings);
 
@@ -67,12 +67,9 @@ export function GoalSection() {
     >
       <Container className="relative flex flex-col">
         <header className="mx-auto flex w-full max-w-3xl flex-col items-center gap-3 text-center max-lg:gap-4 lg:gap-4">
-          <SectionLabel className="max-lg:tracking-[0.18em] lg:tracking-[0.25em]">
-            {label}
-          </SectionLabel>
-          <h2 className="font-display text-[clamp(1.375rem,4.5vw,2.25rem)] leading-[1.2] tracking-[-0.02em] text-navy-800 lg:text-[clamp(1.5rem,3vw,2.25rem)]">
+          <DisplayHeading as="h2" className="text-gold-accent" size="md">
             {tagline}
-          </h2>
+          </DisplayHeading>
           <p className={`${sectionSubtextClass} text-navy-800/80 sm:leading-[1.6]`}>
             {body}
           </p>

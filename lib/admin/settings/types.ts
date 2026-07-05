@@ -1,11 +1,17 @@
-export type SettingsTab = "general" | "security";
+import type { SiteCacheSettings } from "@/lib/cache/types";
+
+export type SettingsTab = "general" | "security" | "performance";
+
+export type SettingsSocialLink = {
+  id: string;
+  label: string;
+  url: string;
+  iconUrl: string;
+};
 
 export type SettingsBrand = {
-  logoMark: string;
-  logoWordmark: string;
-  logoMarkFooter: string;
-  logoWordmarkFooter: string;
-  divider: string;
+  logoLight: string;
+  logoDark: string;
 };
 
 export type SettingsGeneral = {
@@ -19,6 +25,7 @@ export type SettingsGeneral = {
   description: string;
   privacyPolicyUrl: string;
   termsOfServiceUrl: string;
+  socialLinks: SettingsSocialLink[];
 };
 
 export type PasswordPolicySettings = {
@@ -35,4 +42,5 @@ export type SettingsSecurity = {
 export type SettingsPageData = {
   general: SettingsGeneral;
   security: SettingsSecurity;
+  cache: SiteCacheSettings;
 };

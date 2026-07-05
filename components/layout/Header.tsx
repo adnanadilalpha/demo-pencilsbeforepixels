@@ -180,7 +180,7 @@ export function Header() {
       <header
         className={`fixed inset-x-0 top-0 z-50 transition-colors duration-300 ${
           showScrolled || menuOpen
-            ? "bg-paper-300 shadow-[0_1px_0_rgba(15,31,61,0.06)]"
+            ? "bg-paper-200 shadow-[0_1px_0_rgba(15,31,61,0.06)]"
             : "bg-transparent"
         }`}
       >

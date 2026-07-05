@@ -303,6 +303,7 @@ async function saveSiteSettingsBatch(settings: SiteSettingsDraft): Promise<void>
     privacyPolicyUrl: settings.privacyPolicyUrl,
     termsOfServiceUrl: settings.termsOfServiceUrl,
     copyright: settings.copyright,
+    socialLinks: settings.socialLinks,
   });
 
   const { error } = await supabase.from("site_settings").upsert(

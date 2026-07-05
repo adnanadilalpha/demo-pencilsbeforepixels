@@ -12,7 +12,11 @@ import { Button } from "@/components/ui/Button";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 
-export function AdminLoginForm() {
+type AdminLoginFormProps = {
+  logoSrc: string;
+};
+
+export function AdminLoginForm({ logoSrc }: AdminLoginFormProps) {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -50,7 +54,7 @@ export function AdminLoginForm() {
         noValidate
       >
         <div className="flex flex-col items-center gap-8">
-          <AdminLogo />
+          <AdminLogo src={logoSrc} />
           <p className="text-base leading-relaxed text-navy-800/70">Welcome back</p>
         </div>
 

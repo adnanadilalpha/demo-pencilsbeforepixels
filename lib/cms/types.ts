@@ -1,5 +1,7 @@
 import type { ResearchChartsData } from "@/lib/research/types";
+import type { SiteCacheSettings } from "@/lib/cache/types";
 import type { LibraryFileKind } from "./library-file";
+import type { SocialLink } from "@/lib/site/social-links";
 
 export type NavLink = {
   label: string;
@@ -13,6 +15,7 @@ export type SectionKey =
   | "homepage.expert_voices"
   | "homepage.mental_health"
   | "homepage.research_library"
+  | "homepage.before_opt_out"
   | "homepage.device_opt_out"
   | "homepage.footer"
   | "evidence.intro"
@@ -44,6 +47,7 @@ export type TimelineSlide = {
 
 export type LibraryCategory =
   | "Books"
+  | "Walled Garden"
   | "Research Papers"
   | "Videos"
   | "Parent Resources";
@@ -97,16 +101,14 @@ export type SiteSettings = {
   privacyPolicyUrl: string;
   termsOfServiceUrl: string;
   copyright: string;
+  socialLinks: SocialLink[];
 };
 
 export type MediaAssets = {
   hero: { background: string };
   brand: {
-    logoMark: string;
-    logoWordmark: string;
-    logoMarkFooter: string;
-    logoWordmarkFooter: string;
-    divider: string;
+    logoLight: string;
+    logoDark: string;
     faviconRichBlack: string;
     faviconRichWhite: string;
   };
@@ -126,6 +128,8 @@ export type MediaAssets = {
 export type SiteContent = {
   version: string;
   publishedAt: string;
+  assetsRevision: string;
+  cache: SiteCacheSettings;
   settings: SiteSettings;
   media: MediaAssets;
   navigation: {
@@ -150,4 +154,5 @@ export type SiteContent = {
 export type ContentVersion = {
   version: string;
   publishedAt: string;
+  assetsRevision: string;
 };

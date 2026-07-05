@@ -80,7 +80,6 @@ export const homepageSections: EditorSection[] = [
     page: "homepage",
     sectionKey: "homepage.goal",
     fields: [
-      { key: "label", label: "Section label", type: "text" },
       { key: "tagline", label: "Headline", type: "textarea" },
       {
         key: "body",
@@ -142,6 +141,21 @@ export const homepageSections: EditorSection[] = [
     ],
   },
   {
+    id: "before_opt_out",
+    label: "Before Opt Out",
+    page: "homepage",
+    sectionKey: "homepage.before_opt_out",
+    fields: [
+      {
+        key: "_note",
+        label: "",
+        type: "text",
+        placeholder:
+          "Large-text questions shown immediately above the Device Opt Out section.",
+      },
+    ],
+  },
+  {
     id: "device_opt_out",
     label: "Device Opt Out",
     page: "homepage",
@@ -179,6 +193,12 @@ export const homepageSections: EditorSection[] = [
         type: "text",
       },
       { key: "newsletterCta", label: "Newsletter CTA", type: "text" },
+      {
+        key: "socialLinksLabel",
+        label: "Social links heading",
+        type: "text",
+        placeholder: "Follow us",
+      },
     ],
   },
 ];

@@ -13,6 +13,8 @@ type AdminModalProps = {
   children: React.ReactNode;
   footer?: React.ReactNode;
   className?: string;
+  /** Use nested when opening above another modal. */
+  layer?: "base" | "nested";
 };
 
 export function AdminModal({
@@ -22,6 +24,7 @@ export function AdminModal({
   children,
   footer,
   className,
+  layer = "base",
 }: AdminModalProps) {
   const titleId = useId();
   const panelRef = useRef<HTMLDivElement>(null);
@@ -57,7 +60,8 @@ export function AdminModal({
   return createPortal(
     <div
       className={cn(
-        "fixed inset-0 z-50 flex items-center justify-center p-4 transition-opacity duration-200",
+        "fixed inset-0 flex items-center justify-center p-4 transition-opacity duration-200",
+        layer === "nested" ? "z-[60]" : "z-50",
         visible ? "opacity-100" : "opacity-0",
       )}
       role="presentation"
@@ -125,11 +129,13 @@ export function AdminModalActions({
   onSave,
   saveLabel,
   saving,
+  saveDisabled,
 }: {
   onCancel: () => void;
   onSave: () => void;
   saveLabel: string;
   saving?: boolean;
+  saveDisabled?: boolean;
 }) {
   return (
     <div className="flex items-center justify-end gap-3">
@@ -143,7 +149,7 @@ export function AdminModalActions({
       <button
         type="button"
         onClick={onSave}
-        disabled={saving}
+        disabled={Boolean(saving || saveDisabled)}
         className="inline-flex items-center gap-2 rounded-full border border-gold-500 bg-gold-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#c26d05] disabled:opacity-60"
       >
         {saveLabel}

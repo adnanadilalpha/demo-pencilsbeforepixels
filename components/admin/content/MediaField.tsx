@@ -5,12 +5,11 @@ import Image from "next/image";
 import { ImagePlus, RefreshCw } from "lucide-react";
 import { UploadProgressPanel } from "@/components/admin/UploadProgressPanel";
 import { adminLabelClass } from "@/components/admin/admin-styles";
+import { BookCoverUploadField } from "@/components/admin/resources/BookCoverUploadField";
 import {
+  brandLogoDimensions,
   brandLogoFieldPreviewClass,
-  brandLogoMarkClass,
-  brandLogoMarkDimensions,
-  brandLogoWordmarkClass,
-  brandLogoWordmarkDimensions,
+  brandLogoPreviewClass,
 } from "@/lib/brand/logo-layout";
 import {
   canonicalStoragePath,
@@ -26,8 +25,9 @@ type MediaFieldProps = {
   folder: string;
   filename?: string;
   altText?: string;
-  variant?: "default" | "logo" | "icon" | "mark";
+  variant?: "default" | "logo" | "icon" | "bookCover";
   previewTheme?: "light" | "dark";
+  accept?: string;
 };
 
 type UploadState = {
@@ -48,6 +48,7 @@ export function MediaField({
   altText,
   variant = "default",
   previewTheme = "dark",
+  accept = "image/*",
 }: MediaFieldProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploadState, setUploadState] = useState<UploadState | null>(null);
@@ -59,6 +60,15 @@ export function MediaField({
   };
 
   const handleUpload = async (file: File) => {
+    const acceptsSvgOnly =
+      accept.includes("svg") && !accept.includes("image/*");
+
+    if (acceptsSvgOnly && !/\.svg$/i.test(file.name) && file.type !== "image/svg+xml") {
+      setError("Logo must be an SVG file.");
+      if (inputRef.current) inputRef.current.value = "";
+      return;
+    }
+
     setUploadState({
       fileName: file.name,
       fileSize: file.size,
@@ -112,7 +122,7 @@ export function MediaField({
   };
 
   const previewSurface =
-    variant === "logo" || variant === "icon" || variant === "mark"
+    variant === "logo" || variant === "icon"
       ? previewTheme === "light"
         ? "bg-paper-300"
         : "bg-navy-800"
@@ -121,35 +131,29 @@ export function MediaField({
     previewTheme === "light" ? "text-body-muted" : "text-white/60";
 
   const brandPreviewContainer =
-    variant === "mark" || variant === "logo"
+    variant === "logo"
       ? brandLogoFieldPreviewClass
       : variant === "icon"
         ? "flex aspect-square max-w-[10rem] min-h-28 items-center justify-center px-4"
         : "";
 
-  const brandMarkImage = (
-    <Image
-      key={value}
-      src={value}
-      alt={altText ?? label}
-      width={brandLogoMarkDimensions.width}
-      height={brandLogoMarkDimensions.height}
-      className={brandLogoMarkClass}
-      unoptimized
-    />
-  );
+  if (variant === "bookCover") {
+    const replacePath =
+      (value ? publicUrlToStoragePath(value) : null) ??
+      (filename ? canonicalStoragePath(folder, filename) : null) ??
+      undefined;
 
-  const brandWordmarkImage = (
-    <Image
-      key={value}
-      src={value}
-      alt={altText ?? label}
-      width={brandLogoWordmarkDimensions.width}
-      height={brandLogoWordmarkDimensions.height}
-      className={brandLogoWordmarkClass}
-      unoptimized
-    />
-  );
+    return (
+      <BookCoverUploadField
+        label={label}
+        valueUrl={value || null}
+        filename={filename}
+        replaceStoragePath={replacePath}
+        title={altText ?? label}
+        onUploaded={(result) => onChange(result?.publicUrl ?? "")}
+      />
+    );
+  }
 
   return (
     <div className="flex flex-col gap-2">
@@ -164,7 +168,6 @@ export function MediaField({
               variant === "default" && "aspect-16/7",
               variant === "logo" && brandPreviewContainer,
               variant === "icon" && brandPreviewContainer,
-              variant === "mark" && brandPreviewContainer,
             )}
           >
             <UploadProgressPanel
@@ -185,7 +188,6 @@ export function MediaField({
               variant === "default" && "aspect-16/7 bg-paper-50",
               variant === "logo" && brandPreviewContainer,
               variant === "icon" && brandPreviewContainer,
-              variant === "mark" && brandPreviewContainer,
             )}
           >
             {variant === "default" ? (
@@ -197,10 +199,16 @@ export function MediaField({
                 className="object-cover"
                 unoptimized
               />
-            ) : variant === "mark" ? (
-              brandMarkImage
             ) : variant === "logo" ? (
-              brandWordmarkImage
+              <Image
+                key={value}
+                src={value}
+                alt={altText ?? label}
+                width={brandLogoDimensions.width}
+                height={brandLogoDimensions.height}
+                className={brandLogoPreviewClass}
+                unoptimized
+              />
             ) : (
               <Image
                 key={value}
@@ -219,7 +227,7 @@ export function MediaField({
               "flex items-center justify-center text-sm",
               previewSurface,
               variant === "default" && "aspect-16/7 bg-paper-50 text-body-muted",
-              (variant === "logo" || variant === "mark") && brandPreviewContainer,
+              variant === "logo" && brandPreviewContainer,
               variant === "icon" && brandPreviewContainer,
               emptyLabelClass,
             )}
@@ -253,7 +261,7 @@ export function MediaField({
       <input
         ref={inputRef}
         type="file"
-        accept="image/*"
+        accept={accept}
         className="hidden"
         onChange={(event) => {
           const file = event.target.files?.[0];

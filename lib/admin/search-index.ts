@@ -26,6 +26,13 @@ const RESOURCE_TABS: AdminSearchEntry[] = [
     keywords: ["resources", "library", "books"],
   },
   {
+    id: "resources-walled-garden",
+    label: "Walled Garden",
+    description: "Resources",
+    href: "/admin/resources?tab=walled-garden",
+    keywords: ["resources", "library", "walled garden", "articles"],
+  },
+  {
     id: "resources-research-papers",
     label: "Research Papers",
     description: "Resources",
@@ -38,13 +45,6 @@ const RESOURCE_TABS: AdminSearchEntry[] = [
     description: "Resources",
     href: "/admin/resources?tab=videos",
     keywords: ["resources", "library", "videos"],
-  },
-  {
-    id: "resources-parent-resources",
-    label: "Parent Resources",
-    description: "Resources",
-    href: "/admin/resources?tab=parent-resources",
-    keywords: ["resources", "library", "parent", "pdfs"],
   },
 ];
 

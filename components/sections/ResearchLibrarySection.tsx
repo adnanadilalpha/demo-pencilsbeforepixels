@@ -1,6 +1,7 @@
 "use client";
 
 import { ContentImage } from "@/components/ui/ContentImage";
+import { BookCoverFrame } from "@/components/books/BookCoverFrame";
 import { useEffect, useState, type ReactNode } from "react";
 import { ScrollReveal } from "@/components/motion/ScrollReveal";
 import { Container, sectionSubtextClass } from "@/components/ui/Container";
@@ -184,17 +185,7 @@ function LibraryMedia({
 }) {
   if (item.kind === "book" && item.image) {
     return (
-      <div className={cardFrameClassName}>
-        <div className="relative h-full w-full overflow-hidden rounded-sm">
-          <ContentImage
-            src={item.image}
-            alt={item.title}
-            fill
-            className="object-cover"
-            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-          />
-        </div>
-      </div>
+      <BookCoverFrame src={item.image} alt={item.title} />
     );
   }
 
@@ -273,11 +264,11 @@ function LibraryCard({
         onPlay={onVideoPlay}
         onDocumentOpen={onDocumentOpen}
       />
-      <div className="flex min-h-17 flex-col gap-2">
-        <h3 className="line-clamp-2 font-display text-lg leading-snug text-[#18263a] sm:text-xl sm:leading-display">
+      <div className="flex flex-col gap-2">
+        <h3 className="font-display text-lg leading-snug text-[#18263a] sm:text-xl sm:leading-display">
           {item.title}
         </h3>
-        <p className="line-clamp-1 text-xs uppercase leading-ui-label text-body-muted sm:text-sm lg:text-base">
+        <p className="text-xs uppercase leading-relaxed text-body-muted break-words sm:text-sm lg:text-base">
           {item.subtitle}
         </p>
         {item.kind === "book" && item.viewUrl ? (
@@ -396,7 +387,7 @@ export function ResearchLibrarySection() {
           </p>
         </ScrollReveal>
 
-        <div className="flex w-full flex-col items-start gap-8 max-lg:gap-7 lg:flex-row lg:gap-10">
+        <div className="flex w-full flex-col items-stretch gap-8 max-lg:gap-7 lg:flex-row lg:items-start lg:gap-10">
           <aside className="w-full shrink-0 lg:w-[260px] xl:w-[280px] lg:border-r lg:border-white/[0.07]">
             <div className="lg:hidden">
               <Select
@@ -447,7 +438,7 @@ export function ResearchLibrarySection() {
             role="tabpanel"
             id={`library-panel-${activeIndex}`}
             aria-labelledby={`library-tab-${activeIndex}`}
-            className="min-w-0 flex-1"
+            className="min-w-0 w-full max-w-full flex-1"
             aria-label={`${activeCategory} resources`}
           >
             {activeItems.length === 0 ? (
@@ -456,9 +447,8 @@ export function ResearchLibrarySection() {
               </p>
             ) : (
               <div
-                className="timeline-snap-track -mx-1 flex flex-row gap-4 overflow-x-auto px-1 pb-3 snap-x snap-mandatory max-lg:gap-4 sm:gap-6 lg:gap-8 lg:pb-2"
-                data-lenis-prevent-horizontal
-                data-lenis-prevent-touch
+                className="timeline-snap-track -mx-1 flex w-full max-w-full flex-row gap-4 overflow-x-auto overscroll-x-contain px-1 pb-3 snap-x snap-mandatory max-lg:gap-4 sm:gap-6 lg:gap-8 lg:pb-2"
+                data-lenis-prevent
               >
                 {activeItems.map((item) => (
                   <LibraryCard

@@ -1,6 +1,7 @@
 import type { ContentSavePayload } from "@/lib/admin/content-editor-types";
 import type { SectionLocalDraft } from "@/lib/admin/content-local-draft";
 import { sanitizeGoalSectionForPublish } from "@/lib/cms/goal-section-content";
+import { sanitizeBeforeOptOutForPublish, stripBeforeOptOutFieldsFromRecord } from "@/lib/cms/before-opt-out-content";
 import { sanitizeResearchLibraryForPublish } from "@/lib/cms/research-library-content";
 import { MISSION_SLIDE_LABELS } from "@/lib/cms/mission-slides";
 import { sanitizeMentalHealthForPublish } from "@/lib/cms/site-ctas";
@@ -49,8 +50,12 @@ function buildSavePayload(
     content = sanitizeResearchLibraryForPublish(content);
   }
 
+  if (sectionId === "before_opt_out") {
+    content = sanitizeBeforeOptOutForPublish(content);
+  }
+
   if (sectionId === "device_opt_out") {
-    content = { ...content };
+    content = stripBeforeOptOutFieldsFromRecord(content);
     delete content.secondaryCta;
   }
 
@@ -98,6 +103,10 @@ function buildSavePayload(
   }
 
   if (sectionId === "site_settings" && draft.siteSettings) {
+    payload.siteSettings = draft.siteSettings;
+  }
+
+  if (sectionId === "footer" && draft.siteSettings) {
     payload.siteSettings = draft.siteSettings;
   }
 

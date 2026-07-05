@@ -1,9 +1,9 @@
 "use client";
 
-import { ContentImage } from "@/components/ui/ContentImage";
 import Link from "next/link";
 import { useLenis } from "lenis/react";
 import { usePathname } from "next/navigation";
+import { BrandLogoImage } from "@/components/brand/BrandLogoImage";
 import { useSiteContent } from "@/lib/cms/hooks";
 import {
   getAnchorScrollDuration,
@@ -19,12 +19,6 @@ export function Logo({ variant = "light" }: LogoProps) {
   const pathname = usePathname();
   const lenis = useLenis();
   const { settings, media } = useSiteContent();
-  const mark =
-    variant === "light" ? media.brand.logoMark : media.brand.logoMarkFooter;
-  const wordmark =
-    variant === "light"
-      ? media.brand.logoWordmark
-      : media.brand.logoWordmarkFooter;
 
   const handleClick = (event: React.MouseEvent<HTMLAnchorElement>) => {
     if (pathname !== "/") return;
@@ -52,33 +46,15 @@ export function Logo({ variant = "light" }: LogoProps) {
     <Link
       href="/"
       onClick={handleClick}
-      className="flex h-[58px] items-center gap-6 max-lg:h-[clamp(2.25rem,3vw+1.5rem,3.625rem)] max-lg:gap-[clamp(0.75rem,2vw,1.5rem)]"
+      className="flex h-[clamp(3.25rem,3.5vw+2rem,4.75rem)] max-w-[min(100%,18rem)] items-center lg:max-w-[22rem]"
       aria-label="Pencils Before Pixels home"
     >
-      <ContentImage
-        src={mark}
-        alt=""
-        width={47}
-        height={58}
-        className="h-[58px] w-auto shrink-0 max-lg:h-full"
-        priority
-      />
-      <span className="flex h-[58px] items-center max-lg:h-full" aria-hidden>
-        <ContentImage
-          src={media.brand.divider}
-          alt=""
-          width={1}
-          height={58}
-          className="h-[58px] w-px max-lg:h-full"
-        />
-      </span>
-      <ContentImage
-        src={wordmark}
+      <BrandLogoImage
+        key={variant}
+        src={variant === "light" ? media.brand.logoLight : media.brand.logoDark}
         alt={settings.siteName}
-        width={67}
-        height={58}
-        className="h-[58px] w-auto shrink-0 max-lg:h-full"
         priority
+        className="max-h-full"
       />
     </Link>
   );

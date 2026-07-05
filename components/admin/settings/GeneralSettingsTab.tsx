@@ -3,6 +3,7 @@
 import { adminInputClass, adminLabelClass } from "@/components/admin/admin-styles";
 import { MediaField } from "@/components/admin/content/MediaField";
 import { BrandLogoPreview } from "@/components/admin/settings/BrandLogoPreview";
+import { SocialLinksEditor } from "@/components/admin/settings/SocialLinksEditor";
 import {
   SettingsCard,
   SettingsCardStack,
@@ -41,7 +42,7 @@ export function GeneralSettingsTab({
     <SettingsCardStack>
       <SettingsCard
         title="Site identity"
-        description="Site name and the logo assets used on the public website."
+        description="Site name and the logo used across the public website and admin."
       >
         <div className="flex flex-col gap-8">
           <Field
@@ -52,121 +53,93 @@ export function GeneralSettingsTab({
 
           <section className="flex flex-col gap-5">
             <div>
-              <h4 className="text-sm font-semibold text-navy-800">
-                Transparent header
-              </h4>
+              <h4 className="text-sm font-semibold text-navy-800">Logos</h4>
               <p className="mt-1 text-sm text-body-muted">
-                Light logo shown over the hero before the header background
-                appears.
+                Upload separate logo files for the transparent header and for
+                the solid header and footer.
               </p>
             </div>
 
-            <BrandLogoPreview
-              variant="light"
-              label="Preview"
-              mark={general.brand.logoMark}
-              wordmark={general.brand.logoWordmark}
-              divider={general.brand.divider}
-            />
+            <div className="flex flex-col gap-8">
+              <div className="flex flex-col gap-5">
+                <div>
+                  <h5 className="text-sm font-semibold text-navy-800">
+                    Transparent header
+                  </h5>
+                  <p className="mt-1 text-sm text-body-muted">
+                    Shown over the homepage hero before the header background
+                    appears.
+                  </p>
+                </div>
 
-            <SettingsFieldGrid columns={2}>
-              <MediaField
-                label="Logo mark"
-                value={general.brand.logoMark}
-                onChange={(value) => updateBrand("logoMark", value)}
-                folder="brand"
-                filename="logo-mark.svg"
-                altText="Logo mark for transparent header"
-                variant="mark"
-                previewTheme="dark"
-              />
-              <MediaField
-                label="Wordmark"
-                value={general.brand.logoWordmark}
-                onChange={(value) => updateBrand("logoWordmark", value)}
-                folder="brand"
-                filename="logo-wordmark.svg"
-                altText="Logo wordmark for transparent header"
-                variant="logo"
-                previewTheme="dark"
-              />
-            </SettingsFieldGrid>
+                <BrandLogoPreview
+                  variant="light"
+                  label="Preview"
+                  logo={general.brand.logoLight}
+                />
+
+                <MediaField
+                  label="Logo"
+                  value={general.brand.logoLight}
+                  onChange={(value) => updateBrand("logoLight", value)}
+                  folder="brand"
+                  filename="logo-light.svg"
+                  altText="Logo for transparent header"
+                  variant="logo"
+                  previewTheme="dark"
+                />
+              </div>
+
+              <div className="flex flex-col gap-5">
+                <div>
+                  <h5 className="text-sm font-semibold text-navy-800">
+                    Solid header & footer
+                  </h5>
+                  <p className="mt-1 text-sm text-body-muted">
+                    Shown when the header has a background, in the footer, and
+                    in the admin panel.
+                  </p>
+                </div>
+
+                <BrandLogoPreview
+                  variant="dark"
+                  label="Preview"
+                  logo={general.brand.logoDark}
+                />
+
+                <MediaField
+                  label="Logo"
+                  value={general.brand.logoDark}
+                  onChange={(value) => updateBrand("logoDark", value)}
+                  folder="brand"
+                  filename="logo-dark.svg"
+                  altText="Logo for solid header and footer"
+                  variant="logo"
+                  previewTheme="light"
+                />
+              </div>
+            </div>
           </section>
 
           <section className="flex flex-col gap-5">
             <div>
-              <h4 className="text-sm font-semibold text-navy-800">
-                Solid header & footer
-              </h4>
+              <h4 className="text-sm font-semibold text-navy-800">Favicon</h4>
               <p className="mt-1 text-sm text-body-muted">
-                Dark logo used when the header has a background and in the
-                footer.
+                Browser tab icon. Uploading a new favicon does not change the
+                built-in app icons.
               </p>
             </div>
 
-            <BrandLogoPreview
-              variant="dark"
-              label="Preview"
-              mark={general.brand.logoMarkFooter}
-              wordmark={general.brand.logoWordmarkFooter}
-              divider={general.brand.divider}
+            <MediaField
+              label="Favicon"
+              value={general.faviconUrl}
+              onChange={(value) => update("faviconUrl", value)}
+              folder="brand"
+              filename="Favicon_RichBlack.svg"
+              altText="Site favicon"
+              variant="icon"
+              previewTheme="dark"
             />
-
-            <SettingsFieldGrid columns={2}>
-              <MediaField
-                label="Logo mark"
-                value={general.brand.logoMarkFooter}
-                onChange={(value) => updateBrand("logoMarkFooter", value)}
-                folder="brand"
-                filename="logo-mark-footer.svg"
-                altText="Logo mark for solid header and footer"
-                variant="mark"
-                previewTheme="light"
-              />
-              <MediaField
-                label="Wordmark"
-                value={general.brand.logoWordmarkFooter}
-                onChange={(value) => updateBrand("logoWordmarkFooter", value)}
-                folder="brand"
-                filename="logo-wordmark-footer.svg"
-                altText="Logo wordmark for solid header and footer"
-                variant="logo"
-                previewTheme="light"
-              />
-            </SettingsFieldGrid>
-          </section>
-
-          <section className="flex flex-col gap-5">
-            <div>
-              <h4 className="text-sm font-semibold text-navy-800">Shared & favicon</h4>
-              <p className="mt-1 text-sm text-body-muted">
-                Divider line between mark and wordmark, plus the browser tab
-                icon.
-              </p>
-            </div>
-
-            <SettingsFieldGrid columns={2}>
-              <MediaField
-                label="Divider"
-                value={general.brand.divider}
-                onChange={(value) => updateBrand("divider", value)}
-                folder="brand"
-                filename="divider.svg"
-                altText="Logo divider"
-                variant="mark"
-                previewTheme="dark"
-              />
-              <MediaField
-                label="Favicon"
-                value={general.faviconUrl}
-                onChange={(value) => update("faviconUrl", value)}
-                folder="brand"
-                filename="Favicon_RichBlack.svg"
-                altText="Site favicon"
-                variant="icon"
-                previewTheme="dark"
-              />
-            </SettingsFieldGrid>
           </section>
         </div>
       </SettingsCard>
@@ -201,7 +174,7 @@ export function GeneralSettingsTab({
 
       <SettingsCard
         title="Footer"
-        description="Text shown in the site footer."
+        description="Text and social links shown in the site footer."
       >
         <SettingsFieldGrid>
           <Field
@@ -216,6 +189,20 @@ export function GeneralSettingsTab({
             onChange={(value) => update("copyright", value)}
           />
         </SettingsFieldGrid>
+
+        <div className="mt-8 border-t border-navy-800/8 pt-8">
+          <h4 className="text-sm font-semibold text-navy-800">Social links</h4>
+          <p className="mt-1 text-sm text-body-muted">
+            Also editable under Content → Footer. Changes here apply after you
+            save settings.
+          </p>
+          <div className="mt-4">
+            <SocialLinksEditor
+              links={general.socialLinks}
+              onChange={(socialLinks) => update("socialLinks", socialLinks)}
+            />
+          </div>
+        </div>
       </SettingsCard>
 
       <SettingsCard

@@ -25,6 +25,24 @@ import {
 } from "@/lib/timeline-motion";
 import { scrollToSection } from "@/lib/navigation";
 
+const MISSION_GOAL_EMPHASIS =
+  "focus over distraction and cognitive friction over swiping.";
+
+function MissionSlideDescription({ description }: { description: string }) {
+  const index = description.indexOf(MISSION_GOAL_EMPHASIS);
+  if (index === -1) {
+    return <>{description}</>;
+  }
+
+  return (
+    <>
+      {description.slice(0, index)}
+      <strong className="font-bold italic">{MISSION_GOAL_EMPHASIS}</strong>
+      {description.slice(index + MISSION_GOAL_EMPHASIS.length)}
+    </>
+  );
+}
+
 function getAbsoluteTop(element: HTMLElement) {
   return element.getBoundingClientRect().top + window.scrollY;
 }
@@ -446,7 +464,7 @@ export function TimelineSection() {
                       isLight ? "text-slate-200" : "text-hero-dark"
                     }`}
                   >
-                    {slide.description}
+                    <MissionSlideDescription description={slide.description} />
                   </p>
                 </div>
 

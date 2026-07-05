@@ -378,56 +378,62 @@ export function EvidenceExplorer({ bootstrap }: { bootstrap: EvidenceBootstrap }
 
   return (
     <div className="flex w-full min-w-0 flex-col gap-8 lg:gap-12">
-      <div className="flex items-center gap-5">
+      <div className="flex items-center justify-between gap-6 sm:gap-10 lg:gap-16">
         <Link
           href="/"
-          className="inline-flex items-center gap-1.5 text-xs font-medium leading-[18px] text-navy-800 transition-opacity hover:opacity-70"
+          className="inline-flex shrink-0 items-center gap-1.5 text-sm font-medium leading-none text-navy-800 transition-opacity hover:opacity-70"
         >
-          <ArrowLeft className="size-3.5" strokeWidth={1.5} />
+          <ArrowLeft className="size-4" strokeWidth={1.5} />
           Back
         </Link>
-        <div className="h-[18px] w-px bg-[#e9e6df]" aria-hidden />
+
+        <div
+          role="tablist"
+          aria-label="Data scope"
+          className="flex shrink-0 items-stretch border-b border-[#e9e6df]"
+        >
+          {TABS.map((entry) => {
+            const Icon = entry.icon;
+            const isActive = tab === entry.id;
+            return (
+              <button
+                key={entry.id}
+                type="button"
+                role="tab"
+                aria-selected={isActive}
+                onClick={() => handleTabChange(entry.id)}
+                className={cn(
+                  "flex min-h-11 min-w-[7.5rem] items-center justify-center gap-2 border-b-2 px-3 pb-2.5 pt-1 text-sm font-medium leading-none transition-colors sm:min-h-12 sm:min-w-[8.75rem] sm:px-5 sm:text-base",
+                  isActive
+                    ? "-mb-px border-gold-500 font-semibold text-navy-800"
+                    : "-mb-px border-transparent text-[#6b7280] hover:text-navy-800",
+                )}
+              >
+                <Icon
+                  className="size-4 shrink-0"
+                  strokeWidth={isActive ? 2 : 1.5}
+                />
+                {entry.label}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       <div className="flex flex-col gap-8">
-        <div className="grid grid-cols-1 gap-6 border-b border-[#e9e6df] sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end sm:gap-8">
-          <div className="flex min-w-0 flex-col gap-4">
-            <h1 className="font-display text-[32px] leading-display text-[#18263a] sm:text-[40px] lg:text-[48px]">
-              {copy.title}
-            </h1>
-            {copy.tagline ? (
-              <p className="text-base leading-ui-label text-[#6b7280] sm:leading-single">
-                {copy.tagline}
-              </p>
-            ) : (
-              <p className="max-w-3xl text-base leading-snug text-[#6b7280] lg:text-lg">
-                {copy.subtitle}
-              </p>
-            )}
-          </div>
-
-          <div className="-mx-4 flex h-14 w-[calc(100%+2rem)] shrink-0 items-start overflow-x-auto px-4 sm:mx-0 sm:w-auto sm:justify-self-end sm:overflow-visible sm:px-0">
-            {TABS.map((entry) => {
-              const Icon = entry.icon;
-              const isActive = tab === entry.id;
-              return (
-                <button
-                  key={entry.id}
-                  type="button"
-                  onClick={() => handleTabChange(entry.id)}
-                  className={cn(
-                    "flex h-full min-w-[104px] flex-1 items-center justify-center gap-1.5 border-b-[1.5px] px-3 pb-1.5 text-xs leading-[18px] text-navy-800 transition-colors sm:min-w-0 sm:flex-none sm:px-5",
-                    isActive
-                      ? "border-gold-accent font-semibold"
-                      : "border-transparent font-normal opacity-80 hover:opacity-100",
-                  )}
-                >
-                  <Icon className="size-3 shrink-0" strokeWidth={isActive ? 2 : 1.5} />
-                  {entry.label}
-                </button>
-              );
-            })}
-          </div>
+        <div className="flex min-w-0 flex-col gap-4 border-b border-[#e9e6df] pb-6 sm:pb-8">
+          <h1 className="font-display text-[32px] leading-display text-[#18263a] sm:text-[40px] lg:text-[48px]">
+            {copy.title}
+          </h1>
+          {copy.tagline ? (
+            <p className="text-base leading-ui-label text-[#6b7280] sm:leading-single">
+              {copy.tagline}
+            </p>
+          ) : (
+            <p className="max-w-3xl text-base leading-snug text-[#6b7280] lg:text-lg">
+              {copy.subtitle}
+            </p>
+          )}
         </div>
 
         <div className="flex w-full min-w-0 max-w-full flex-col gap-4 sm:w-fit">

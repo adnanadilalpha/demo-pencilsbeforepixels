@@ -1,5 +1,6 @@
 "use client";
 
+import { Dancing_Script } from "next/font/google";
 import { useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Button } from "@/components/ui/Button";
@@ -23,6 +24,11 @@ import {
 import type { OptOutLetterForm, OptOutSchool, OptOutSignatureMode } from "@/lib/opt-out/types";
 import { SignaturePad } from "@/components/opt-out/SignaturePad";
 import { cn } from "@/lib/utils";
+
+const signatureFont = Dancing_Script({
+  subsets: ["latin"],
+  weight: "400",
+});
 
 type OptOutLetterModalProps = {
   open: boolean;
@@ -337,9 +343,13 @@ export function OptOutLetterModal({ open, onClose }: OptOutLetterModalProps) {
                 ) : null}
                 <p className="mt-2">
                   <span className="font-medium text-navy-800">Signature:</span>{" "}
-                  {form.signatureMode === "draw"
-                    ? "Drawn signature"
-                    : form.signatureName || form.parentName}
+                  {form.signatureMode === "draw" ? (
+                    "Drawn signature"
+                  ) : (
+                    <span className={cn(signatureFont.className, "text-xl text-navy-800")}>
+                      {form.signatureName || form.parentName}
+                    </span>
+                  )}
                 </p>
                 <p className="mt-2">
                   <span className="font-medium text-navy-800">School:</span>{" "}
@@ -495,7 +505,11 @@ export function OptOutLetterModal({ open, onClose }: OptOutLetterModalProps) {
                       required
                       value={form.signatureName}
                       onChange={(e) => updateField("signatureName", e.target.value)}
-                      className={cn(modalInputClass, "h-11")}
+                      className={cn(
+                        modalInputClass,
+                        signatureFont.className,
+                        "h-11 text-xl",
+                      )}
                       placeholder="Type your full name"
                     />
                   ) : (

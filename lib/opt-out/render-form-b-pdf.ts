@@ -24,6 +24,7 @@ import {
 } from "@/lib/opt-out/form-b-layout";
 import {
   FORM_B_BODY_COLOR_RGB,
+  formBSignatureSizePt,
 } from "@/lib/opt-out/form-b-theme";
 import { parseDataUrl } from "@/lib/opt-out/embed-docx-image";
 import { formatPhoneNumber } from "@/lib/opt-out/format-phone";
@@ -320,9 +321,16 @@ async function drawSignatureRow(
     }
   } else {
     const name = form.signatureName.trim() || form.parentName.trim();
+    const signatureSize = formBSignatureSizePt(pen.scale.bodySize);
     pen.page.drawText(
-      truncateToWidth(name, pen.fonts.regular, pen.scale.bodySize, signatureLineEnd - signatureLineStart - 6),
-      { x: signatureLineStart + 3, y, size: pen.scale.bodySize, font: pen.fonts.regular, color: BODY_COLOR },
+      truncateToWidth(name, pen.fonts.signature, signatureSize, signatureLineEnd - signatureLineStart - 6),
+      {
+        x: signatureLineStart + 3,
+        y,
+        size: signatureSize,
+        font: pen.fonts.signature,
+        color: BODY_COLOR,
+      },
     );
   }
 

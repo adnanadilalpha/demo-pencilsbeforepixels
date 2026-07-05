@@ -2,6 +2,10 @@ import "server-only";
 
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
+  RESEARCH_PAPERS_CATEGORY,
+  WALLED_GARDEN_CATEGORY,
+} from "@/lib/cms/research-library-content";
+import {
   inferLibraryFileKind,
   fileNameFromUrl,
 } from "@/lib/cms/library-file";
@@ -190,9 +194,14 @@ export async function fetchResourcesCatalog(): Promise<ResourcesCatalog> {
 
   const mediaMap = await mediaByIds(mediaIds);
 
+  const paperRows = rows.filter((row) => row.kind === "paper");
+
   return {
-    researchPapers: rows
-      .filter((row) => row.kind === "paper")
+    walledGarden: paperRows
+      .filter((row) => row.category === WALLED_GARDEN_CATEGORY)
+      .map((row) => mapLibraryItem(row, mediaMap)),
+    researchPapers: paperRows
+      .filter((row) => row.category === RESEARCH_PAPERS_CATEGORY)
       .map((row) => mapLibraryItem(row, mediaMap)),
     books: rows
       .filter((row) => row.kind === "book")

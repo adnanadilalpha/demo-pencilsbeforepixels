@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { revalidatePath, revalidateTag } from "next/cache";
+import { revalidateSiteContent } from "@/lib/cms/revalidate-site-content";
 import {
   fetchContentEditorState,
   publishAllContent,
@@ -28,14 +28,6 @@ function jsonNoStore<T>(data: T, init?: ResponseInit) {
 
 function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : "Something went wrong.";
-}
-
-function revalidateSiteContent() {
-  revalidateTag("site-content", "max");
-  revalidatePath("/", "layout");
-  revalidatePath("/");
-  revalidatePath("/evidence");
-  revalidatePath("/research");
 }
 
 export async function GET() {

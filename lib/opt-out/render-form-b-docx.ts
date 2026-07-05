@@ -1,5 +1,8 @@
 import "server-only";
 
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
+
 import {
   AlignmentType,
   convertInchesToTwip,
@@ -39,6 +42,8 @@ import {
   FORM_B_BODY_FONT,
   FORM_B_FOOTER_COLOR,
   FORM_B_FOOTER_FONT,
+  FORM_B_SIGNATURE_FONT,
+  formBSignatureSizePt,
 } from "@/lib/opt-out/form-b-theme";
 import { parseDataUrl } from "@/lib/opt-out/embed-docx-image";
 import { formatPhoneNumber } from "@/lib/opt-out/format-phone";
@@ -52,6 +57,16 @@ const CONTENT_WIDTH_TWIPS = convertInchesToTwip(8.5) - MARGIN_TWIPS * 2;
 const LINE_END_TWIPS = MARGIN_TWIPS + CONTENT_WIDTH_TWIPS;
 const PHONE_SPLIT_TWIPS = MARGIN_TWIPS + Math.round(CONTENT_WIDTH_TWIPS * 0.48);
 const SIGNATURE_SPLIT_TWIPS = MARGIN_TWIPS + Math.round(CONTENT_WIDTH_TWIPS * 0.55);
+const signatureFontPath = join(process.cwd(), "lib/opt-out/fonts/DancingScript-Regular.ttf");
+
+let signatureFontBytes: Buffer | null = null;
+
+async function loadSignatureFontBytes() {
+  if (!signatureFontBytes) {
+    signatureFontBytes = await readFile(signatureFontPath);
+  }
+  return signatureFontBytes;
+}
 
 function resolveSignatureMode(form: OptOutLetterForm) {
   if (form.signatureMode === "draw" || form.signatureMode === "name") {
@@ -68,6 +83,15 @@ function bodyRun(text: string, scale: FormBLayoutScale, options?: { bold?: boole
     color: FORM_B_BODY_COLOR,
     bold: options?.bold,
     italics: options?.italics,
+  });
+}
+
+function signatureRun(text: string, scale: FormBLayoutScale) {
+  return new TextRun({
+    text,
+    font: FORM_B_SIGNATURE_FONT,
+    size: pointsToHalfPoints(formBSignatureSizePt(scale.bodySize)),
+    color: FORM_B_BODY_COLOR,
   });
 }
 
@@ -190,7 +214,7 @@ async function signatureParagraph(form: OptOutLetterForm, scale: FormBLayoutScal
     if (!name) {
       throw new Error("A typed signature is required to generate Form B.");
     }
-    children.push(bodyRun(name, scale));
+    children.push(signatureRun(name, scale));
   }
 
   children.push(tabRun());
@@ -293,6 +317,7 @@ export async function renderFormBDocx(
   );
 
   const doc = new Document({
+    fonts: [{ name: FORM_B_SIGNATURE_FONT, data: await loadSignatureFontBytes() }],
     sections: [
       {
         properties: {

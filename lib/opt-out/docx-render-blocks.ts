@@ -9,7 +9,7 @@ export type DocxTextAlign = "left" | "center" | "right" | "both";
 export type DocxRenderBlock =
   | { type: "text"; text: string; bold?: boolean; align?: DocxTextAlign }
   | { type: "spacer" }
-  | { type: "image"; data: Buffer; widthPt: number; heightPt: number };
+  | { type: "image"; data: Buffer; widthPt: number; heightPt: number; align?: DocxTextAlign };
 
 function decodeXml(value: string) {
   return value
@@ -47,6 +47,7 @@ function extractDrawingBlock(
   drawing: string,
   zip: PizZip,
   rels: Map<string, string>,
+  align?: DocxTextAlign,
 ): DocxRenderBlock | null {
   const embedMatch = drawing.match(/r:embed="([^"]+)"/);
   if (!embedMatch) return null;
@@ -67,6 +68,7 @@ function extractDrawingBlock(
     data: file.asNodeBuffer(),
     widthPt,
     heightPt,
+    ...(align ? { align } : {}),
   };
 }
 
@@ -127,7 +129,7 @@ function extractParagraphBlocks(
     const drawingMatch = run.match(/<w:drawing[\s\S]*?<\/w:drawing>/);
     if (drawingMatch) {
       flushText();
-      const image = extractDrawingBlock(drawingMatch[0], zip, rels);
+      const image = extractDrawingBlock(drawingMatch[0], zip, rels, align);
       if (image) {
         blocks.push(image);
       }

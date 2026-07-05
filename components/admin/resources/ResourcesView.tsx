@@ -35,6 +35,8 @@ type PendingDelete = {
   label: string;
 };
 
+type LibrarySaveType = "walled-garden" | "research-papers";
+
 export function ResourcesView({ initialCatalog }: ResourcesViewProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -42,9 +44,8 @@ export function ResourcesView({ initialCatalog }: ResourcesViewProps) {
 
   const [catalog, setCatalog] = useState(initialCatalog);
   const [libraryModalOpen, setLibraryModalOpen] = useState(false);
-  const [librarySaveType, setLibrarySaveType] = useState<
-    "research-papers" | "parent-resources"
-  >("research-papers");
+  const [librarySaveType, setLibrarySaveType] =
+    useState<LibrarySaveType>("walled-garden");
   const [bookModalOpen, setBookModalOpen] = useState(false);
   const [videoModalOpen, setVideoModalOpen] = useState(false);
   const [editingLibraryItem, setEditingLibraryItem] =
@@ -106,7 +107,7 @@ export function ResourcesView({ initialCatalog }: ResourcesViewProps) {
   };
 
   const openLibraryModal = (
-    saveType: "research-papers" | "parent-resources",
+    saveType: LibrarySaveType,
     item: AdminLibraryItem | null,
   ) => {
     setLibrarySaveType(saveType);
@@ -115,12 +116,12 @@ export function ResourcesView({ initialCatalog }: ResourcesViewProps) {
   };
 
   const handleAdd = () => {
-    if (activeTab === "research-papers") {
-      openLibraryModal("research-papers", null);
+    if (activeTab === "walled-garden") {
+      openLibraryModal("walled-garden", null);
       return;
     }
-    if (activeTab === "parent-resources") {
-      openLibraryModal("parent-resources", null);
+    if (activeTab === "research-papers") {
+      openLibraryModal("research-papers", null);
       return;
     }
     if (activeTab === "books") {
@@ -139,7 +140,7 @@ export function ResourcesView({ initialCatalog }: ResourcesViewProps) {
       <div className="flex flex-wrap items-start justify-between gap-4">
         <AdminPageHeader
           title="Resources"
-          description="Manage books, research papers, videos, and parent resources."
+          description="Manage books, Walled Garden articles, research papers, and videos."
         />
         <button
           type="button"
@@ -153,6 +154,21 @@ export function ResourcesView({ initialCatalog }: ResourcesViewProps) {
 
       <ResourceTabBar active={activeTab} onChange={setTab} />
 
+      {activeTab === "walled-garden" ? (
+        <LibraryItemsTab
+          items={catalog.walledGarden}
+          emptyMessage="No Walled Garden articles yet."
+          searchPlaceholder="Search Walled Garden articles…"
+          onEdit={(item) => openLibraryModal("walled-garden", item)}
+          onDelete={(item) =>
+            void requestDelete("walled-garden", item.id, item.title)
+          }
+          onToggleVisible={(item, visible) =>
+            void patchResource("walled-garden", item.id, { visible })
+          }
+        />
+      ) : null}
+
       {activeTab === "research-papers" ? (
         <LibraryItemsTab
           items={catalog.researchPapers}
@@ -164,21 +180,6 @@ export function ResourcesView({ initialCatalog }: ResourcesViewProps) {
           }
           onToggleVisible={(item, visible) =>
             void patchResource("research-papers", item.id, { visible })
-          }
-        />
-      ) : null}
-
-      {activeTab === "parent-resources" ? (
-        <LibraryItemsTab
-          items={catalog.parentResources}
-          emptyMessage="No parent resources yet."
-          searchPlaceholder="Search parent resources…"
-          onEdit={(item) => openLibraryModal("parent-resources", item)}
-          onDelete={(item) =>
-            void requestDelete("parent-resources", item.id, item.title)
-          }
-          onToggleVisible={(item, visible) =>
-            void patchResource("parent-resources", item.id, { visible })
           }
         />
       ) : null}

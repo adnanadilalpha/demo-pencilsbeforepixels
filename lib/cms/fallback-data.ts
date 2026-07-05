@@ -13,11 +13,8 @@ import { FOOTER_NAV_LINKS, HEADER_NAV_LINKS } from "./navigation";
 export const LOCAL_ASSETS = {
   hero: { background: "/images/hero/child-writing.jpg" },
   brand: {
-    logoMark: "/images/brand/logo-mark.svg",
-    logoWordmark: "/images/brand/logo-wordmark.svg",
-    logoMarkFooter: "/images/brand/logo-mark-footer.svg",
-    logoWordmarkFooter: "/images/brand/logo-wordmark-footer.svg",
-    divider: "/images/brand/divider.svg",
+    logoLight: "/images/brand/logo-light.svg",
+    logoDark: "/images/brand/logo-dark.svg",
     faviconRichBlack: LOCAL_FAVICONS.richBlack,
     faviconRichWhite: LOCAL_FAVICONS.richWhite,
   },
@@ -87,6 +84,7 @@ export const mentalHealthLegend = [
 
 export const libraryCategories: LibraryCategory[] = [
   "Books",
+  "Walled Garden",
   "Research Papers",
   "Videos",
 ];
@@ -95,14 +93,35 @@ export function resolvePublicLibraryCategories(
   categories: LibraryCategory[] | undefined,
 ): LibraryCategory[] {
   const allowed = new Set(libraryCategories);
-  const fromCms = (categories ?? []).filter(
-    (category): category is LibraryCategory =>
-      typeof category === "string" &&
-      category.trim().length > 0 &&
-      allowed.has(category),
-  );
+  const fromCms = (categories ?? [])
+    .map((category) => {
+      if (typeof category !== "string") return null;
+      const trimmed = category.trim();
+      if (!trimmed) return null;
+      return allowed.has(trimmed as LibraryCategory)
+        ? (trimmed as LibraryCategory)
+        : null;
+    })
+    .filter((category): category is LibraryCategory => category !== null);
 
-  return fromCms.length > 0 ? fromCms : [...libraryCategories];
+  if (fromCms.length === 0) return [...libraryCategories];
+
+  const seen = new Set<LibraryCategory>();
+  const merged: LibraryCategory[] = [];
+
+  for (const category of libraryCategories) {
+    merged.push(category);
+    seen.add(category);
+  }
+
+  for (const category of fromCms) {
+    if (!seen.has(category)) {
+      merged.push(category);
+      seen.add(category);
+    }
+  }
+
+  return merged;
 }
 
 export const libraryContent: Record<LibraryCategory, LibraryItem[]> = {
@@ -126,7 +145,7 @@ export const libraryContent: Record<LibraryCategory, LibraryItem[]> = {
       image: LOCAL_ASSETS.books.pencilVsStylus,
     },
   ],
-  "Research Papers": [
+  "Walled Garden": [
     {
       title: "Screen Time and Academic Outcomes",
       subtitle: "PISA RESEARCH TEAM 2023",
@@ -140,6 +159,23 @@ export const libraryContent: Record<LibraryCategory, LibraryItem[]> = {
     {
       title: "Digital Devices in Primary Classrooms",
       subtitle: "NEUROSCIENCE REVIEW 2024",
+      kind: "paper",
+    },
+  ],
+  "Research Papers": [
+    {
+      title: "Attention Restoration in Children",
+      subtitle: "JOURNAL OF EDUCATIONAL PSYCHOLOGY",
+      kind: "paper",
+    },
+    {
+      title: "Longitudinal Effects of Device Use",
+      subtitle: "CHILD DEVELOPMENT RESEARCH",
+      kind: "paper",
+    },
+    {
+      title: "Reading Comprehension: Print vs. Screen",
+      subtitle: "LITERACY RESEARCH QUARTERLY",
       kind: "paper",
     },
   ],

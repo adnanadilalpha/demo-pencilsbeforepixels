@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Save } from "lucide-react";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
+import { CacheSettingsTab } from "@/components/admin/settings/CacheSettingsTab";
 import { GeneralSettingsTab } from "@/components/admin/settings/GeneralSettingsTab";
 import { SecuritySettingsTab } from "@/components/admin/settings/SecuritySettingsTab";
 import { SettingsTabs } from "@/components/admin/settings/SettingsTabs";
@@ -53,7 +54,7 @@ export function SettingsView({ initialData }: SettingsViewProps) {
       <div className="flex flex-wrap items-start justify-between gap-4">
         <AdminPageHeader
           title="Settings"
-          description="Site identity, SEO, footer content, and admin security."
+          description="Site identity, SEO, footer content, performance, and admin security."
         />
 
         <button
@@ -90,6 +91,13 @@ export function SettingsView({ initialData }: SettingsViewProps) {
           onChange={(security) =>
             setData((current) => ({ ...current, security }))
           }
+        />
+      ) : null}
+
+      {activeTab === "performance" ? (
+        <CacheSettingsTab
+          cache={data.cache}
+          onChange={(cache) => setData((current) => ({ ...current, cache }))}
         />
       ) : null}
     </div>

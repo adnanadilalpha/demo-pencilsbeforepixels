@@ -12,9 +12,17 @@ import {
   inferLibraryFileKind,
   fileNameFromUrl,
 } from "@/lib/cms/library-file";
+import {
+  stripUrlCacheBuster,
+  withCacheBuster,
+} from "@/lib/admin/media-paths";
+import { getAssetsRevision } from "./assets-revision";
+import { mergeSiteCacheSettings } from "@/lib/cache/settings";
+import { SITE_CACHE_SETTINGS_KEY } from "@/lib/cache/types";
+import { ensureSiteContentShape } from "./normalize-site-content";
 import { buildFallbackSiteContent } from "./fallback";
 import { normalizeGoalSectionContent } from "./goal-section-content";
-import { normalizeResearchLibraryCategories } from "./research-library-content";
+import { normalizeResearchLibraryCategories, normalizeLibraryCategory } from "./research-library-content";
 import { resolveResearchPageCta } from "./site-ctas";
 import { navLinks as defaultNavLinks } from "./fallback-data";
 import {
@@ -25,7 +33,9 @@ import {
   normalizeMissionTimeline,
 } from "./mission-slides";
 import { resolvePrivacyPolicyUrl, resolveTermsOfServiceUrl } from "./settings-urls";
+import { publicSocialLinks } from "@/lib/site/social-links";
 import type {
+  ContentVersion,
   ExpertQuote,
   LibraryCategory,
   LibraryItem,
@@ -68,11 +78,8 @@ function mediaUrl(
 function buildMediaAssets(
   map: Map<string, string>,
   brand?: {
-    logoMark?: string;
-    logoWordmark?: string;
-    logoMarkFooter?: string;
-    logoWordmarkFooter?: string;
-    divider?: string;
+    logoLight?: string;
+    logoDark?: string;
   },
 ) {
   const brandAssets = resolveBrandForSiteContent(map, brand);
@@ -224,6 +231,19 @@ async function fetchSiteContentFromDb(): Promise<SiteContent | null> {
     settingsMap.set(row.key, row.value);
   }
 
+  const assetsRevisionRaw = String(settingsMap.get("assets_revision") ?? "0");
+  const mediaCacheToken = Number(assetsRevisionRaw) || Date.now();
+
+  function resolveMediaUrl(
+    id: string | null | undefined,
+    fallback = "",
+  ): string {
+    if (!id) return fallback;
+    const url = mediaById.get(id);
+    if (!url) return fallback;
+    return withCacheBuster(stripUrlCacheBuster(url), mediaCacheToken);
+  }
+
   const headerNav = resolveHeaderNav(
     navRes.data
       ?.filter((l) => l.location === "header")
@@ -240,7 +260,7 @@ async function fetchSiteContentFromDb(): Promise<SiteContent | null> {
     quote: q.quote,
     name: q.name,
     title: q.title,
-    image: mediaUrl(mediaById, q.image_media_id),
+    image: resolveMediaUrl(q.image_media_id),
   }));
 
   const rawTimeline: TimelineSlide[] = (timelineRes.data ?? []).map((s) => ({
@@ -248,7 +268,7 @@ async function fetchSiteContentFromDb(): Promise<SiteContent | null> {
     number: s.number,
     title: s.title,
     description: s.body,
-    image: mediaUrl(mediaById, s.image_media_id),
+    image: resolveMediaUrl(s.image_media_id),
     background: s.background,
     textColor: s.text_color as "light" | "dark",
     eraStyle: s.era_style as "large" | "compact",
@@ -263,18 +283,19 @@ async function fetchSiteContentFromDb(): Promise<SiteContent | null> {
   );
   const libraryContent: Record<LibraryCategory, LibraryItem[]> = {
     Books: [],
+    "Walled Garden": [],
     "Research Papers": [],
     Videos: [],
     "Parent Resources": [],
   };
   for (const item of libraryRes.data ?? []) {
-    const cat = item.category as LibraryCategory;
-    if (!libraryContent[cat]) continue;
+    const cat = normalizeLibraryCategory(item.category);
+    if (!cat || !libraryContent[cat]) continue;
 
     const kind = item.kind as LibraryItem["kind"];
     const fileMediaId = item.file_media_id ?? item.image_media_id;
     const fileMeta = fileMediaId ? mediaMetaById.get(fileMediaId) : null;
-    const fileUrl = fileMediaId ? mediaUrl(mediaById, fileMediaId) : undefined;
+    const fileUrl = fileMediaId ? resolveMediaUrl(fileMediaId) : undefined;
     const resolvedFileUrl = fileUrl || undefined;
 
     libraryContent[cat].push({
@@ -283,7 +304,7 @@ async function fetchSiteContentFromDb(): Promise<SiteContent | null> {
       kind,
       image:
         kind === "book" && item.image_media_id
-          ? mediaUrl(mediaById, item.image_media_id)
+          ? resolveMediaUrl(item.image_media_id)
           : undefined,
       viewUrl:
         kind === "book" && item.external_url ? item.external_url : undefined,
@@ -292,7 +313,7 @@ async function fetchSiteContentFromDb(): Promise<SiteContent | null> {
           ? normalizeYouTubeUrl(item.external_url)
           : undefined,
       videoUrl: item.video_media_id
-        ? mediaUrl(mediaById, item.video_media_id)
+        ? resolveMediaUrl(item.video_media_id)
         : undefined,
       fileUrl: kind === "paper" || kind === "resource" ? resolvedFileUrl : undefined,
       fileName:
@@ -372,11 +393,13 @@ async function fetchSiteContentFromDb(): Promise<SiteContent | null> {
   >;
   const mergedSettings = mergeStoredGeneral(settingsRecord);
   const hydratedSettings = hydrateSettingsBrand(mergedSettings, mediaByPath);
-  const media = buildMediaAssets(mediaByPath, hydratedSettings.brand);
+  const media = buildMediaAssets(mediaByPath, mergedSettings.brand);
 
   return {
     version: versionRes.data.version,
     publishedAt: versionRes.data.published_at,
+    assetsRevision: String(settingsMap.get("assets_revision") ?? "0"),
+    cache: mergeSiteCacheSettings(settingsMap.get(SITE_CACHE_SETTINGS_KEY)),
     settings: {
       siteName: hydratedSettings.siteName ?? "Pencils Before Pixels",
       description:
@@ -401,6 +424,7 @@ async function fetchSiteContentFromDb(): Promise<SiteContent | null> {
       copyright:
         hydratedSettings.copyright ??
         "© 2026 Pencils Before Pixels. A Research-Driven Editorial for District 66 Parents.",
+      socialLinks: publicSocialLinks(mergedSettings.socialLinks),
     },
     media,
     navigation: { header: headerNav, footer: footerNav },
@@ -423,33 +447,41 @@ async function fetchSiteContentFromDb(): Promise<SiteContent | null> {
 export async function getSiteContentUncached(): Promise<SiteContent> {
   try {
     const fromDb = await fetchSiteContentFromDb();
-    if (fromDb) return fromDb;
+    if (fromDb) return ensureSiteContentShape(fromDb);
   } catch (error) {
     console.error("CMS fetch failed, using fallback:", error);
   }
-  return buildFallbackSiteContent();
+  return ensureSiteContentShape(buildFallbackSiteContent());
 }
 
-export async function getContentVersionUncached(): Promise<{
-  version: string;
-  publishedAt: string;
-}> {
+export async function getContentVersionUncached(): Promise<ContentVersion> {
   try {
     const supabase = createAdminClient();
-    const { data } = await supabase
-      .from("content_versions")
-      .select("version, published_at")
-      .order("published_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
+    const [versionRes, assetsRevision] = await Promise.all([
+      supabase
+        .from("content_versions")
+        .select("version, published_at")
+        .order("published_at", { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+      getAssetsRevision(),
+    ]);
 
-    if (data) {
-      return { version: data.version, publishedAt: data.published_at };
+    if (versionRes.data) {
+      return {
+        version: versionRes.data.version,
+        publishedAt: versionRes.data.published_at,
+        assetsRevision,
+      };
     }
   } catch (error) {
     console.error("CMS version fetch failed:", error);
   }
 
   const fallback = buildFallbackSiteContent();
-  return { version: fallback.version, publishedAt: fallback.publishedAt };
+  return {
+    version: fallback.version,
+    publishedAt: fallback.publishedAt,
+    assetsRevision: fallback.assetsRevision,
+  };
 }

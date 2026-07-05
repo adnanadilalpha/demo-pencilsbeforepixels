@@ -5,7 +5,9 @@ import { fillFormBDocx } from "@/lib/opt-out/fill-form-b-docx";
 import { fillCoverDocx } from "@/lib/opt-out/fill-cover-docx";
 import { formatCoverDocx } from "@/lib/opt-out/format-cover-docx";
 import { formatEssayDocx } from "@/lib/opt-out/format-essay-docx";
+import { loadBrandLogoDarkPng } from "@/lib/opt-out/load-brand-logo-png";
 import { mergeDocxBuffers } from "@/lib/opt-out/merge-docx";
+import { replaceCoverLogoDocx } from "@/lib/opt-out/replace-cover-logo";
 import { resolveTemplatePath } from "@/lib/opt-out/template-path";
 import type { OptOutFormConfig, OptOutLetterForm } from "@/lib/opt-out/types";
 
@@ -30,12 +32,16 @@ export async function buildOptOutPackageParts(
   );
   const essayTemplate = await readFile(resolveTemplatePath(config.essayTemplatePath));
   const essay = formatEssayDocx(essayTemplate);
-  const cover = formatCoverDocx(
-    await fillCoverDocx(config.coverTemplatePath, {
+  const [filledCover, logoPng] = await Promise.all([
+    fillCoverDocx(config.coverTemplatePath, {
       schoolName: form.schoolName,
       principalName: form.principalName,
       principalEmail: form.principalEmail,
     }),
+    loadBrandLogoDarkPng(),
+  ]);
+  const cover = formatCoverDocx(
+    await replaceCoverLogoDocx(filledCover, logoPng),
   );
 
   return [

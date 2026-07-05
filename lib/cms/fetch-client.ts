@@ -5,6 +5,8 @@ import {
   readCachedVersion,
   writeCachedSiteContent,
 } from "./cache";
+import { isClientSiteCacheEnabled } from "@/lib/cache/client-state";
+import { ensureSiteContentShape } from "./normalize-site-content";
 import type { ContentVersion, SiteContent } from "./types";
 
 export async function fetchContentVersion(): Promise<ContentVersion> {
@@ -19,32 +21,47 @@ export async function fetchSiteContentBundle(): Promise<SiteContent> {
   return res.json() as Promise<SiteContent>;
 }
 
+function contentCacheKey(version: ContentVersion): string {
+  return `${version.version}:${version.assetsRevision}`;
+}
+
 export async function getClientSiteContent(
   initial: SiteContent,
 ): Promise<SiteContent> {
+  if (!isClientSiteCacheEnabled()) {
+    try {
+      return ensureSiteContentShape(await fetchSiteContentBundle());
+    } catch {
+      return ensureSiteContentShape(initial);
+    }
+  }
+
   try {
     const remoteVersion = await fetchContentVersion();
+    const remoteKey = contentCacheKey(remoteVersion);
 
-    // SSR payload is already up to date for the current publish version.
-    if (remoteVersion.version === initial.version) {
+    if (
+      remoteVersion.version === initial.version &&
+      remoteVersion.assetsRevision === initial.assetsRevision
+    ) {
       writeCachedSiteContent(initial, remoteVersion);
-      return initial;
+      return ensureSiteContentShape(initial);
     }
 
-    // Publish bumped the version but this document still has older SSR data.
     const cachedVersion = readCachedVersion();
+    const cached = readCachedSiteContent();
     if (
-      cachedVersion === remoteVersion.version &&
-      readCachedSiteContent()?.version === remoteVersion.version
+      cachedVersion === remoteKey &&
+      cached?.version === remoteVersion.version &&
+      cached.assetsRevision === remoteVersion.assetsRevision
     ) {
-      const cached = readCachedSiteContent();
-      if (cached) return cached;
+      return ensureSiteContentShape(cached);
     }
 
     const bundle = await fetchSiteContentBundle();
     writeCachedSiteContent(bundle, remoteVersion);
-    return bundle;
+    return ensureSiteContentShape(bundle);
   } catch {
-    return initial;
+    return ensureSiteContentShape(initial);
   }
 }

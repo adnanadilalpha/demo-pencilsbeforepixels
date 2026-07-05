@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { Upload } from "lucide-react";
 import { UploadProgressPanel } from "@/components/admin/UploadProgressPanel";
 import { adminLabelClass } from "@/components/admin/admin-styles";
+import { BookCoverFrame } from "@/components/books/BookCoverFrame";
 import { uploadMediaWithProgress } from "@/lib/admin/upload-media-client";
 import { cn } from "@/lib/utils";
 
@@ -29,6 +30,7 @@ type FileUploadFieldProps = {
   valueUrl?: string | null;
   onUploaded: (result: UploadResult | null) => void;
   compact?: boolean;
+  preview?: "default" | "bookCover";
 };
 
 export function FileUploadField({
@@ -39,6 +41,7 @@ export function FileUploadField({
   valueUrl,
   onUploaded,
   compact = false,
+  preview = "default",
 }: FileUploadFieldProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploadState, setUploadState] = useState<UploadState | null>(null);
@@ -92,6 +95,18 @@ export function FileUploadField({
   return (
     <div className="flex flex-col gap-2">
       <span className={adminLabelClass}>{label}</span>
+
+      {valueUrl && preview === "bookCover" && !uploadState ? (
+        <div className="overflow-hidden rounded-[10px] border border-navy-800/10">
+          <BookCoverFrame
+            src={valueUrl}
+            alt={label}
+            variant="admin"
+            className="max-w-xs rounded-none border-0 shadow-none"
+          />
+        </div>
+      ) : null}
+
       <button
         type="button"
         onClick={() => inputRef.current?.click()}

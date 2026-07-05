@@ -46,7 +46,9 @@ import type { EditableLibraryItem } from "@/lib/admin/cms-entity-types";
 import { LibraryItemsEditor } from "@/components/admin/content/LibraryItemsEditor";
 import { MentalHealthLegendEditor } from "@/components/admin/content/MentalHealthLegendEditor";
 import { NavigationEditor } from "@/components/admin/content/NavigationEditor";
+import { BeforeOptOutEditor } from "@/components/admin/content/BeforeOptOutEditor";
 import { OptOutStepsEditor } from "@/components/admin/content/OptOutStepsEditor";
+import { SocialLinksEditor } from "@/components/admin/settings/SocialLinksEditor";
 import { SiteSettingsEditor } from "@/components/admin/content/SiteSettingsEditor";
 import type { AcademicDatasetCopy } from "@/lib/admin/academic-dataset-defaults";
 import { mergeAcademicDatasetEditorState } from "@/lib/admin/academic-dataset-defaults";
@@ -57,6 +59,10 @@ import {
   normalizeGoalSectionContent,
   type GoalFinding,
 } from "@/lib/cms/goal-section-content";
+import {
+  mergeBeforeOptOutSectionContent,
+  normalizeBeforeOptOutContent,
+} from "@/lib/cms/before-opt-out-content";
 import type {
   ExpertQuote,
   OptOutStep,
@@ -146,6 +152,12 @@ function buildFormValues(
         ...sectionContent,
         chartImage: state.mentalHealthChartImage,
       };
+    } else if (sectionId === "before_opt_out") {
+      const legacy = state.sections["homepage.device_opt_out"] ?? {};
+      base = mergeBeforeOptOutSectionContent(
+        sectionContent,
+        legacy,
+      );
     } else if (sectionId === "device_opt_out") {
       base = {
         ...sectionContent,
@@ -165,7 +177,9 @@ function buildFormValues(
   const merged = localContent
     ? sectionId === "goal"
       ? normalizeGoalSectionContent({ ...base, ...localContent })
-      : { ...base, ...localContent }
+      : sectionId === "before_opt_out"
+        ? mergeBeforeOptOutSectionContent({ ...base, ...localContent })
+        : { ...base, ...localContent }
     : base;
 
   if (sectionId === "evidence_research") {
@@ -240,6 +254,10 @@ function buildSectionLocalDraft(
   }
 
   if (sectionId === "site_settings") {
+    draft.siteSettings = extras.siteSettings;
+  }
+
+  if (sectionId === "footer") {
     draft.siteSettings = extras.siteSettings;
   }
 
@@ -405,6 +423,10 @@ export function ContentEditor({
       }
 
       if (sectionId === "site_settings") {
+        setSiteSettings(session?.siteSettings ?? serverState.siteSettings);
+      }
+
+      if (sectionId === "footer") {
         setSiteSettings(session?.siteSettings ?? serverState.siteSettings);
       }
 
@@ -811,11 +833,54 @@ export function ContentEditor({
                     />
                   ) : null}
 
+                  {activeSection.id === "before_opt_out" ? (
+                    <div className="mt-8 border-t border-navy-800/8 pt-8">
+                      <BeforeOptOutEditor
+                        value={normalizeBeforeOptOutContent(formValues)}
+                        onChange={(content) => {
+                          markSectionDirty("before_opt_out");
+                          userEditedRef.current = true;
+                          setFormValues((current) => ({
+                            ...current,
+                            ...content,
+                          }));
+                        }}
+                      />
+                    </div>
+                  ) : null}
+
                   {activeSection.id === "device_opt_out" ? (
-                    <OptOutStepsEditor
-                      steps={optOutSteps}
-                      onChange={setOptOutSteps}
-                    />
+                    <div className="mt-8 border-t border-navy-800/8 pt-8">
+                      <OptOutStepsEditor
+                        steps={optOutSteps}
+                        onChange={setOptOutSteps}
+                      />
+                    </div>
+                  ) : null}
+
+                  {activeSection.id === "footer" ? (
+                    <div className="mt-8 border-t border-navy-800/8 pt-8">
+                      <h3 className="text-sm font-semibold text-navy-800">
+                        Social links
+                      </h3>
+                      <p className="mt-1 text-sm text-body-muted">
+                        Same links as Settings → General. Publish here to update
+                        the footer icons on the live site.
+                      </p>
+                      <div className="mt-4">
+                        <SocialLinksEditor
+                          links={siteSettings.socialLinks}
+                          onChange={(socialLinks) => {
+                            markSectionDirty("footer");
+                            userEditedRef.current = true;
+                            setSiteSettings((current) => ({
+                              ...current,
+                              socialLinks,
+                            }));
+                          }}
+                        />
+                      </div>
+                    </div>
                   ) : null}
 
                   {activeSection.id === "expert_voices" ? (

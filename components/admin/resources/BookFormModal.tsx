@@ -7,7 +7,7 @@ import {
   AdminModalActions,
   AdminModalField,
 } from "@/components/admin/resources/AdminModal";
-import { FileUploadField } from "@/components/admin/resources/FileUploadField";
+import { BookCoverUploadField } from "@/components/admin/resources/BookCoverUploadField";
 import type { AdminBook, BookInput } from "@/lib/admin/resources/types";
 
 type BookFormModalProps = {
@@ -127,10 +127,8 @@ export function BookFormModal({
           Books saved here appear in the Research Library section on the homepage.
         </p>
 
-        <FileUploadField
+        <BookCoverUploadField
           label="Cover image"
-          folder="library"
-          accept="image/*"
           valueUrl={coverUrl}
           onUploaded={(result) => {
             setCoverUrl(result?.publicUrl ?? null);

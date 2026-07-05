@@ -1,4 +1,8 @@
 import { NextResponse } from "next/server";
+import {
+  RESEARCH_PAPERS_CATEGORY,
+  WALLED_GARDEN_CATEGORY,
+} from "@/lib/cms/research-library-content";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { fetchResourcesCatalog } from "@/lib/admin/resources/fetch";
 import type { LibraryItemInput } from "@/lib/admin/resources/types";
@@ -28,16 +32,24 @@ function normalizeType(type: string | null): string | null {
   if (!type) return null;
   if (type === "research") return "research-papers";
   if (type === "pdfs") return "parent-resources";
+  if (type === "walled-garden") return "walled-garden";
   return type;
 }
 
 function isLibraryItemType(type: string) {
   return (
+    type === "walled-garden" ||
     type === "research-papers" ||
     type === "parent-resources" ||
     type === "books" ||
     type === "videos"
   );
+}
+
+function paperCategoryForType(type: string) {
+  if (type === "walled-garden") return WALLED_GARDEN_CATEGORY;
+  if (type === "research-papers") return RESEARCH_PAPERS_CATEGORY;
+  return null;
 }
 
 export async function GET() {
@@ -68,12 +80,17 @@ export async function POST(request: Request) {
   const supabase = createAdminClient();
 
   try {
-    if (type === "research-papers") {
+    if (type === "walled-garden" || type === "research-papers") {
       const input = body.data as LibraryItemInput;
+      const category = paperCategoryForType(type);
+      if (!category) {
+        return NextResponse.json({ error: "Unknown resource type." }, { status: 400 });
+      }
+
       const { data, error } = await supabase
         .from("library_items")
         .insert({
-          category: "Research Papers",
+          category,
           title: input.title,
           subtitle: input.subtitle,
           kind: "paper",
@@ -205,7 +222,11 @@ export async function PATCH(request: Request) {
       if ("visible" in body.patch) patch.visible = body.patch.visible;
       if ("published" in body.patch) patch.visible = body.patch.published;
 
-      if (type === "research-papers" || type === "parent-resources") {
+      if (
+        type === "walled-garden" ||
+        type === "research-papers" ||
+        type === "parent-resources"
+      ) {
         if ("subtitle" in body.patch) patch.subtitle = body.patch.subtitle;
         if ("source" in body.patch) patch.subtitle = body.patch.source;
         if ("fileMediaId" in body.patch) {

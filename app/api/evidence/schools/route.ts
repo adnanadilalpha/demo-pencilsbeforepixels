@@ -1,9 +1,10 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
+import { getApiCacheHeaders } from "@/lib/cache/server";
 import { getDistrict66SchoolOptions } from "@/lib/evidence/district66";
 import type { EvidenceSubject, StudentGroup } from "@/lib/evidence/types";
 
-export async function GET(request: NextRequest) {
-  const { searchParams } = request.nextUrl;
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
   const subject = (searchParams.get("subject") ?? "math") as EvidenceSubject;
   const studentGroup = (searchParams.get("studentGroup") ??
     "all") as StudentGroup;
@@ -11,7 +12,9 @@ export async function GET(request: NextRequest) {
 
   try {
     const schools = await getDistrict66SchoolOptions(subject, subgroupType);
-    return NextResponse.json(schools);
+    return NextResponse.json(schools, {
+      headers: await getApiCacheHeaders("evidence-data"),
+    });
   } catch (error) {
     console.error("Schools API error:", error);
     return NextResponse.json(

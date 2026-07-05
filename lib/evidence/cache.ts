@@ -1,5 +1,6 @@
 "use client";
 
+import { isClientSiteCacheEnabled } from "@/lib/cache/client-state";
 import type {
   DistrictOption,
   EvidenceBootstrap,
@@ -30,7 +31,7 @@ type PanelsCache = {
 };
 
 function readJson<T>(key: string): T | null {
-  if (typeof window === "undefined") return null;
+  if (!isClientSiteCacheEnabled() || typeof window === "undefined") return null;
   try {
     const raw = localStorage.getItem(key);
     if (!raw) return null;
@@ -41,12 +42,12 @@ function readJson<T>(key: string): T | null {
 }
 
 function writeJson(key: string, value: unknown) {
-  if (typeof window === "undefined") return;
+  if (!isClientSiteCacheEnabled() || typeof window === "undefined") return;
   localStorage.setItem(key, JSON.stringify(value));
 }
 
 export function readCachedEvidenceVersion(): string | null {
-  if (typeof window === "undefined") return null;
+  if (!isClientSiteCacheEnabled() || typeof window === "undefined") return null;
   return localStorage.getItem(VERSION_KEY);
 }
 
@@ -59,6 +60,7 @@ export function writeCachedEvidenceBootstrap(
   version: EvidenceVersion,
 ): void {
   writeJson(BOOTSTRAP_KEY, bootstrap);
+  if (typeof window === "undefined") return;
   localStorage.setItem(VERSION_KEY, version.version);
 }
 

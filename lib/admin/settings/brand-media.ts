@@ -1,23 +1,29 @@
 import "server-only";
 
+import {
+  publicUrlToStoragePath,
+  stripUrlCacheBuster,
+} from "@/lib/admin/media-paths";
 import type { SettingsBrand, SettingsGeneral } from "@/lib/admin/settings/types";
 import { defaultGeneral } from "@/lib/admin/settings/defaults";
 
-export const BRAND_ASSET_PATHS = {
-  logoMark: "site-media/brand/logo-mark.svg",
-  logoWordmark: "site-media/brand/logo-wordmark.svg",
-  logoMarkFooter: "site-media/brand/logo-mark-footer.svg",
-  logoWordmarkFooter: "site-media/brand/logo-wordmark-footer.svg",
-  divider: "site-media/brand/divider.svg",
-} as const;
+export const BRAND_LOGO_LIGHT_PATH = "site-media/brand/logo-light.svg";
+export const BRAND_LOGO_DARK_PATH = "site-media/brand/logo-dark.svg";
 
-const LOCAL_BRAND_FALLBACKS: Record<keyof typeof BRAND_ASSET_PATHS, string> = {
-  logoMark: "/images/brand/logo-mark.svg",
-  logoWordmark: "/images/brand/logo-wordmark.svg",
-  logoMarkFooter: "/images/brand/logo-mark-footer.svg",
-  logoWordmarkFooter: "/images/brand/logo-wordmark-footer.svg",
-  divider: "/images/brand/divider.svg",
-};
+export const BRAND_LOGO_LIGHT_PATHS = [
+  "site-media/brand/logo-light.svg",
+  "site-media/brand/logo-light.png",
+  "site-media/brand/logo-light.webp",
+] as const;
+
+export const BRAND_LOGO_DARK_PATHS = [
+  "site-media/brand/logo-dark.svg",
+  "site-media/brand/logo-dark.png",
+  "site-media/brand/logo-dark.webp",
+] as const;
+
+export const BRAND_LOGO_LIGHT_FALLBACK = "/images/brand/logo-light.svg";
+export const BRAND_LOGO_DARK_FALLBACK = "/images/brand/logo-dark.svg";
 
 const FAVICON_LOCAL_FALLBACK = "/images/brand/Favicon_RichBlack.svg";
 
@@ -26,6 +32,10 @@ const FAVICON_PATH_CANDIDATES = [
   "site-media/brand/Favicon_RichBlack.svg",
   "site-media/brand/Favicon_RichWhite.svg",
 ] as const;
+
+function isBundledBrandAssetUrl(url: string): boolean {
+  return url.startsWith("/images/brand/");
+}
 
 export function buildMediaPathMap(
   rows: Array<{ storage_path: string; public_url: string }>,
@@ -38,15 +48,23 @@ export function resolveBrandAssetUrl(
   candidates: readonly string[],
   explicit?: string,
 ): string {
-  const trimmed = explicit?.trim();
-  if (trimmed) return trimmed;
+  const trimmed = stripUrlCacheBuster(explicit?.trim() ?? "");
+
+  if (trimmed && !isBundledBrandAssetUrl(trimmed)) {
+    return trimmed;
+  }
 
   for (const candidate of candidates) {
     const exact = mediaByPath.get(candidate);
     if (exact) return exact;
 
+    const candidatePrefix = candidate.replace(/\.[^.]+$/, "");
     for (const [path, url] of mediaByPath) {
-      if (path.startsWith(`${candidate}.`) || path.startsWith(`${candidate}/`)) {
+      if (
+        path === candidate ||
+        path.startsWith(`${candidatePrefix}.`) ||
+        path.startsWith(`${candidatePrefix}/`)
+      ) {
         return url;
       }
     }
@@ -55,16 +73,51 @@ export function resolveBrandAssetUrl(
   return "";
 }
 
-function resolveBrandField(
+function resolveLogoLightUrl(
   mediaByPath: Map<string, string>,
-  field: keyof typeof BRAND_ASSET_PATHS,
   explicit?: string,
 ): string {
-  const path = BRAND_ASSET_PATHS[field];
   return (
-    resolveBrandAssetUrl(mediaByPath, [path], explicit) ||
-    LOCAL_BRAND_FALLBACKS[field]
+    resolveBrandAssetUrl(mediaByPath, BRAND_LOGO_LIGHT_PATHS, explicit) ||
+    BRAND_LOGO_LIGHT_FALLBACK
   );
+}
+
+function resolveLogoDarkUrl(
+  mediaByPath: Map<string, string>,
+  explicit?: string,
+): string {
+  return (
+    resolveBrandAssetUrl(mediaByPath, BRAND_LOGO_DARK_PATHS, explicit) ||
+    BRAND_LOGO_DARK_FALLBACK
+  );
+}
+
+export function brandForStorage(brand: SettingsBrand): SettingsBrand {
+  return {
+    logoLight: sanitizeBrandLogoForStorage(brand.logoLight, "light"),
+    logoDark: sanitizeBrandLogoForStorage(brand.logoDark, "dark"),
+  };
+}
+
+function sanitizeBrandLogoForStorage(
+  url: string,
+  slot: "light" | "dark",
+): string {
+  const trimmed = stripUrlCacheBuster(url.trim());
+  if (!trimmed || isBundledBrandAssetUrl(trimmed)) return "";
+
+  const storagePath = publicUrlToStoragePath(trimmed);
+  if (!storagePath) return trimmed;
+
+  const slotPrefix =
+    slot === "light" ? "site-media/brand/logo-light" : "site-media/brand/logo-dark";
+
+  if (!storagePath.startsWith(slotPrefix)) {
+    return trimmed;
+  }
+
+  return trimmed;
 }
 
 export function hydrateSettingsBrand(
@@ -72,31 +125,13 @@ export function hydrateSettingsBrand(
   mediaByPath: Map<string, string>,
 ): SettingsGeneral {
   const base = defaultGeneral(general);
+  const storedBrand = brandForStorage(base.brand);
 
   return {
     ...base,
     brand: {
-      logoMark: resolveBrandField(
-        mediaByPath,
-        "logoMark",
-        base.brand.logoMark,
-      ),
-      logoWordmark: resolveBrandField(
-        mediaByPath,
-        "logoWordmark",
-        base.brand.logoWordmark,
-      ),
-      logoMarkFooter: resolveBrandField(
-        mediaByPath,
-        "logoMarkFooter",
-        base.brand.logoMarkFooter,
-      ),
-      logoWordmarkFooter: resolveBrandField(
-        mediaByPath,
-        "logoWordmarkFooter",
-        base.brand.logoWordmarkFooter,
-      ),
-      divider: resolveBrandField(mediaByPath, "divider", base.brand.divider),
+      logoLight: resolveLogoLightUrl(mediaByPath, storedBrand.logoLight),
+      logoDark: resolveLogoDarkUrl(mediaByPath, storedBrand.logoDark),
     },
     faviconUrl:
       resolveBrandAssetUrl(
@@ -111,19 +146,13 @@ export function resolveBrandForSiteContent(
   mediaByPath: Map<string, string>,
   brand?: Partial<SettingsBrand>,
 ) {
-  const fallback = (path: string) =>
-    mediaByPath.get(path) ?? `/images/${path.replace(/^site-media\//, "")}`;
+  const storedBrand = brandForStorage({
+    logoLight: brand?.logoLight ?? "",
+    logoDark: brand?.logoDark ?? "",
+  });
 
   return {
-    logoMark: brand?.logoMark?.trim() || fallback(BRAND_ASSET_PATHS.logoMark),
-    logoWordmark:
-      brand?.logoWordmark?.trim() || fallback(BRAND_ASSET_PATHS.logoWordmark),
-    logoMarkFooter:
-      brand?.logoMarkFooter?.trim() ||
-      fallback(BRAND_ASSET_PATHS.logoMarkFooter),
-    logoWordmarkFooter:
-      brand?.logoWordmarkFooter?.trim() ||
-      fallback(BRAND_ASSET_PATHS.logoWordmarkFooter),
-    divider: brand?.divider?.trim() || fallback(BRAND_ASSET_PATHS.divider),
+    logoLight: resolveLogoLightUrl(mediaByPath, storedBrand.logoLight),
+    logoDark: resolveLogoDarkUrl(mediaByPath, storedBrand.logoDark),
   };
 }

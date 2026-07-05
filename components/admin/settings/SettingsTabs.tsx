@@ -5,6 +5,7 @@ import type { SettingsTab } from "@/lib/admin/settings/types";
 
 const TABS: Array<{ id: SettingsTab; label: string }> = [
   { id: "general", label: "General" },
+  { id: "performance", label: "Performance" },
   { id: "security", label: "Security" },
 ];
 

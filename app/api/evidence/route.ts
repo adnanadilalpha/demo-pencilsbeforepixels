@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
+import { getApiCacheHeaders } from "@/lib/cache/server";
 import { getEvidencePanelForView, parseGradesParam } from "@/lib/evidence/fetch";
 import type {
   EvidenceSubject,
@@ -7,8 +8,8 @@ import type {
   StudentGroup,
 } from "@/lib/evidence/types";
 
-export async function GET(request: NextRequest) {
-  const { searchParams } = request.nextUrl;
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
 
   const tab = (searchParams.get("tab") ?? "nebraska") as EvidenceTab;
   const view = (searchParams.get("view") ?? "performance") as EvidenceView;
@@ -46,7 +47,9 @@ export async function GET(request: NextRequest) {
       schoolYear,
     });
 
-    return NextResponse.json(data);
+    return NextResponse.json(data, {
+      headers: await getApiCacheHeaders("evidence-data"),
+    });
   } catch (error) {
     console.error("Evidence API error:", error);
     return NextResponse.json(

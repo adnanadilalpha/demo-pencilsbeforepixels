@@ -1,10 +1,6 @@
 import type { LibraryFileKind } from "@/lib/cms/library-file";
 
-export type ResourceTab =
-  | "books"
-  | "research-papers"
-  | "videos"
-  | "parent-resources";
+export type ResourceTab = "books" | "walled-garden" | "research-papers" | "videos";
 
 export type AdminLibraryItem = {
   id: string;
@@ -65,6 +61,7 @@ export type AdminVideo = {
 
 export type ResourcesCatalog = {
   books: AdminBook[];
+  walledGarden: AdminLibraryItem[];
   researchPapers: AdminLibraryItem[];
   videos: AdminVideo[];
   parentResources: AdminLibraryItem[];
@@ -108,6 +105,7 @@ export type VideoInput = {
 
 export type ResourceApiType =
   | "books"
+  | "walled-garden"
   | "research-papers"
   | "videos"
   | "parent-resources";

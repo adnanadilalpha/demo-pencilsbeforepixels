@@ -38,7 +38,7 @@ export async function PATCH(request: Request) {
 
   const body = (await request.json()) as Partial<SettingsPageData>;
 
-  if (!body.general && !body.security) {
+  if (!body.general && !body.security && !body.cache) {
     return NextResponse.json({ error: "Invalid payload." }, { status: 400 });
   }
 
@@ -47,6 +47,7 @@ export async function PATCH(request: Request) {
     const next: SettingsPageData = {
       general: body.general ?? current.general,
       security: body.security ?? current.security,
+      cache: body.cache ?? current.cache,
     };
 
     await saveSettingsPageData(next);

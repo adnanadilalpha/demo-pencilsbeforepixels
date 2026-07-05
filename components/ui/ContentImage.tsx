@@ -1,4 +1,7 @@
+"use client";
+
 import Image, { type ImageProps } from "next/image";
+import { isClientSiteCacheEnabled } from "@/lib/cache/client-state";
 
 export type ContentImageProps = ImageProps;
 
@@ -11,10 +14,13 @@ export function ContentImage({
   priority,
   loading,
   fetchPriority,
+  unoptimized,
   ...props
 }: ContentImageProps) {
+  const bypassOptimization = unoptimized ?? !isClientSiteCacheEnabled();
+
   if (priority) {
-    return <Image {...props} priority />;
+    return <Image {...props} priority unoptimized={bypassOptimization} />;
   }
 
   return (
@@ -22,6 +28,7 @@ export function ContentImage({
       {...props}
       loading={loading ?? "lazy"}
       fetchPriority={fetchPriority ?? "low"}
+      unoptimized={bypassOptimization}
     />
   );
 }

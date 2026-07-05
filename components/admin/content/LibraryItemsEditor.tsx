@@ -15,7 +15,7 @@ type LibraryItemsEditorProps = {
 
 const KIND_LABELS: Record<EditableLibraryItem["kind"], string> = {
   book: "Book",
-  paper: "Research paper",
+  paper: "PDF article",
   video: "Video",
   resource: "Resource",
 };
@@ -110,6 +110,7 @@ export function LibraryItemsEditor({
                     folder="library"
                     filename={`${item.title.toLowerCase().replace(/[^a-z0-9]+/g, "-") || "item"}.jpg`}
                     altText={item.title}
+                    variant="bookCover"
                     onChange={(url) => updateItem(item.id, { image: url })}
                   />
                 ) : null}

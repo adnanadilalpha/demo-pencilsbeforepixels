@@ -2,6 +2,7 @@ import "server-only";
 
 import { unstable_noStore as noStore } from "next/cache";
 import { mergeStoredGeneral } from "@/lib/admin/settings/defaults";
+import { normalizeSocialLinks } from "@/lib/site/social-links";
 import { getEditorSection } from "@/lib/admin/content-config";
 import {
   mergeAcademicDatasetCopies,
@@ -48,7 +49,10 @@ import {
   normalizeGoalSectionContent,
   sanitizeGoalSectionForPublish,
 } from "@/lib/cms/goal-section-content";
-import { normalizeResearchLibraryCategories } from "@/lib/cms/research-library-content";
+import {
+  normalizeLibraryCategory,
+  normalizeResearchLibraryCategories,
+} from "@/lib/cms/research-library-content";
 
 function assertNoError(
   error: { message: string } | null,
@@ -388,13 +392,22 @@ async function loadSiteSettings(): Promise<SiteSettingsDraft> {
 
   assertNoError(error, "Failed to load site settings");
 
-  const value = (data?.value ?? {}) as Record<string, string>;
+  const value = (data?.value ?? {}) as Record<string, unknown>;
   return {
-    siteName: value.siteName ?? "",
-    description: value.description ?? "",
-    privacyPolicyUrl: value.privacyPolicyUrl ?? "/privacy",
-    termsOfServiceUrl: value.termsOfServiceUrl ?? "/terms",
-    copyright: value.copyright ?? "",
+    siteName: typeof value.siteName === "string" ? value.siteName : "",
+    description: typeof value.description === "string" ? value.description : "",
+    privacyPolicyUrl:
+      typeof value.privacyPolicyUrl === "string"
+        ? value.privacyPolicyUrl
+        : "/privacy",
+    termsOfServiceUrl:
+      typeof value.termsOfServiceUrl === "string"
+        ? value.termsOfServiceUrl
+        : "/terms",
+    copyright: typeof value.copyright === "string" ? value.copyright : "",
+    socialLinks: normalizeSocialLinks(value.socialLinks, {
+      useDefaultsWhenMissing: true,
+    }),
   };
 }
 
@@ -451,7 +464,9 @@ async function loadLibraryItems(): Promise<EditableLibraryItem[]> {
 
   return (itemsRes.data ?? []).map((row) => ({
     id: row.id,
-    category: row.category as LibraryCategory,
+    category:
+      normalizeLibraryCategory(row.category) ??
+      (row.category as LibraryCategory),
     title: row.title,
     subtitle: row.subtitle,
     kind: row.kind as EditableLibraryItem["kind"],
@@ -494,6 +509,7 @@ async function saveSiteSettings(settings: SiteSettingsDraft): Promise<void> {
     privacyPolicyUrl: settings.privacyPolicyUrl,
     termsOfServiceUrl: settings.termsOfServiceUrl,
     copyright: settings.copyright,
+    socialLinks: settings.socialLinks,
   });
 
   const { error } = await supabase.from("site_settings").upsert(
@@ -558,7 +574,9 @@ async function saveLibraryItems(items: EditableLibraryItem[]): Promise<void> {
       : null;
 
     const row = {
-      category: item.category,
+      category:
+        normalizeLibraryCategory(item.category) ??
+        (item.category as LibraryCategory),
       title: item.title,
       subtitle: item.subtitle,
       kind: item.kind,

@@ -8,14 +8,12 @@ export type GoalFinding = {
 };
 
 export type GoalSectionContent = {
-  label: string;
   tagline: string;
   body: string;
   findings: GoalFinding[];
 };
 
 const GOAL_SECTION_DEFAULTS = {
-  label: "10 Facts",
   tagline: "Focus over distraction and cognitive friction over swiping.",
   body:
     "Ten findings from national assessments and international studies — grouped so you can follow the story from U.S. classrooms to OECD nations and back to early childhood.",
@@ -130,8 +128,6 @@ export function normalizeGoalSectionContent(
 ): GoalSectionContent {
   const fallback = getFallbackSection();
 
-  const label =
-    readString(raw?.label) ?? readString(fallback.label) ?? "10 Facts";
   const tagline =
     readString(raw?.tagline) ??
     readString(raw?.headline) ??
@@ -146,7 +142,6 @@ export function normalizeGoalSectionContent(
     readFallbackFindings();
 
   return {
-    label,
     tagline,
     body,
     findings: padFindings(findings),
@@ -166,7 +161,6 @@ export function sanitizeGoalSectionForPublish(
   ).filter((finding) => finding.headline || finding.body);
 
   return {
-    label: normalized.label,
     tagline: normalized.tagline,
     body: normalized.body,
     findings:

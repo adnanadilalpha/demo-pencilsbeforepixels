@@ -80,15 +80,15 @@ export function LibraryDocumentModal({
         )}
       >
         <div className="flex items-start justify-between gap-4 border-b border-white/10 px-4 py-3 sm:px-5">
-          <div className="min-w-0 pr-2">
+          <div className="min-w-0 flex-1 pr-2">
             <h2
               id={titleId}
-              className="truncate font-display text-lg text-white sm:text-xl"
+              className="font-display text-lg leading-snug text-white break-words sm:text-xl"
             >
               {item.title}
             </h2>
             {item.subtitle ? (
-              <p className="truncate text-xs uppercase tracking-wide text-white/60 sm:text-sm lg:text-base">
+              <p className="mt-1 text-xs uppercase leading-relaxed tracking-wide text-white/60 break-words sm:text-sm lg:text-base">
                 {item.subtitle}
               </p>
             ) : null}

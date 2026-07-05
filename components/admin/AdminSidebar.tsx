@@ -7,11 +7,13 @@ import { adminNavItems } from "@/lib/admin/navigation";
 import { cn } from "@/lib/utils";
 
 type AdminSidebarProps = {
+  logoSrc: string;
   mobileOpen?: boolean;
   onNavigate?: () => void;
 };
 
 export function AdminSidebar({
+  logoSrc,
   mobileOpen = false,
   onNavigate,
 }: AdminSidebarProps) {
@@ -24,9 +26,13 @@ export function AdminSidebar({
         mobileOpen ? "translate-x-0" : "-translate-x-full",
       )}
     >
-      <div className="border-b border-navy-800/6 px-3 py-3">
-        <Link href="/admin/dashboard" onClick={onNavigate} className="inline-flex">
-          <AdminLogo compact />
+      <div className="border-b border-navy-800/6 px-5 py-4">
+        <Link
+          href="/admin/dashboard"
+          onClick={onNavigate}
+          className="inline-flex min-h-16 items-center"
+        >
+          <AdminLogo compact src={logoSrc} />
         </Link>
       </div>
 
