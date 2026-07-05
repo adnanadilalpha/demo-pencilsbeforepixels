@@ -10,69 +10,47 @@ import {
   resolveGoalFindings,
 } from "@/lib/cms/goal-section-content";
 import {
-  isDeclineStat,
   parseWhatToDoPoint,
   type WhatToDoPoint,
 } from "@/lib/cms/what-to-do-points";
 import { useSection } from "@/lib/cms/hooks";
 import { cn } from "@/lib/utils";
 
-/** 4×3 bento on xl+ — spans must sum to 4 columns per row. Below xl: even 2-column grid. */
-const BENTO_SPANS = [
-  "xl:col-span-2",
-  "xl:col-span-1",
-  "xl:col-span-1",
-  "xl:col-span-1",
-  "xl:col-span-1",
-  "xl:col-span-2",
-  "xl:col-span-1",
-  "xl:col-span-1",
-  "xl:col-span-1",
-  "xl:col-span-1",
-] as const;
-
-function BentoBullet({
+function FindingChip({
   point,
   index,
 }: {
   point: WhatToDoPoint;
   index: number;
 }) {
-  const decline = isDeclineStat(point.stat);
   const number = index + 1;
 
   return (
-    <article className="flex h-full flex-col rounded-xl border border-navy-800/12 bg-white/95 p-4 sm:rounded-2xl sm:p-5 xl:p-5">
-      <div className="flex min-h-0 flex-1 items-start gap-3 sm:gap-4">
-        <span
-          className="flex size-9 shrink-0 items-center justify-center rounded-full bg-navy-800/[0.07] font-sans text-base font-semibold tabular-nums leading-none text-navy-800"
-          aria-hidden
-        >
-          {number}
-        </span>
-
-        <div className="flex min-w-0 flex-1 flex-col gap-2 sm:gap-2.5">
-          <span className="font-sans text-base font-medium text-navy-800/70">
-            {point.source}
+    <li className="list-none">
+      <article className="flex h-full flex-col gap-1.5 rounded-2xl border border-navy-800/12 bg-white/95 p-3.5 sm:p-4">
+        <div className="flex items-start gap-2 sm:gap-2.5">
+          <span
+            className="flex size-6 shrink-0 items-center justify-center rounded-full bg-navy-800/[0.07] font-sans text-[11px] font-semibold tabular-nums leading-none text-navy-800 sm:size-7 sm:text-xs"
+            aria-hidden
+          >
+            {number}
           </span>
 
           {point.stat ? (
-            <p
-              className={cn(
-                "text-pretty font-sans text-lg font-semibold leading-snug xl:text-xl xl:leading-snug",
-                decline ? "text-red-900/90" : "text-navy-800",
-              )}
-            >
+            <h3 className="min-w-0 flex-1 text-pretty font-sans text-base font-semibold leading-snug text-navy-800 sm:text-lg sm:leading-snug">
+              <span className="sr-only">{`Finding ${number}. `}</span>
               {point.stat}
-            </p>
-          ) : null}
-
-          <p className="text-pretty font-sans text-base leading-[1.65] text-navy-800/90">
-            {point.body}
-          </p>
+            </h3>
+          ) : (
+            <span className="sr-only">{`Finding ${number}`}</span>
+          )}
         </div>
-      </div>
-    </article>
+
+        <p className="text-pretty font-sans text-sm leading-[1.55] text-navy-800/85 sm:text-[0.9375rem] sm:leading-[1.6]">
+          {point.body}
+        </p>
+      </article>
+    </li>
   );
 }
 
@@ -103,37 +81,23 @@ export function GoalSection() {
           <p className={`${sectionSubtextClass} text-navy-800/80 sm:leading-[1.6]`}>
             {body}
           </p>
-          <p className="font-sans text-base leading-relaxed text-navy-800/65 xl:hidden">
-            Start at{" "}
-            <span className="font-semibold text-navy-800">1</span> and read across
-            each row.
-          </p>
-          <p className="hidden font-sans text-base leading-relaxed text-navy-800/65 xl:block">
-            Start at{" "}
-            <span className="font-semibold text-navy-800">1</span> and read left
-            to right, row by row.
-          </p>
         </header>
 
-        <div className="mt-8 max-lg:mt-7 lg:mt-10">
+        <div className="mt-8 w-full max-lg:mt-7 lg:mt-10">
           <ul
             className={cn(
-              "grid grid-cols-1 gap-4 sm:gap-5",
-              "md:grid-cols-2 md:gap-5",
-              "xl:grid-cols-4 xl:gap-3",
+              "grid grid-cols-2 gap-3 sm:gap-4",
+              "md:grid-cols-3 md:gap-4",
+              "lg:grid-cols-5 lg:gap-3.5",
             )}
-            aria-label="Ten research findings, read in order from 1 to 10"
+            aria-label="Ten research findings in row order, left to right"
           >
             {bullets.map((point, index) => (
-              <li
-                key={`${point.source}-${index}`}
-                className={cn(
-                  "min-h-0 list-none",
-                  BENTO_SPANS[index] ?? "xl:col-span-1",
-                )}
-              >
-                <BentoBullet point={point} index={index} />
-              </li>
+              <FindingChip
+                key={`${point.stat}-${index}`}
+                point={point}
+                index={index}
+              />
             ))}
           </ul>
         </div>
