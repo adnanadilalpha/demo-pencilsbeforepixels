@@ -175,7 +175,7 @@ export function NewsletterModal({
             <form onSubmit={handleSubmit} className="flex flex-col gap-5">
               <div className="pr-6">
                 <h2 id={titleId} className="text-lg font-semibold text-navy-800">
-                  Registration
+                  Newsletter Registration
                 </h2>
               </div>
 
