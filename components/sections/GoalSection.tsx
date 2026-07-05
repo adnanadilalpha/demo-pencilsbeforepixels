@@ -14,7 +14,6 @@ import {
   type WhatToDoPoint,
 } from "@/lib/cms/what-to-do-points";
 import { useSection } from "@/lib/cms/hooks";
-import { cn } from "@/lib/utils";
 
 function FindingChip({
   point,
@@ -83,14 +82,10 @@ export function GoalSection() {
           </p>
         </header>
 
-        <div className="mt-8 w-full max-lg:mt-7 lg:mt-10">
+        <div className="mx-auto mt-8 w-full max-w-3xl max-lg:mt-7 lg:mt-10">
           <ul
-            className={cn(
-              "grid grid-cols-2 gap-3 sm:gap-4",
-              "md:grid-cols-3 md:gap-4",
-              "lg:grid-cols-5 lg:gap-3.5",
-            )}
-            aria-label="Ten research findings in row order, left to right"
+            className="flex flex-col gap-3 sm:gap-3.5"
+            aria-label="Ten research findings, read in order from 1 to 10"
           >
             {bullets.map((point, index) => (
               <FindingChip
