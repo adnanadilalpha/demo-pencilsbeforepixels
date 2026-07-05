@@ -76,7 +76,7 @@ export const homepageSections: EditorSection[] = [
   },
   {
     id: "goal",
-    label: "What To Do",
+    label: "10 Facts",
     page: "homepage",
     sectionKey: "homepage.goal",
     fields: [
@@ -88,20 +88,6 @@ export const homepageSections: EditorSection[] = [
         type: "textarea",
         placeholder:
           "Short paragraph below the headline — e.g. how many findings and where they come from.",
-      },
-      {
-        key: "points",
-        label: "Bullet points (10 items)",
-        type: "stringList",
-        placeholder:
-          "Stat — supporting detail (e.g. −1.45 pts/yr — NAEP Grade 4 math decline…)",
-      },
-      {
-        key: "_note",
-        label: "How bullet points work",
-        type: "text",
-        placeholder:
-          "One bullet point per line. Use an em dash between the headline stat and body.",
       },
     ],
   },

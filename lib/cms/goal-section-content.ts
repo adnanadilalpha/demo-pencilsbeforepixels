@@ -1,16 +1,32 @@
-import { buildFallbackSiteContent } from "./fallback";
 import { whatToDoPoints } from "./what-to-do-points";
 
 export const WHAT_TO_DO_FINDINGS_COUNT = 10;
+
+export type GoalFinding = {
+  headline: string;
+  body: string;
+};
 
 export type GoalSectionContent = {
   label: string;
   tagline: string;
   body: string;
-  points: string[];
+  findings: GoalFinding[];
 };
 
-const fallbackSection = buildFallbackSiteContent().sections["homepage.goal"];
+const GOAL_SECTION_DEFAULTS = {
+  label: "10 Facts",
+  tagline: "Focus over distraction and cognitive friction over swiping.",
+  body:
+    "Ten findings from national assessments and international studies — grouped so you can follow the story from U.S. classrooms to OECD nations and back to early childhood.",
+};
+
+function getFallbackSection(): Record<string, unknown> {
+  return {
+    ...GOAL_SECTION_DEFAULTS,
+    findings: createDefaultGoalFindings(),
+  };
+}
 
 function readString(value: unknown): string | undefined {
   if (typeof value !== "string") return undefined;
@@ -18,34 +34,104 @@ function readString(value: unknown): string | undefined {
   return trimmed.length > 0 ? trimmed : undefined;
 }
 
-function readStringArray(value: unknown): string[] | undefined {
+/** Short stat-style prefix before an em dash; longer text is treated as body-only. */
+const LEGACY_HEADLINE_MAX_LENGTH = 48;
+
+export function splitLegacyGoalPoint(point: string): GoalFinding {
+  const separator = " — ";
+  const trimmed = point.trim();
+  if (!trimmed) return { headline: "", body: "" };
+
+  const splitIndex = trimmed.indexOf(separator);
+  if (splitIndex === -1) {
+    return { headline: "", body: trimmed };
+  }
+
+  const headline = trimmed.slice(0, splitIndex).trim();
+  const body = trimmed.slice(splitIndex + separator.length).trim();
+
+  if (
+    headline.length > LEGACY_HEADLINE_MAX_LENGTH ||
+    /[.!?]\s/.test(headline)
+  ) {
+    return { headline: "", body: trimmed };
+  }
+
+  return {
+    headline,
+    body: body || trimmed,
+  };
+}
+
+export function createDefaultGoalFindings(): GoalFinding[] {
+  return whatToDoPoints.map(splitLegacyGoalPoint);
+}
+
+function padFindings(findings: GoalFinding[]): GoalFinding[] {
+  const defaults = createDefaultGoalFindings();
+  const padded = findings.map((finding) => ({
+    headline: finding.headline.trim(),
+    body: finding.body.trim(),
+  }));
+
+  while (padded.length < WHAT_TO_DO_FINDINGS_COUNT) {
+    const index = padded.length;
+    padded.push(defaults[index] ?? { headline: "", body: "" });
+  }
+
+  return padded.slice(0, WHAT_TO_DO_FINDINGS_COUNT);
+}
+
+function readStructuredFindings(value: unknown): GoalFinding[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+
+  const items = value
+    .map((item) => {
+      if (typeof item === "string") {
+        return splitLegacyGoalPoint(item);
+      }
+
+      if (!item || typeof item !== "object") return null;
+
+      const record = item as Record<string, unknown>;
+      const headline =
+        readString(record.headline) ??
+        readString(record.stat) ??
+        readString(record.title) ??
+        "";
+      const body = readString(record.body) ?? "";
+
+      if (!headline && !body) return null;
+
+      return { headline, body };
+    })
+    .filter((item): item is GoalFinding => item !== null);
+
+  return items.length > 0 ? items : undefined;
+}
+
+function readLegacyPointsArray(value: unknown): GoalFinding[] | undefined {
   if (!Array.isArray(value)) return undefined;
 
   const items = value.filter(
     (item): item is string => typeof item === "string" && item.trim().length > 0,
   );
 
-  return items.length > 0 ? items : undefined;
+  return items.length > 0 ? items.map(splitLegacyGoalPoint) : undefined;
 }
 
-function padFindings(points: string[]): string[] {
-  const padded = [...points];
-
-  while (padded.length < WHAT_TO_DO_FINDINGS_COUNT) {
-    padded.push("");
-  }
-
-  return padded.slice(0, WHAT_TO_DO_FINDINGS_COUNT);
+function readFallbackFindings(): GoalFinding[] {
+  return createDefaultGoalFindings();
 }
 
 /** Merge CMS / legacy keys with defaults for admin + public rendering. */
 export function normalizeGoalSectionContent(
   raw: Record<string, unknown> | null | undefined,
 ): GoalSectionContent {
-  const fallback = fallbackSection as Record<string, unknown>;
+  const fallback = getFallbackSection();
 
   const label =
-    readString(raw?.label) ?? readString(fallback.label) ?? "What To Do";
+    readString(raw?.label) ?? readString(fallback.label) ?? "10 Facts";
   const tagline =
     readString(raw?.tagline) ??
     readString(raw?.headline) ??
@@ -53,18 +139,17 @@ export function normalizeGoalSectionContent(
     "";
   const body =
     readString(raw?.body) ?? readString(fallback.body) ?? "";
-  const points =
-    readStringArray(raw?.points) ??
-    readStringArray(raw?.findings) ??
-    readStringArray(raw?.bullets) ??
-    readStringArray(fallback.points) ??
-    [...whatToDoPoints];
+  const findings =
+    readStructuredFindings(raw?.findings) ??
+    readLegacyPointsArray(raw?.points) ??
+    readLegacyPointsArray(raw?.bullets) ??
+    readFallbackFindings();
 
   return {
     label,
     tagline,
     body,
-    points: padFindings(points),
+    findings: padFindings(findings),
   };
 }
 
@@ -73,19 +158,29 @@ export function sanitizeGoalSectionForPublish(
   content: Record<string, unknown>,
 ): Record<string, unknown> {
   const normalized = normalizeGoalSectionContent(content);
-  const points = normalized.points
-    .map((point) => point.trim())
-    .filter(Boolean);
+  const findings = padFindings(
+    normalized.findings.map((finding) => ({
+      headline: finding.headline.trim(),
+      body: finding.body.trim(),
+    })),
+  ).filter((finding) => finding.headline || finding.body);
 
   return {
     label: normalized.label,
     tagline: normalized.tagline,
     body: normalized.body,
-    points: points.length > 0 ? points : [...whatToDoPoints],
+    findings:
+      findings.length > 0 ? findings : createDefaultGoalFindings(),
   };
 }
 
-export function resolveGoalFindings(points: string[]): string[] {
-  const trimmed = points.map((point) => point.trim()).filter(Boolean);
-  return trimmed.length > 0 ? trimmed : [...whatToDoPoints];
+export function resolveGoalFindingItems(findings: GoalFinding[]): GoalFinding[] {
+  const trimmed = findings
+    .map((finding) => ({
+      headline: finding.headline.trim(),
+      body: finding.body.trim(),
+    }))
+    .filter((finding) => finding.headline || finding.body);
+
+  return trimmed.length > 0 ? trimmed : createDefaultGoalFindings();
 }

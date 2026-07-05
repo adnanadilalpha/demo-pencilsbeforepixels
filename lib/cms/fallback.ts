@@ -1,3 +1,4 @@
+import { createDefaultGoalFindings } from "./goal-section-content";
 import { resolvePrivacyPolicyUrl, resolveTermsOfServiceUrl } from "./settings-urls";
 import { researchChartsData } from "@/lib/research/data";
 import {
@@ -13,7 +14,6 @@ import {
   navLinks,
   optOutSteps,
   timelineSlides,
-  whatToDoPoints,
 } from "./fallback-data";
 import { normalizeMissionTimeline } from "./mission-slides";
 import type { SiteContent } from "./types";
@@ -60,12 +60,12 @@ export function buildFallbackSiteContent(): SiteContent {
         backgroundAlt: "Children writing in a classroom",
       },
       "homepage.goal": {
-        label: "What To Do",
+        label: "10 Facts",
         tagline:
           "Focus over distraction and cognitive friction over swiping.",
         body:
           "Ten findings from national assessments and international studies — grouped so you can follow the story from U.S. classrooms to OECD nations and back to early childhood.",
-        points: [...whatToDoPoints],
+        findings: createDefaultGoalFindings(),
       },
       "homepage.learning_apps": {
         headline: "Epic Reading Platform",

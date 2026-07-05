@@ -7,19 +7,16 @@ import { TextLink } from "@/components/ui/TextLink";
 import { RESEARCH_PAGE_CTA } from "@/lib/cms/site-ctas";
 import {
   normalizeGoalSectionContent,
-  resolveGoalFindings,
+  resolveGoalFindingItems,
+  type GoalFinding,
 } from "@/lib/cms/goal-section-content";
-import {
-  parseWhatToDoPoint,
-  type WhatToDoPoint,
-} from "@/lib/cms/what-to-do-points";
 import { useSection } from "@/lib/cms/hooks";
 
 function FindingChip({
-  point,
+  finding,
   index,
 }: {
-  point: WhatToDoPoint;
+  finding: GoalFinding;
   index: number;
 }) {
   const number = index + 1;
@@ -35,19 +32,21 @@ function FindingChip({
             {number}
           </span>
 
-          {point.stat ? (
+          {finding.headline ? (
             <h3 className="min-w-0 flex-1 text-pretty font-sans text-base font-semibold leading-snug text-navy-800 sm:text-lg sm:leading-snug">
               <span className="sr-only">{`Finding ${number}. `}</span>
-              {point.stat}
+              {finding.headline}
             </h3>
           ) : (
             <span className="sr-only">{`Finding ${number}`}</span>
           )}
         </div>
 
-        <p className="text-pretty font-sans text-sm leading-[1.55] text-navy-800/85 sm:text-[0.9375rem] sm:leading-[1.6]">
-          {point.body}
-        </p>
+        {finding.body ? (
+          <p className="text-pretty font-sans text-sm leading-[1.55] text-navy-800/85 sm:text-[0.9375rem] sm:leading-[1.6]">
+            {finding.body}
+          </p>
+        ) : null}
       </article>
     </li>
   );
@@ -55,14 +54,11 @@ function FindingChip({
 
 export function GoalSection() {
   const rawSection = useSection("homepage.goal");
-  const { label, tagline, body, points: rawPoints } =
+  const { label, tagline, body, findings: rawFindings } =
     normalizeGoalSectionContent(rawSection);
-  const points = resolveGoalFindings(rawPoints);
+  const findings = resolveGoalFindingItems(rawFindings);
 
-  const bullets = useMemo(
-    () => points.map((point, index) => parseWhatToDoPoint(point, index)),
-    [points],
-  );
+  const bullets = useMemo(() => findings, [findings]);
 
   return (
     <section
@@ -87,10 +83,10 @@ export function GoalSection() {
             className="flex flex-col gap-3 sm:gap-3.5"
             aria-label="Ten research findings, read in order from 1 to 10"
           >
-            {bullets.map((point, index) => (
+            {bullets.map((finding, index) => (
               <FindingChip
-                key={`${point.stat}-${index}`}
-                point={point}
+                key={`${finding.headline}-${index}`}
+                finding={finding}
                 index={index}
               />
             ))}

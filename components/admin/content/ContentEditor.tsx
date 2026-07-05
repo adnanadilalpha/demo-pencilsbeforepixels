@@ -52,7 +52,11 @@ import type { AcademicDatasetCopy } from "@/lib/admin/academic-dataset-defaults"
 import { mergeAcademicDatasetEditorState } from "@/lib/admin/academic-dataset-defaults";
 import { normalizeYouTubeUrl } from "@/lib/youtube";
 import { normalizeMissionTimeline } from "@/lib/cms/mission-slides";
-import { normalizeGoalSectionContent } from "@/lib/cms/goal-section-content";
+import {
+  createDefaultGoalFindings,
+  normalizeGoalSectionContent,
+  type GoalFinding,
+} from "@/lib/cms/goal-section-content";
 import type {
   ExpertQuote,
   OptOutStep,
@@ -756,13 +760,7 @@ export function ContentEditor({
                 <>
                   <SectionForm
                     title={activeSection.label}
-                    fields={
-                      activeSection.id === "goal"
-                        ? activeSection.fields.filter(
-                            (field) => field.key !== "points",
-                          )
-                        : activeSection.fields
-                    }
+                    fields={activeSection.fields}
                     values={formValues}
                     onChange={handleFieldChange}
                   />
@@ -771,11 +769,13 @@ export function ContentEditor({
                     <div className="mt-8 border-t border-navy-800/8 pt-8">
                       <WhatToDoFindingsEditor
                         value={
-                          Array.isArray(formValues.points)
-                            ? (formValues.points as string[])
-                            : []
+                          Array.isArray(formValues.findings)
+                            ? (formValues.findings as GoalFinding[])
+                            : createDefaultGoalFindings()
                         }
-                        onChange={(value) => handleFieldChange("points", value)}
+                        onChange={(value) =>
+                          handleFieldChange("findings", value)
+                        }
                       />
                     </div>
                   ) : null}
