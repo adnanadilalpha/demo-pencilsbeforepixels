@@ -70,7 +70,7 @@ export function Footer({ paddingX = sectionPaddingX }: FooterProps) {
                           pathname,
                           lenis,
                           undefined,
-                          (url) => router.push(url),
+                          router,
                         );
                       }}
                       className="transition-opacity hover:opacity-70"

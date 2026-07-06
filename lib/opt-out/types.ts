@@ -40,13 +40,10 @@ export type OptOutLetterForm = {
 
 export type OptOutLetterMetrics = {
   pdfDownloads: number;
-  docxDownloads: number;
   lastDownloadAt?: string;
-  lastDownloadFormat?: "pdf" | "docx";
 };
 
 export type OptOutCachedPackages = {
-  docx?: string;
   pdf?: string;
 };
 

@@ -89,7 +89,6 @@ export async function POST(request: Request) {
       defaultAnswers: config.defaultAnswers,
       metrics: {
         pdfDownloads: 0,
-        docxDownloads: 0,
       },
       downloadToken,
     };
@@ -113,7 +112,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Failed to create submission" }, { status: 500 });
     }
 
-    // Build the PDF/DOCX after responding so submit stays fast; download
+    // Build the PDF after responding so submit stays fast; download
     // routes fall back to on-demand builds if the cache isn't ready yet.
     after(async () => {
       try {

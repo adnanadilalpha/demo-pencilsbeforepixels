@@ -9,7 +9,6 @@ import {
   researchChartCategoryLabelDark,
   researchChartTickMutedDark,
 } from "@/components/charts/chart-theme";
-import { RichTextContent } from "@/components/cms/RichTextContent";
 import { isResearchDesktopWidth } from "@/lib/research/responsive";
 import {
   bindChartHitTarget,
@@ -59,7 +58,7 @@ function barBorder(row: ScreenTimeRow) {
 function axisTitle(active: ScreenTimeKey) {
   return active === "video"
     ? "Drop in chances of meeting grade level (%) — any video game use vs. none"
-    : "Drop in chances of meeting grade level (%) per extra hour/day of screen time";
+    : "Drop in chances of meeting grade level (%) per hour/day of screen time";
 }
 
 type ScreenTimeTooltipProps = {
@@ -86,22 +85,25 @@ function ScreenTimeTooltip({
       ? `No drop — slightly higher odds (OR ${row.or.toFixed(2)}, not confirmed)`
       : `~${row.pct}% lower chance of meeting grade level`;
 
+  const tooltipWidth = Math.min(340, containerWidth - 16);
+  const tooltipHeight = 168;
+
   const { left, top } = positionChartTooltip(
     containerWidth,
     containerHeight,
     x,
     y,
-    288,
-    148,
+    tooltipWidth,
+    tooltipHeight,
   );
 
   return (
     <div
-      className="pointer-events-none absolute z-20 w-[288px] transition-all duration-200 ease-out"
+      className="pointer-events-none absolute z-20 w-max min-w-[288px] max-w-[calc(100%-16px)] transition-all duration-200 ease-out"
       style={{ left, top }}
       role="tooltip"
     >
-      <div className="relative overflow-hidden rounded-md border border-gold-accent/25 bg-hero-dark shadow-[0_8px_24px_rgba(15,31,61,0.28)]">
+      <div className="relative rounded-md border border-gold-accent/25 bg-hero-dark shadow-[0_8px_24px_rgba(15,31,61,0.28)]">
         {onDismiss ? (
           <button
             type="button"
@@ -135,19 +137,19 @@ function ScreenTimeTooltip({
             style={{ backgroundColor: barColor(row) }}
             aria-hidden
           />
-          <p className={`pr-4 ${chartTooltipTitle}`}>{row.label}</p>
+          <p className={`pr-8 ${chartTooltipTitle}`}>{row.label}</p>
         </div>
         <div className="space-y-1.5 px-3.5 py-3 font-sans text-xs leading-snug text-slate-50/85 lg:text-sm">
-          <p className="whitespace-nowrap text-slate-50">{dropText}</p>
-          <p className="whitespace-nowrap">
+          <p className="text-slate-50">{dropText}</p>
+          <p>
             {row.sig ? "✓ Confirmed finding" : "✗ Result may be due to chance"}
           </p>
           <div className="border-t border-white/10 pt-2">
-            <p className="whitespace-nowrap">
+            <p>
               Research figure (OR): {row.or.toFixed(2)}{" "}
               <span className="text-slate-50/70">(95% CI: {row.ci})</span>
             </p>
-            <p className="whitespace-nowrap">p value: {row.p}</p>
+            <p>p value: {row.p}</p>
           </div>
         </div>
       </div>
@@ -380,45 +382,7 @@ export function ResearchScreenTimeChart({ data }: ResearchScreenTimeChartProps) 
         ))}
       </div>
 
-      <div className="flex flex-wrap gap-x-5 gap-y-2">
-        {[
-          { swatch: "bg-navy-800", label: "Grade 3 — confirmed finding" },
-          { swatch: "bg-[#4a6fa5]", label: "Grade 6 — confirmed finding" },
-          {
-            swatch: "bg-[#c8ddf2] border border-[#8aafd4]",
-            label: "Result may be due to chance",
-          },
-          {
-            swatch: "bg-[#e5e7eb] border border-[#d1d5db]",
-            label: "No drop (OR ≥ 1.0)",
-          },
-        ].map(({ swatch, label }) => (
-          <span
-            key={label}
-            className={`flex items-center gap-1.5 ${researchChartCaptionMutedDark}`}
-          >
-            <span className={`inline-block h-3 w-3 shrink-0 rounded-sm ${swatch}`} />
-            {label}
-          </span>
-        ))}
-      </div>
-
       <ScreenTimePlot key={active} tab={tab} active={active} />
-
-      <div className="rounded-xl border border-navy-50 bg-navy-50 px-3 py-2.5 md:px-4 md:py-3 lg:px-5">
-        <p className={researchBodyText}>
-          <span className="font-semibold text-navy-800">What this means: </span>
-          {tab.note}
-        </p>
-      </div>
-
-      <div className="rounded-xl border border-[#e9e6df] bg-paper-200 px-3 py-2.5 md:px-4 md:py-3 lg:px-5">
-        <p className={researchBodyText}>
-          <span className="font-semibold text-[#18263a]">Statistical note: </span>
-          <RichTextContent content={data.statisticalNote} inline />
-        </p>
-      </div>
-
     </div>
   );
 }

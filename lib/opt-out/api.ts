@@ -38,13 +38,12 @@ export async function createOptOutSubmission(
 
 export async function trackOptOutDownload(
   id: string,
-  format: "pdf" | "docx",
   downloadToken: string,
 ): Promise<void> {
   const response = await fetch(`/api/opt-out/${id}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ action: "download", format, downloadToken }),
+    body: JSON.stringify({ action: "download", downloadToken }),
   });
 
   if (!response.ok) {
@@ -63,9 +62,8 @@ async function readDownloadError(response: Response): Promise<string> {
   return `Download failed (${response.status})`;
 }
 
-async function downloadFromApi(
+export async function downloadOptOutPdf(
   id: string,
-  format: "pdf" | "docx",
   filename: string,
   downloadToken: string,
 ) {
@@ -75,7 +73,7 @@ async function downloadFromApi(
 
   let response: Response;
   try {
-    response = await fetch(`/api/opt-out/${id}/${format}?${params.toString()}`, {
+    response = await fetch(`/api/opt-out/${id}/pdf?${params.toString()}`, {
       signal: controller.signal,
     });
   } catch (error) {
@@ -102,20 +100,4 @@ async function downloadFromApi(
   anchor.click();
   anchor.remove();
   window.setTimeout(() => URL.revokeObjectURL(url), 0);
-}
-
-export async function downloadOptOutDocx(
-  id: string,
-  filename: string,
-  downloadToken: string,
-) {
-  await downloadFromApi(id, "docx", filename, downloadToken);
-}
-
-export async function downloadOptOutPdf(
-  id: string,
-  filename: string,
-  downloadToken: string,
-) {
-  await downloadFromApi(id, "pdf", filename, downloadToken);
 }

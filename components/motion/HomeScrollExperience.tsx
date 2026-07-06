@@ -1,51 +1,46 @@
 "use client";
 
 import { ReactLenis } from "lenis/react";
-import { useEffect, useState, type ReactNode } from "react";
+import { useSyncExternalStore, type ReactNode } from "react";
 import { HashSectionScroll } from "@/components/navigation/HashSectionScroll";
 import { LENIS_OPTIONS, prefersNativeScroll } from "@/lib/motion";
 import "lenis/dist/lenis.css";
 
-function HomeScrollContent({
-  children,
-  scrollReady,
-}: {
-  children: ReactNode;
-  scrollReady: boolean;
-}) {
+function subscribeToSmoothScrollPreference() {
+  return () => {};
+}
+
+function getSmoothScrollSnapshot() {
+  return !prefersNativeScroll();
+}
+
+function getSmoothScrollServerSnapshot() {
+  return false;
+}
+
+function HomeScrollContent({ children }: { children: ReactNode }) {
   return (
     <>
-      <HashSectionScroll scrollReady={scrollReady} />
+      <HashSectionScroll />
       {children}
     </>
   );
 }
 
 export function HomeScrollExperience({ children }: { children: ReactNode }) {
-  const [useSmoothScroll, setUseSmoothScroll] = useState(false);
-  const [scrollReady, setScrollReady] = useState(false);
-
-  useEffect(() => {
-    setUseSmoothScroll(!prefersNativeScroll());
-  }, []);
-
-  useEffect(() => {
-    const frame = window.requestAnimationFrame(() => {
-      setScrollReady(true);
-    });
-
-    return () => window.cancelAnimationFrame(frame);
-  }, [useSmoothScroll]);
+  const useSmoothScroll = useSyncExternalStore(
+    subscribeToSmoothScrollPreference,
+    getSmoothScrollSnapshot,
+    getSmoothScrollServerSnapshot,
+  );
 
   if (!useSmoothScroll) {
-    return (
-      <HomeScrollContent scrollReady={scrollReady}>{children}</HomeScrollContent>
-    );
+    return <HomeScrollContent>{children}</HomeScrollContent>;
   }
 
   return (
     <ReactLenis root options={LENIS_OPTIONS}>
-      <HomeScrollContent scrollReady={scrollReady}>{children}</HomeScrollContent>
+      <HomeScrollContent>{children}</HomeScrollContent>
     </ReactLenis>
   );
 }

@@ -40,7 +40,7 @@ export function Logo({ variant = "light", size = "default" }: LogoProps) {
       });
     }
 
-    window.history.pushState(null, "", "/");
+    window.history.replaceState(null, "", "/");
   };
 
   return (

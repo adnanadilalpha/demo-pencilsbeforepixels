@@ -65,6 +65,12 @@ html {
   overflow-x: clip;
   overscroll-behavior-y: none;
   scrollbar-gutter: stable;
+  scroll-padding-top: var(--header-height);
+}
+
+#opt-out,
+#resources {
+  scroll-margin-top: var(--header-height);
 }
 
 body {

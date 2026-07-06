@@ -96,7 +96,7 @@ export function Header() {
       pathname,
       lenis,
       setActiveHash,
-      (url) => router.push(url),
+      router,
     );
   };
 

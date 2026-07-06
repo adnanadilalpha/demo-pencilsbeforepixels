@@ -5,7 +5,6 @@ import {
   fetchOptOutSubmissionPayload,
 } from "@/lib/admin/opt-out/fetch";
 import { packageFilename } from "@/lib/opt-out/filenames";
-import { buildOptOutPackageDocx } from "@/lib/opt-out/build-package-docx";
 import { buildOptOutPackagePdf } from "@/lib/opt-out/build-package-pdf";
 import { loadOptOutFormConfig } from "@/lib/opt-out/config";
 import type { OptOutLetterForm, OptOutSubmissionPayload } from "@/lib/opt-out/types";
@@ -69,10 +68,9 @@ export async function POST(request: Request) {
 
   const body = (await request.json()) as {
     id?: string;
-    format?: "pdf" | "docx";
   };
 
-  if (!body.id || !body.format) {
+  if (!body.id) {
     return NextResponse.json({ error: "Invalid payload." }, { status: 400 });
   }
 
@@ -94,24 +92,12 @@ export async function POST(request: Request) {
       config.defaultAnswers = payload.defaultAnswers;
     }
 
-    if (body.format === "pdf") {
-      const buffer = await buildOptOutPackagePdf(letter, config);
-
-      return new NextResponse(new Uint8Array(buffer), {
-        headers: {
-          "Content-Type": "application/pdf",
-          "Content-Disposition": `attachment; filename="${packageFilename(letter.studentName, "pdf")}"`,
-        },
-      });
-    }
-
-    const buffer = await buildOptOutPackageDocx(letter, config);
+    const buffer = await buildOptOutPackagePdf(letter, config);
 
     return new NextResponse(new Uint8Array(buffer), {
       headers: {
-        "Content-Type":
-          "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        "Content-Disposition": `attachment; filename="${packageFilename(letter.studentName, "docx")}"`,
+        "Content-Type": "application/pdf",
+        "Content-Disposition": `attachment; filename="${packageFilename(letter.studentName, "pdf")}"`,
       },
     });
   } catch (error) {

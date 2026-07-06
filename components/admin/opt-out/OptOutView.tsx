@@ -154,10 +154,7 @@ export function OptOutView({ initialData }: OptOutViewProps) {
     URL.revokeObjectURL(url);
   };
 
-  const handleDownload = async (
-    submission: AdminOptOutSubmission,
-    format: "pdf" | "docx",
-  ) => {
+  const handleDownload = async (submission: AdminOptOutSubmission) => {
     setBusyId(submission.id);
     setActionError(null);
 
@@ -165,7 +162,7 @@ export function OptOutView({ initialData }: OptOutViewProps) {
       const response = await fetch("/api/admin/opt-out", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: submission.id, format }),
+        body: JSON.stringify({ id: submission.id }),
       });
 
       if (!response.ok) {
@@ -178,7 +175,7 @@ export function OptOutView({ initialData }: OptOutViewProps) {
       const link = document.createElement("a");
       const filename = packageFilename(
         submission.studentName ?? submission.parentName,
-        format,
+        "pdf",
       );
 
       link.href = url;
@@ -393,9 +390,7 @@ export function OptOutView({ initialData }: OptOutViewProps) {
             ? "No submissions match your search."
             : "No submissions yet."
         }
-        onDownload={(submission, format) =>
-          void handleDownload(submission, format)
-        }
+        onDownload={(submission) => void handleDownload(submission)}
         onDelete={(submission) =>
           setPendingDelete({ mode: "single", submission })
         }

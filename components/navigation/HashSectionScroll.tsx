@@ -3,38 +3,35 @@
 import { usePathname } from "next/navigation";
 import { useLenis } from "lenis/react";
 import { useEffect } from "react";
-import { scheduleHashSectionScroll } from "@/lib/navigation";
+import { prefersNativeScroll } from "@/lib/motion";
+import {
+  SECTION_SCROLL_STORAGE_KEY,
+  scrollToHomeSection,
+} from "@/lib/navigation";
 
-/**
- * Scrolls to homepage section hashes after client navigation (e.g. /research → /#opt-out).
- * Retries until the section sits under the fixed header — lower sections need layout/Lenis to settle.
- */
-export function HashSectionScroll({ scrollReady }: { scrollReady: boolean }) {
+/** One effect: if another page sent us a section target, scroll there once. */
+export function HashSectionScroll() {
   const pathname = usePathname();
   const lenis = useLenis();
 
   useEffect(() => {
-    if (pathname !== "/" || !scrollReady) return;
+    if (pathname !== "/") return;
 
-    let cancelScroll = () => {};
+    const pendingId = sessionStorage.getItem(SECTION_SCROLL_STORAGE_KEY);
+    if (!pendingId) return;
 
-    const scrollToCurrentHash = () => {
-      cancelScroll();
-      const hash = window.location.hash;
-      if (!hash) return;
-      cancelScroll = scheduleHashSectionScroll(hash, lenis);
-    };
+    const expectsLenis = !prefersNativeScroll();
+    if (expectsLenis && !lenis) return;
 
-    scrollToCurrentHash();
-    window.addEventListener("hashchange", scrollToCurrentHash);
-    window.addEventListener("load", scrollToCurrentHash);
+    sessionStorage.removeItem(SECTION_SCROLL_STORAGE_KEY);
 
-    return () => {
-      window.removeEventListener("hashchange", scrollToCurrentHash);
-      window.removeEventListener("load", scrollToCurrentHash);
-      cancelScroll();
-    };
-  }, [pathname, lenis, scrollReady]);
+    // Wait for layout + Lenis dimensions before jumping to the section top.
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        scrollToHomeSection(pendingId, lenis);
+      });
+    });
+  }, [pathname, lenis]);
 
   return null;
 }

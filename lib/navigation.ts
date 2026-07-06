@@ -1,4 +1,5 @@
 import type Lenis from "lenis";
+import type { AppRouterInstance } from "next/dist/shared/lib/app-router-context.shared-runtime";
 import {
   getAnchorScrollDuration,
   prefersReducedMotion,
@@ -6,6 +7,22 @@ import {
 } from "@/lib/motion";
 
 export const HEADER_SCROLL_OFFSET = -90;
+export const SECTION_SCROLL_STORAGE_KEY = "pbp:section-scroll-target";
+export const HOME_SECTION_REVEAL_EVENT = "pbp:reveal-home-section";
+
+export type HomeSectionRevealDetail = {
+  sectionId: string;
+};
+
+export function revealHomeSectionContent(sectionId: string) {
+  if (typeof window === "undefined") return;
+
+  window.dispatchEvent(
+    new CustomEvent<HomeSectionRevealDetail>(HOME_SECTION_REVEAL_EVENT, {
+      detail: { sectionId },
+    }),
+  );
+}
 
 export function getHeaderScrollOffset() {
   if (typeof window === "undefined") return HEADER_SCROLL_OFFSET;
@@ -19,41 +36,113 @@ export function getHeaderScrollOffset() {
 }
 
 export function resolveNavHref(href: string, pathname: string) {
-  if (href.startsWith("/")) return href;
-  if (pathname !== "/") return `/${href}`;
-  return href;
+  const trimmed = href.trim();
+  if (trimmed.startsWith("#")) return `/${trimmed}`;
+  if (trimmed.startsWith("/")) return trimmed;
+  if (pathname !== "/") return `/${trimmed}`;
+  return trimmed;
 }
 
 export function parseNavHref(href: string): { path: string; hash: string | null } {
-  const hashIndex = href.indexOf("#");
+  const trimmed = href.trim();
+  const hashIndex = trimmed.indexOf("#");
   if (hashIndex === -1) {
-    return { path: href || "/", hash: null };
+    return { path: trimmed || "/", hash: null };
   }
 
-  const path = href.slice(0, hashIndex) || "/";
-  const hash = href.slice(hashIndex);
+  const path = trimmed.slice(0, hashIndex) || "/";
+  const hashBody = trimmed.slice(hashIndex + 1).split("#")[0];
+  const hash = hashBody ? `#${hashBody}` : null;
 
   return { path: path === "" ? "/" : path, hash };
+}
+
+export function hashToSectionId(hash: string) {
+  return hash.replace(/^#/, "").split("#")[0];
 }
 
 export function getSectionElement(hash: string): HTMLElement | null {
   if (!hash || hash === "#") return null;
 
-  const id = decodeURIComponent(hash.replace(/^#/, ""));
+  const id = decodeURIComponent(hash.replace(/^#/, "").split("#")[0]);
   if (!id) return null;
 
   const target = document.getElementById(id);
   return target instanceof HTMLElement ? target : null;
 }
 
-export function isSectionScrollAligned(hash: string): boolean {
+function getSectionScrollTop(element: HTMLElement, offset: number) {
+  return Math.max(
+    0,
+    element.getBoundingClientRect().top + window.scrollY + offset,
+  );
+}
+
+/** Scroll to a homepage section by id — single code path for cross-page arrival. */
+export function scrollToHomeSection(
+  sectionId: string,
+  lenis?: Lenis | null,
+): boolean {
+  const target = document.getElementById(sectionId);
+  if (!target) return false;
+
+  const offset = getHeaderScrollOffset();
+  const scrollTop = getSectionScrollTop(target, offset);
+
+  if (lenis) {
+    lenis.resize();
+    lenis.scrollTo(scrollTop, { immediate: true, force: true });
+  } else {
+    window.scrollTo({ top: scrollTop, left: 0, behavior: "auto" });
+  }
+
+  window.history.replaceState(null, "", `/#${sectionId}`);
+  requestAnimationFrame(() => {
+    revealHomeSectionContent(sectionId);
+  });
+  return true;
+}
+
+export function scrollToSectionSmooth(
+  hash: string,
+  lenis?: Lenis | null,
+): boolean {
   const target = getSectionElement(hash);
   if (!target) return false;
 
-  const headerHeight = -getHeaderScrollOffset();
-  const top = target.getBoundingClientRect().top;
+  const offset = getHeaderScrollOffset();
 
-  return Math.abs(top - headerHeight) < 48;
+  if (prefersReducedMotion()) {
+    return scrollToHomeSection(hashToSectionId(hash), lenis);
+  }
+
+  if (lenis) {
+    const distance = Math.abs(
+      target.getBoundingClientRect().top + window.scrollY + offset - lenis.scroll,
+    );
+    lenis.scrollTo(target, {
+      offset,
+      duration: getAnchorScrollDuration(distance),
+      easing: smoothScrollEasing,
+    });
+    return true;
+  }
+
+  const top = Math.max(
+    0,
+    target.getBoundingClientRect().top + window.scrollY + offset,
+  );
+  window.scrollTo({ top, behavior: "smooth" });
+  return true;
+}
+
+/** Cross-page: remember section, go home without hash, scroll once on arrival. */
+export function navigateToHomeSection(
+  sectionId: string,
+  router: Pick<AppRouterInstance, "push">,
+) {
+  sessionStorage.setItem(SECTION_SCROLL_STORAGE_KEY, sectionId);
+  router.push("/", { scroll: false });
 }
 
 export function handleNavLinkClick(
@@ -62,114 +151,45 @@ export function handleNavLinkClick(
   pathname: string,
   lenis?: Lenis | null,
   onHashScroll?: (hash: string) => void,
-  navigate?: (url: string) => void,
+  router?: Pick<AppRouterInstance, "push">,
 ): boolean {
   const { path, hash } = parseNavHref(href);
   if (!hash) return false;
 
+  const sectionId = hashToSectionId(hash);
   const targetUrl = buildHashNavUrl(path, hash);
 
+  event.preventDefault();
+
   if (pathname === path) {
-    event.preventDefault();
-    scheduleHashSectionScroll(hash, lenis);
+    scrollToSectionSmooth(hash, lenis);
     window.history.pushState(null, "", targetUrl);
     onHashScroll?.(hash);
     return true;
   }
 
-  if (navigate) {
-    event.preventDefault();
-    navigate(targetUrl);
+  if (router) {
+    navigateToHomeSection(sectionId, router);
     return true;
   }
 
   return false;
 }
 
-export function scrollToSection(hash: string, lenis?: Lenis | null) {
-  if (!hash || hash === "#") return false;
-
-  const target = getSectionElement(hash);
-  if (!target) return false;
-
-  if (lenis) {
-    const current = lenis.scroll;
-    const offset = getHeaderScrollOffset();
-    const targetTop =
-      target.getBoundingClientRect().top + window.scrollY + offset;
-    const distance = targetTop - current;
-
-    lenis.scrollTo(target, {
-      offset,
-      duration: prefersReducedMotion() ? 0 : getAnchorScrollDuration(distance),
-      easing: smoothScrollEasing,
-    });
-    return true;
-  }
-
-  const offset = getHeaderScrollOffset();
-  const top =
-    target.getBoundingClientRect().top + window.scrollY + offset;
-
-  window.scrollTo({
-    top,
-    behavior: prefersReducedMotion() ? "auto" : "smooth",
-  });
-
-  return true;
-}
-
-const HASH_SCROLL_MAX_ATTEMPTS = 24;
-const HASH_SCROLL_RETRY_MS = [0, 50, 100, 150, 200, 300, 400, 500, 650, 800, 1000, 1200];
-
-/** Retry scroll until the section is aligned under the header (post client navigation / Lenis init). */
-export function scheduleHashSectionScroll(
-  hash: string,
-  lenis?: Lenis | null,
-): () => void {
-  if (!hash || hash === "#") return () => {};
-
-  let cancelled = false;
-  let attempts = 0;
-  let timer = 0;
-
-  const tryScroll = () => {
-    if (cancelled) return;
-
-    if (!getSectionElement(hash)) {
-      scheduleRetry();
-      return;
-    }
-
-    scrollToSection(hash, lenis);
-
-    if (isSectionScrollAligned(hash)) {
-      return;
-    }
-
-    scheduleRetry();
-  };
-
-  const scheduleRetry = () => {
-    attempts += 1;
-    if (attempts >= HASH_SCROLL_MAX_ATTEMPTS) {
-      return;
-    }
-
-    const delay =
-      HASH_SCROLL_RETRY_MS[Math.min(attempts, HASH_SCROLL_RETRY_MS.length - 1)] ??
-      150;
-    timer = window.setTimeout(tryScroll, delay);
-  };
-
-  tryScroll();
-
-  return () => {
-    cancelled = true;
-    window.clearTimeout(timer);
-  };
-}
-
 export function buildHashNavUrl(path: string, hash: string) {
-  return `${path}${hash}`;
+  const normalizedPath = path.split("#")[0] || "/";
+  const normalizedHash = hash.startsWith("#") ? hash : `#${hash}`;
+  return `${normalizedPath}${normalizedHash}`;
+}
+
+export function normalizeBrowserHashUrl() {
+  if (typeof window === "undefined") return;
+
+  const { pathname, hash } = window.location;
+  if (!hash) return;
+
+  const segments = hash.split("#").filter(Boolean);
+  if (segments.length <= 1) return;
+
+  window.history.replaceState(null, "", buildHashNavUrl(pathname, `#${segments[0]}`));
 }

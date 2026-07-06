@@ -170,11 +170,11 @@ export const researchChartsData: ResearchChartsData = {
     statPills: [
       {
         value: "~9% lower",
-        label: "chance of meeting grade level per extra hour/day — Gr.3 Reading & Math",
+        label: "chance of meeting grade level per hour/day of screen time — Gr.3 Reading & Math",
       },
       {
         value: "~10% lower",
-        label: "chance of meeting grade level per extra hour/day — Gr.6 Math",
+        label: "chance of meeting grade level per hour/day of screen time — Gr.6 Math",
       },
       {
         value: "~23% lower",
@@ -191,7 +191,7 @@ export const researchChartsData: ResearchChartsData = {
       "Percentage estimates are derived from proportional odds ratios reported in Table 3 of Li et al. (JAMA Network Open, 2025). For interpretive clarity, each odds ratio has been converted to an approximate percentage-point change in the likelihood of meeting grade-level standards (e.g., OR = 0.91 ≈ 9% reduction). This conversion is an approximation; readers are encouraged to consult the original odds ratios, 95% confidence intervals, and p values — available on hover — for precise statistical inference.",
     tabs: {
       total: {
-        unit: "per extra hour/day",
+        unit: "per hour/day of screen time",
         note: "Each extra hour of daily screen time is linked to roughly a 9–10% drop in the chances of children meeting their grade level in Reading and Math (Grade 3) and Math (Grade 6). Writing showed no confirmed effect in either grade. These are confirmed findings — the study ruled out chance as the cause.",
         rows: screenTimeRows([
           { label: "Reading — Grade 3", or: 0.91, pct: 9, ci: "0.86–0.96", p: ".001", sig: true, grade: 3 },
@@ -203,7 +203,7 @@ export const researchChartsData: ResearchChartsData = {
         ]),
       },
       tv: {
-        unit: "per extra hour/day",
+        unit: "per hour/day of screen time",
         note: "TV and digital media time (TV, DVDs, computers, handheld devices — not including video games) shows a similar pattern. Each extra hour per day is linked to a ~9–11% drop in chances of meeting grade level for Grade 3 Reading & Math and Grade 6 Math. No confirmed effect on writing.",
         rows: screenTimeRows([
           { label: "Reading — Grade 3", or: 0.91, pct: 9, ci: "0.85–0.97", p: ".004", sig: true, grade: 3 },

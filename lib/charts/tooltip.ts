@@ -39,6 +39,8 @@ export function positionChartTooltip(
     top = containerHeight - tooltipHeight - padding;
   }
 
+  left = Math.max(padding, Math.min(left, containerWidth - tooltipWidth - padding));
+
   return { left, top };
 }
 

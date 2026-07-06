@@ -5,7 +5,6 @@ import { createPortal } from "react-dom";
 import { Button } from "@/components/ui/Button";
 import {
   createOptOutSubmission,
-  downloadOptOutDocx,
   downloadOptOutPdf,
   trackOptOutDownload,
 } from "@/lib/opt-out/api";
@@ -136,7 +135,7 @@ export function OptOutLetterModal({ open, onClose }: OptOutLetterModalProps) {
   const [downloadToken, setDownloadToken] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
-  const [downloading, setDownloading] = useState<"pdf" | "docx" | null>(null);
+  const [downloading, setDownloading] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -181,7 +180,7 @@ export function OptOutLetterModal({ open, onClose }: OptOutLetterModalProps) {
         setDownloadToken(null);
         setError("");
         setFieldErrors({});
-        setDownloading(null);
+        setDownloading(false);
       }, 200);
       return () => window.clearTimeout(timer);
     }
@@ -331,35 +330,18 @@ export function OptOutLetterModal({ open, onClose }: OptOutLetterModalProps) {
 
   const handlePdfDownload = async () => {
     if (!submissionId || !downloadToken) return;
-    setDownloading("pdf");
+    setDownloading(true);
     try {
       await downloadOptOutPdf(
         submissionId,
         packageFilename(form.studentName, "pdf"),
         downloadToken,
       );
-      await trackOptOutDownload(submissionId, "pdf", downloadToken);
+      await trackOptOutDownload(submissionId, downloadToken);
     } catch {
       setError("PDF download failed. Please try again.");
     } finally {
-      setDownloading(null);
-    }
-  };
-
-  const handleDocxDownload = async () => {
-    if (!submissionId || !downloadToken) return;
-    setDownloading("docx");
-    try {
-      await downloadOptOutDocx(
-        submissionId,
-        packageFilename(form.studentName, "docx"),
-        downloadToken,
-      );
-      await trackOptOutDownload(submissionId, "docx", downloadToken);
-    } catch {
-      setError("DOCX download failed. Please try again.");
-    } finally {
-      setDownloading(null);
+      setDownloading(false);
     }
   };
 
@@ -459,23 +441,13 @@ export function OptOutLetterModal({ open, onClose }: OptOutLetterModalProps) {
                 </p>
               </div>
 
-              <div className="flex flex-col gap-3 sm:flex-row">
-                <Button
-                  className="flex-1"
-                  onClick={handlePdfDownload}
-                  disabled={downloading !== null}
-                >
-                  {downloading === "pdf" ? "Downloading…" : "Download PDF"}
-                </Button>
-                <Button
-                  variant="outlineDark"
-                  className="flex-1"
-                  onClick={handleDocxDownload}
-                  disabled={downloading !== null}
-                >
-                  {downloading === "docx" ? "Downloading…" : "Download DOCX"}
-                </Button>
-              </div>
+              <Button
+                className="w-full"
+                onClick={handlePdfDownload}
+                disabled={downloading}
+              >
+                {downloading ? "Downloading…" : "Download PDF"}
+              </Button>
 
               {error ? (
                 <p className="text-sm text-red-700" role="alert">

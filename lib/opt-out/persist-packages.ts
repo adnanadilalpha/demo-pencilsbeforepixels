@@ -27,11 +27,10 @@ export async function persistOptOutCachedPackages(
 export async function persistOptOutCachedPackage(
   id: string,
   payload: OptOutSubmissionPayload,
-  format: "pdf" | "docx",
   buffer: Buffer,
 ): Promise<void> {
   await persistOptOutCachedPackages(id, payload, {
     ...payload.cachedPackages,
-    [format]: buffer.toString("base64"),
+    pdf: buffer.toString("base64"),
   });
 }

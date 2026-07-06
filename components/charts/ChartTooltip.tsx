@@ -22,13 +22,13 @@ function estimateTooltipSize(tooltip: NonNullable<ChartTooltipState>) {
       (line) => line.label.length + line.value.length + 4,
     ),
   );
-  const width = Math.min(Math.max(240, longestContent * 6.8 + 40), 380);
+  const width = Math.min(Math.max(260, longestContent * 7.5 + 56), 400);
   const titleLines = tooltip.title.length > 34 ? 2 : 1;
   const wrappedLabelLines = tooltip.lines.filter(
     (line) => line.label.length > 28,
   ).length;
   const height =
-    52 + titleLines * 18 + tooltip.lines.length * 22 + wrappedLabelLines * 10;
+    56 + titleLines * 20 + tooltip.lines.length * 24 + wrappedLabelLines * 12;
   return { width, height };
 }
 
@@ -54,20 +54,21 @@ export function ChartTooltip({
 
   const { width: tooltipWidth, height: tooltipHeight } =
     estimateTooltipSize(tooltip);
+  const positionedWidth = Math.min(tooltipWidth, containerWidth - 16);
 
   const { left, top } = positionChartTooltip(
     containerWidth,
     containerHeight,
     tooltip.x,
     tooltip.y,
-    tooltipWidth,
+    positionedWidth,
     tooltipHeight,
   );
 
   return (
     <div
-      className="pointer-events-none absolute z-20 min-w-[240px] max-w-[380px] transition-all duration-200 ease-out"
-      style={{ left, top, width: tooltipWidth }}
+      className="pointer-events-none absolute z-20 w-max min-w-[240px] max-w-[calc(100%-16px)] transition-all duration-200 ease-out"
+      style={{ left, top }}
       role="tooltip"
     >
       <div className="relative rounded-md border border-gold-accent/25 bg-hero-dark shadow-[0_8px_24px_rgba(15,31,61,0.28)]">
@@ -108,9 +109,7 @@ export function ChartTooltip({
               aria-hidden
             />
           ) : null}
-          <p
-            className={`min-w-0 flex-1 pr-4 leading-snug ${chartTooltipTitle}`}
-          >
+          <p className={`pr-8 leading-snug ${chartTooltipTitle}`}>
             {tooltip.title}
           </p>
         </div>
@@ -120,10 +119,8 @@ export function ChartTooltip({
               key={`${line.label}-${line.value}`}
               className="flex items-start justify-between gap-x-4"
             >
-              <dt className={`whitespace-nowrap ${chartTooltipLabel}`}>
-                {line.label}
-              </dt>
-              <dd className={`whitespace-nowrap text-right ${chartTooltipValue}`}>
+              <dt className={`shrink-0 ${chartTooltipLabel}`}>{line.label}</dt>
+              <dd className={`shrink-0 text-right ${chartTooltipValue}`}>
                 {line.value}
               </dd>
             </div>

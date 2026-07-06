@@ -9,6 +9,10 @@ import {
 } from "react";
 import { cn } from "@/lib/utils";
 import { prefersReducedMotion } from "@/lib/motion";
+import {
+  HOME_SECTION_REVEAL_EVENT,
+  type HomeSectionRevealDetail,
+} from "@/lib/navigation";
 
 type ScrollRevealProps = {
   children: ReactNode;
@@ -17,6 +21,17 @@ type ScrollRevealProps = {
   delay?: number;
   offset?: number;
 };
+
+function isRevealInView(element: HTMLElement) {
+  const rect = element.getBoundingClientRect();
+  const viewportHeight =
+    window.innerHeight || document.documentElement.clientHeight;
+  const visibleTop = Math.max(rect.top, 0);
+  const visibleBottom = Math.min(rect.bottom, viewportHeight * 0.94);
+  const visibleHeight = visibleBottom - visibleTop;
+
+  return visibleHeight / Math.max(rect.height, 1) >= 0.12;
+}
 
 export function ScrollReveal({
   children,
@@ -37,18 +52,43 @@ export function ScrollReveal({
       return;
     }
 
+    let revealed = false;
+    const reveal = () => {
+      if (revealed) return;
+      revealed = true;
+      setVisible(true);
+      observer.disconnect();
+    };
+
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (entry?.isIntersecting) {
-          setVisible(true);
-          observer.disconnect();
-        }
+        if (entry?.isIntersecting) reveal();
       },
       { threshold: 0.12, rootMargin: "0px 0px -6% 0px" },
     );
 
     observer.observe(element);
-    return () => observer.disconnect();
+
+    const onHomeSectionReveal = (event: Event) => {
+      const { sectionId } = (event as CustomEvent<HomeSectionRevealDetail>)
+        .detail;
+      const section = document.getElementById(sectionId);
+      if (section?.contains(element)) reveal();
+    };
+
+    window.addEventListener(HOME_SECTION_REVEAL_EVENT, onHomeSectionReveal);
+
+    requestAnimationFrame(() => {
+      if (isRevealInView(element)) reveal();
+    });
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener(
+        HOME_SECTION_REVEAL_EVENT,
+        onHomeSectionReveal,
+      );
+    };
   }, []);
 
   return (

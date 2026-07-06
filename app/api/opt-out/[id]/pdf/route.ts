@@ -34,7 +34,7 @@ export async function GET(request: Request, context: RouteContext) {
       return NextResponse.json({ error: "Form data missing" }, { status: 400 });
     }
 
-    let buffer = readCachedOptOutPackage(payload.cachedPackages, "pdf");
+    let buffer = readCachedOptOutPackage(payload.cachedPackages);
 
     if (!buffer) {
       const config = await loadOptOutFormConfig();
@@ -42,7 +42,7 @@ export async function GET(request: Request, context: RouteContext) {
       const built = await buildOptOutPackagePdf(letter, config);
       buffer = built;
       after(() =>
-        persistOptOutCachedPackage(id, payload, "pdf", built).catch(() => {}),
+        persistOptOutCachedPackage(id, payload, built).catch(() => {}),
       );
     }
 

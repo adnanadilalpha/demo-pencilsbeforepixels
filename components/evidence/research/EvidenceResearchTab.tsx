@@ -2,7 +2,6 @@
 
 import { RichTextContent } from "@/components/cms/RichTextContent";
 import { DualLineChartsWithLegend } from "@/components/charts/DualLineChartsWithLegend";
-import { LineChartWithLegend } from "@/components/charts/LineChartWithLegend";
 import { PisaChartsSection } from "@/components/charts/PisaChartsSection";
 import { NaepGradeImagePanel } from "@/components/evidence/research/NaepGradeImagePanel";
 import { ResearchBarChart } from "@/components/evidence/research/ResearchBarChart";
@@ -193,21 +192,6 @@ export function EvidenceResearchTab() {
             />
           </ResearchChartCard>
         </div>
-      </ResearchChartSection>
-
-      <ResearchChartSection>
-        <ResearchChartCard>
-          <div className="mb-4 flex flex-col gap-1.5 lg:mb-8 lg:gap-2">
-            <h3 className={researchSectionHeading}>
-              <RichTextContent content={data.deviceTime.title} inline />
-            </h3>
-            <RichTextContent
-              content={data.deviceTime.description}
-              className={researchBodyText}
-            />
-          </div>
-          <LineChartWithLegend chart={data.deviceTime.chart} />
-        </ResearchChartCard>
       </ResearchChartSection>
 
       <ResearchChartSection>

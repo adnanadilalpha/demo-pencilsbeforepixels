@@ -29,7 +29,7 @@ import {
   getTimelineProgress,
   resolveViewportHeight,
 } from "@/lib/timeline-motion";
-import { getSectionElement, scrollToSection } from "@/lib/navigation";
+import { getSectionElement, scrollToSectionSmooth } from "@/lib/navigation";
 
 const MISSION_GOAL_EMPHASIS =
   "focus over distraction and cognitive friction over swiping.";
@@ -403,7 +403,7 @@ export function TimelineSection() {
       if (!isInsidePin) return;
 
       event.preventDefault();
-      scrollToSection(hash, lenisRef.current);
+      scrollToSectionSmooth(hash, lenisRef.current);
       window.history.pushState(null, "", hash);
     };
 
@@ -437,7 +437,7 @@ export function TimelineSection() {
             return (
               <article
                 key={slide.number}
-                className={`flex h-full min-h-0 shrink-0 flex-col items-center gap-5 py-8 max-lg:justify-center max-lg:gap-6 max-lg:py-10 lg:flex-row lg:gap-12 lg:py-0 ${sectionPaddingX} ${
+                className={`flex h-full min-h-0 shrink-0 flex-col items-stretch gap-5 py-8 max-lg:justify-start max-lg:gap-5 max-lg:pb-6 max-lg:pt-[calc(var(--header-height)+4.75rem)] lg:flex-row lg:items-center lg:gap-12 lg:py-0 ${sectionPaddingX} ${
                   isLight ? RICH_TEXT_LINKS_LIGHT_CLASS : ""
                 }`}
                 style={{
@@ -449,12 +449,12 @@ export function TimelineSection() {
                   ref={(node) => {
                     copyRefs.current[index] = node;
                   }}
-                  className={`timeline-slide-copy flex min-h-0 w-full flex-1 flex-col justify-center gap-3 max-lg:max-w-xl max-lg:gap-4 lg:gap-6 ${
-                    slide.indentContent ? "pl-4 max-lg:pl-5 sm:pl-6 lg:pl-32" : ""
+                  className={`timeline-slide-copy flex min-h-0 w-full flex-1 flex-col justify-center gap-3 max-lg:max-w-none max-lg:justify-start max-lg:gap-3 lg:gap-6 ${
+                    slide.indentContent ? "pl-0 max-lg:pl-0 sm:pl-6 lg:pl-32" : ""
                   }`}
                 >
                   <p
-                    className={`text-fluid-timeline-number font-sans font-bold leading-none lg:text-[96px] ${
+                    className={`text-fluid-timeline-number font-sans font-bold leading-none max-lg:text-[2.75rem] lg:text-[96px] ${
                       isLight ? "text-slate-50/70" : "text-hero-dark"
                     }`}
                   >
@@ -506,16 +506,16 @@ export function TimelineSection() {
         </div>
 
         <div
-          className={`pointer-events-none absolute inset-x-0 top-20 z-20 max-lg:top-16 sm:top-24 ${sectionPaddingX}`}
+          className={`pointer-events-none absolute inset-x-0 z-20 max-lg:top-[calc(var(--header-height)+0.75rem)] lg:top-24 ${sectionPaddingX}`}
           aria-hidden
         >
           <p
-            className={`font-sans text-sm font-medium uppercase tracking-[0.18em] max-lg:tracking-[0.14em] lg:text-base lg:tracking-[0.24em] ${paginationColors.muted}`}
+            className={`font-sans text-xs font-medium uppercase tracking-[0.14em] max-lg:leading-tight lg:text-base lg:tracking-[0.24em] ${paginationColors.muted}`}
           >
             Our Mission
           </p>
           <div
-            className={`mt-4 h-px w-full overflow-hidden ${paginationColors.track}`}
+            className={`mt-2 h-px w-full overflow-hidden lg:mt-4 ${paginationColors.track}`}
           >
             <div
               ref={progressFillRef}
@@ -526,11 +526,11 @@ export function TimelineSection() {
         </div>
 
         <div
-          className="pointer-events-none absolute inset-y-0 left-0 z-10 w-16 bg-linear-to-r from-black/10 to-transparent sm:w-24"
+          className="pointer-events-none absolute inset-y-0 left-0 z-10 hidden w-16 bg-linear-to-r from-black/10 to-transparent sm:w-24 lg:block"
           aria-hidden
         />
         <div
-          className="pointer-events-none absolute inset-y-0 right-0 z-10 w-16 bg-linear-to-l from-black/10 to-transparent sm:w-24"
+          className="pointer-events-none absolute inset-y-0 right-0 z-10 hidden w-16 bg-linear-to-l from-black/10 to-transparent sm:w-24 lg:block"
           aria-hidden
         />
 

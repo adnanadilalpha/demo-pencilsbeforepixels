@@ -15,7 +15,7 @@ type OptOutSubmissionsTableProps = {
   onToggleRow: (id: string) => void;
   onToggleAll: (ids: string[]) => void;
   emptyMessage?: string;
-  onDownload: (submission: AdminOptOutSubmission, format: "pdf" | "docx") => void;
+  onDownload: (submission: AdminOptOutSubmission) => void;
   onDelete: (submission: AdminOptOutSubmission) => void;
 };
 
@@ -135,18 +135,10 @@ export function OptOutSubmissionsTable({
                         <button
                           type="button"
                           disabled={isBusy}
-                          onClick={() => onDownload(submission, "pdf")}
+                          onClick={() => onDownload(submission)}
                           className="text-xs font-medium text-navy-800/70 transition-colors hover:text-navy-800 disabled:opacity-50"
                         >
                           PDF
-                        </button>
-                        <button
-                          type="button"
-                          disabled={isBusy}
-                          onClick={() => onDownload(submission, "docx")}
-                          className="text-xs font-medium text-navy-800/70 transition-colors hover:text-navy-800 disabled:opacity-50"
-                        >
-                          DOCX
                         </button>
                         <button
                           type="button"

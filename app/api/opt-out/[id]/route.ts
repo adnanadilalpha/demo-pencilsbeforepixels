@@ -20,11 +20,10 @@ export async function PATCH(request: Request, context: RouteContext) {
     const { id } = await context.params;
     const body = (await request.json()) as {
       action?: string;
-      format?: "pdf" | "docx";
       downloadToken?: string;
     };
 
-    if (body.action !== "download" || !body.format) {
+    if (body.action !== "download") {
       return NextResponse.json({ error: "Invalid action" }, { status: 400 });
     }
 
@@ -33,24 +32,13 @@ export async function PATCH(request: Request, context: RouteContext) {
       return NextResponse.json({ error: "Submission not found" }, { status: 404 });
     }
 
-    const metrics = {
-      pdfDownloads: payload.metrics?.pdfDownloads ?? 0,
-      docxDownloads: payload.metrics?.docxDownloads ?? 0,
-    };
-
-    if (body.format === "pdf") {
-      metrics.pdfDownloads += 1;
-    } else {
-      metrics.docxDownloads += 1;
-    }
-
+    const pdfDownloads = (payload.metrics?.pdfDownloads ?? 0) + 1;
     const now = new Date().toISOString();
     const updatedPayload: OptOutSubmissionPayload = {
       ...payload,
       metrics: {
-        ...metrics,
+        pdfDownloads,
         lastDownloadAt: now,
-        lastDownloadFormat: body.format,
       },
     };
 
