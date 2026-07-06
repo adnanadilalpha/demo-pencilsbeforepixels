@@ -12,7 +12,7 @@
   --text-body-lg: clamp(1rem, 0.35vw + 0.9rem, 1.125rem);
   --text-quote: clamp(1.5rem, 2vw + 0.75rem, 2.25rem);
   --text-timeline-number: clamp(3rem, 8vw + 1rem, 6rem);
-  --header-height: 72px;
+  /* --header-height set in app/layout.tsx from lib/brand/logo-layout.ts */
   --color-paper-50: #faf8f4;
   --color-paper-200: #f0eae0;
   --color-paper-300: #e8e0d0;
@@ -77,6 +77,19 @@ body {
   overscroll-behavior-y: none;
 }
 
+@font-face {
+  font-family: "Agustina Signature";
+  src: url("/fonts/Agustina-Signature.otf") format("opentype");
+  font-display: swap;
+  font-weight: 400;
+  font-style: normal;
+}
+
+.font-agustina-signature,
+input.font-agustina-signature {
+  font-family: "Agustina Signature", cursive !important;
+}
+
 @supports (-webkit-touch-callout: none) {
   html {
     height: -webkit-fill-available;
@@ -84,12 +97,6 @@ body {
 
   body {
     min-height: -webkit-fill-available;
-  }
-}
-
-@media (min-width: 1024px) {
-  :root {
-    --header-height: 90px;
   }
 }
 

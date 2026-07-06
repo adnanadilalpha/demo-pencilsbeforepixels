@@ -6,6 +6,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { ScrollReveal } from "@/components/motion/ScrollReveal";
 import { Container, sectionSubtextClass } from "@/components/ui/Container";
 import { DisplayHeading } from "@/components/ui/DisplayHeading";
+import { HorizontalScrollRow } from "@/components/ui/HorizontalScrollRow";
 import {
   Select,
   SelectContent,
@@ -446,9 +447,10 @@ export function ResearchLibrarySection() {
                 No {activeCategory.toLowerCase()} yet.
               </p>
             ) : (
-              <div
-                className="timeline-snap-track -mx-1 flex w-full max-w-full flex-row gap-4 overflow-x-auto overscroll-x-contain px-1 pb-3 snap-x snap-mandatory max-lg:gap-4 sm:gap-6 lg:gap-8 lg:pb-2"
-                data-lenis-prevent
+              <HorizontalScrollRow
+                resetKey={activeCategory}
+                ariaLabel={`${activeCategory} resources`}
+                trackClassName="-mx-1 flex w-full max-w-full flex-row gap-4 overflow-x-auto overscroll-x-contain px-1 pb-3 snap-x snap-mandatory max-lg:gap-4 sm:gap-6 lg:gap-8 lg:pb-2"
               >
                 {activeItems.map((item) => (
                   <LibraryCard
@@ -465,7 +467,7 @@ export function ResearchLibrarySection() {
                     }
                   />
                 ))}
-              </div>
+              </HorizontalScrollRow>
             )}
           </div>
         </div>

@@ -1,6 +1,5 @@
 "use client";
 
-import { Dancing_Script } from "next/font/google";
 import { useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Button } from "@/components/ui/Button";
@@ -22,13 +21,11 @@ import {
   saveOptOutFormDraft,
 } from "@/lib/opt-out/form-draft";
 import type { OptOutLetterForm, OptOutSchool, OptOutSignatureMode } from "@/lib/opt-out/types";
+import { FORM_B_SIGNATURE_FONT_CLASS, FORM_B_SIGNATURE_FONT_STACK } from "@/lib/opt-out/form-b-theme";
 import { SignaturePad } from "@/components/opt-out/SignaturePad";
 import { cn } from "@/lib/utils";
 
-const signatureFont = Dancing_Script({
-  subsets: ["latin"],
-  weight: "400",
-});
+const signatureFontStyle = { fontFamily: FORM_B_SIGNATURE_FONT_STACK } as const;
 
 type OptOutLetterModalProps = {
   open: boolean;
@@ -346,7 +343,10 @@ export function OptOutLetterModal({ open, onClose }: OptOutLetterModalProps) {
                   {form.signatureMode === "draw" ? (
                     "Drawn signature"
                   ) : (
-                    <span className={cn(signatureFont.className, "text-xl text-navy-800")}>
+                    <span
+                      className={cn(FORM_B_SIGNATURE_FONT_CLASS, "text-xl text-navy-800")}
+                      style={signatureFontStyle}
+                    >
                       {form.signatureName || form.parentName}
                     </span>
                   )}
@@ -507,9 +507,10 @@ export function OptOutLetterModal({ open, onClose }: OptOutLetterModalProps) {
                       onChange={(e) => updateField("signatureName", e.target.value)}
                       className={cn(
                         modalInputClass,
-                        signatureFont.className,
+                        FORM_B_SIGNATURE_FONT_CLASS,
                         "h-11 text-xl",
                       )}
+                      style={signatureFontStyle}
                       placeholder="Type your full name"
                     />
                   ) : (

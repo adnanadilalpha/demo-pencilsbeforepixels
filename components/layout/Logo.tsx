@@ -13,9 +13,10 @@ import {
 
 type LogoProps = {
   variant?: "light" | "dark";
+  size?: "nav" | "default";
 };
 
-export function Logo({ variant = "light" }: LogoProps) {
+export function Logo({ variant = "light", size = "default" }: LogoProps) {
   const pathname = usePathname();
   const lenis = useLenis();
   const { settings, media } = useSiteContent();
@@ -46,7 +47,7 @@ export function Logo({ variant = "light" }: LogoProps) {
     <Link
       href="/"
       onClick={handleClick}
-      className="flex h-[clamp(3.25rem,3.5vw+2rem,4.75rem)] max-w-[min(100%,18rem)] items-center lg:max-w-[22rem]"
+      className="inline-flex shrink-0 items-center"
       aria-label="Pencils Before Pixels home"
     >
       <BrandLogoImage
@@ -54,7 +55,7 @@ export function Logo({ variant = "light" }: LogoProps) {
         src={variant === "light" ? media.brand.logoLight : media.brand.logoDark}
         alt={settings.siteName}
         priority
-        className="max-h-full"
+        size={size === "nav" ? "nav" : "default"}
       />
     </Link>
   );

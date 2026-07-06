@@ -4,6 +4,7 @@ import { access, readFile } from "node:fs/promises";
 import { join } from "node:path";
 import fontkit from "@pdf-lib/fontkit";
 import type { PDFDocument, PDFFont } from "pdf-lib";
+import { FORM_B_SIGNATURE_FONT, FORM_B_SIGNATURE_FONT_DIR, FORM_B_SIGNATURE_FONT_FILE } from "@/lib/opt-out/form-b-theme";
 
 export type PackageFonts = {
   regular: PDFFont;
@@ -39,15 +40,18 @@ const BOLD_ITALIC_CANDIDATES = [
   { file: "NotoSans-BoldItalic.ttf", family: "Noto Sans" },
 ] as const;
 
-const SIGNATURE_CANDIDATES = [{ file: "DancingScript-Regular.ttf", family: "Dancing Script" }] as const;
+const SIGNATURE_CANDIDATES = [{ file: FORM_B_SIGNATURE_FONT_FILE, family: FORM_B_SIGNATURE_FONT }] as const;
+const signatureFontDir = join(process.cwd(), FORM_B_SIGNATURE_FONT_DIR);
 
 const cache = new Map<string, Buffer>();
 
 async function loadFirstAvailable(
   candidates: ReadonlyArray<{ file: string; family: string }>,
+  baseDir = fontDir,
+  context = "lib/opt-out/fonts",
 ) {
   for (const candidate of candidates) {
-    const path = join(fontDir, candidate.file);
+    const path = join(baseDir, candidate.file);
     try {
       await access(path);
       if (!cache.has(path)) {
@@ -59,7 +63,7 @@ async function loadFirstAvailable(
     }
   }
 
-  throw new Error("No PDF fonts found in lib/opt-out/fonts");
+  throw new Error(`No PDF fonts found in ${context}`);
 }
 
 export async function embedPackageFonts(pdf: PDFDocument): Promise<PackageFonts> {
@@ -69,7 +73,7 @@ export async function embedPackageFonts(pdf: PDFDocument): Promise<PackageFonts>
     loadFirstAvailable(REGULAR_CANDIDATES),
     loadFirstAvailable(BOLD_CANDIDATES),
     loadFirstAvailable(BOLD_ITALIC_CANDIDATES),
-    loadFirstAvailable(SIGNATURE_CANDIDATES),
+    loadFirstAvailable(SIGNATURE_CANDIDATES, signatureFontDir, FORM_B_SIGNATURE_FONT_DIR),
   ]);
 
   return {

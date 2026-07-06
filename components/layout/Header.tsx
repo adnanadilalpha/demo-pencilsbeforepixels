@@ -188,9 +188,12 @@ export function Header() {
           className={sectionPaddingX}
         >
           <div
-            className={`${contentMaxWidthClass} flex h-[var(--header-height)] items-center justify-between py-4 max-lg:py-3`}
+            className={`${contentMaxWidthClass} flex h-[var(--header-height)] items-center justify-between py-1`}
           >
-            <Logo variant={showScrolled || menuOpen ? "dark" : "light"} />
+            <Logo
+              size="nav"
+              variant={showScrolled || menuOpen ? "dark" : "light"}
+            />
 
             <nav
               className="hidden items-center gap-7 lg:flex"

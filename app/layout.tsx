@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Anton, DM_Sans } from "next/font/google";
 import { PageViewTracker } from "@/components/analytics/PageViewTracker";
 import { AppProviders } from "@/components/providers/AppProviders";
+import { brandLayoutCss } from "@/lib/brand/logo-layout";
 import { LOCAL_FAVICONS } from "@/lib/brand/favicon";
 import { getSiteContent } from "@/lib/cms/cached";
 import "./globals.css";
@@ -54,6 +55,7 @@ export default async function RootLayout({
       className={`${anton.variable} ${dmSans.variable} h-full overflow-x-clip antialiased`}
     >
       <head>
+        <style dangerouslySetInnerHTML={{ __html: brandLayoutCss() }} />
         {favicon ? (
           <link rel="icon" href={favicon} />
         ) : (
@@ -64,6 +66,13 @@ export default async function RootLayout({
             media="(prefers-color-scheme: dark)"
           />
         )}
+        <link
+          rel="preload"
+          href="/fonts/Agustina-Signature.otf"
+          as="font"
+          type="font/otf"
+          crossOrigin="anonymous"
+        />
       </head>
       <body className="flex min-h-full flex-col overflow-x-clip bg-paper-50">
         <AppProviders initialContent={siteContent}>

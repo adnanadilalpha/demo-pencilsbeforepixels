@@ -2,9 +2,11 @@
 
 import { ContentImage } from "@/components/ui/ContentImage";
 import {
-  brandLogoClass,
+  brandLogoBaseClass,
   brandLogoDimensions,
+  brandLogoInlineStyle,
   isBrandLogoSvg,
+  type BrandLogoSize,
 } from "@/lib/brand/logo-layout";
 import { cn } from "@/lib/utils";
 
@@ -13,6 +15,9 @@ type BrandLogoImageProps = {
   alt: string;
   className?: string;
   priority?: boolean;
+  /** Pixel-based preset from lib/brand/logo-layout.ts */
+  size?: BrandLogoSize;
+  /** Admin / one-off Tailwind override — skips pixel presets when set */
   sizeClass?: string;
 };
 
@@ -21,11 +26,10 @@ export function BrandLogoImage({
   alt,
   className,
   priority,
+  size = "default",
   sizeClass,
 }: BrandLogoImageProps) {
   if (!src.trim()) return null;
-
-  const logoClass = sizeClass ?? brandLogoClass;
 
   return (
     <ContentImage
@@ -34,7 +38,8 @@ export function BrandLogoImage({
       width={brandLogoDimensions.width}
       height={brandLogoDimensions.height}
       priority={priority}
-      className={cn(logoClass, className)}
+      style={sizeClass ? undefined : brandLogoInlineStyle(size)}
+      className={cn(brandLogoBaseClass, sizeClass, className)}
       unoptimized={isBrandLogoSvg(src)}
     />
   );
