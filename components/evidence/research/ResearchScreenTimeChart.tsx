@@ -9,6 +9,7 @@ import {
   researchChartCategoryLabelDark,
   researchChartTickMutedDark,
 } from "@/components/charts/chart-theme";
+import { RichTextContent } from "@/components/cms/RichTextContent";
 import { isResearchDesktopWidth } from "@/lib/research/responsive";
 import {
   bindChartHitTarget,
@@ -414,7 +415,7 @@ export function ResearchScreenTimeChart({ data }: ResearchScreenTimeChartProps) 
       <div className="rounded-xl border border-[#e9e6df] bg-paper-200 px-3 py-2.5 md:px-4 md:py-3 lg:px-5">
         <p className={researchBodyText}>
           <span className="font-semibold text-[#18263a]">Statistical note: </span>
-          {data.statisticalNote}
+          <RichTextContent content={data.statisticalNote} inline />
         </p>
       </div>
 

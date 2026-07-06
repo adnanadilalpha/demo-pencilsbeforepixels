@@ -5,6 +5,7 @@ export function revalidateSiteContent() {
   revalidateTag("evidence-data", "max");
   revalidatePath("/", "layout");
   revalidatePath("/");
+  revalidatePath("/nebraska-data");
   revalidatePath("/evidence");
   revalidatePath("/research");
 }

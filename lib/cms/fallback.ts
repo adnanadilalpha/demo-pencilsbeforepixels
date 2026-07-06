@@ -60,7 +60,7 @@ export function buildFallbackSiteContent(): SiteContent {
         headline: "Every Child Deserves More Than a Screen.",
         body: "Learning is built through reading, writing, conversation, curiosity and hands on experiences. Explore research, local education data and practical resources that help parents better understand learning in today's classrooms.",
         primaryCta: "Join Newsletter",
-        secondaryCta: { label: "Explore Nebraska Data", href: "/evidence" },
+        secondaryCta: { label: "Explore Nebraska Data", href: "/nebraska-data" },
         backgroundImage: LOCAL_ASSETS.hero.background,
         backgroundAlt: "Children writing in a classroom",
       },
@@ -107,17 +107,13 @@ export function buildFallbackSiteContent(): SiteContent {
         headline: "1 to 1 Device Opt Out",
         body: "Parents should have access to clear information and the ability to make informed decisions regarding classroom technology.",
         primaryCta: "Sign Opt Out Letter",
-        secondaryCta: { label: "Explore Nebraska Data", href: "/evidence" },
+        secondaryCta: { label: "Explore Nebraska Data", href: "/nebraska-data" },
       },
       "homepage.footer": {
         newsletterLabel: "Newsletter",
         newsletterPlaceholder: "Enter your email",
         newsletterCta: "Join Newsletter",
         socialLinksLabel: "Follow us",
-      },
-      "evidence.intro": {
-        label: "Nebraska in a National Context",
-        body: "How does Nebraska's trend compare to the broader national pattern?",
       },
       "evidence.research_tab": {
         title: "Research",

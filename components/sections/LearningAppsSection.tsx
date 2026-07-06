@@ -1,6 +1,7 @@
 "use client";
 
 import { AudioReviewPlayer } from "@/components/ui/AudioReviewPlayer";
+import { RichTextContent } from "@/components/cms/RichTextContent";
 import { Container, sectionSubtextClass } from "@/components/ui/Container";
 import { DisplayHeading } from "@/components/ui/DisplayHeading";
 import { YouTubeEmbed } from "@/components/ui/YouTubeEmbed";
@@ -47,11 +48,12 @@ export function LearningAppsSection() {
       <Container className="flex flex-col gap-10 max-lg:gap-10 lg:gap-16">
         <ScrollReveal className="mx-auto flex w-full max-w-3xl flex-col items-center gap-4 text-center max-lg:gap-4 lg:gap-5">
           <DisplayHeading as="h2" className="text-navy-800">
-            {headline}
+            <RichTextContent content={headline} inline />
           </DisplayHeading>
-          <p className={`${sectionSubtextClass} text-navy-800/85 sm:leading-[1.6]`}>
-            {body}
-          </p>
+          <RichTextContent
+            content={body}
+            className={`${sectionSubtextClass} text-navy-800/85 sm:leading-[1.6]`}
+          />
         </ScrollReveal>
 
         <ScrollReveal

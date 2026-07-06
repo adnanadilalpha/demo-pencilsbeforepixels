@@ -53,28 +53,25 @@ function ensureParagraphCenter(paragraphXml: string) {
 }
 
 function ensureRunBold(paragraphXml: string) {
-  const withExistingRunProps = paragraphXml.replace(
-    /<w:rPr>([\s\S]*?)<\/w:rPr>/g,
-    (_match, inner: string) => {
-      const withoutItalic = inner
-        .replace(/<w:i\/>/g, "")
-        .replace(/<w:iCs\/>/g, "");
-      const hasBold =
-        withoutItalic.includes("<w:b") || withoutItalic.includes("<w:bCs");
-      const boldTags = hasBold ? "" : "<w:b/><w:bCs/>";
-      return `<w:rPr>${boldTags}${withoutItalic}</w:rPr>`;
-    },
-  );
+  return paragraphXml.replace(/<w:r[\s\S]*?<\/w:r>/g, (run) => {
+    if (run.includes("<w:drawing") || !run.includes("<w:t")) {
+      return run;
+    }
 
-  return withExistingRunProps.replace(
-    /<w:r(\s[^>]*)>((?![\s\S]*?<w:rPr>)[\s\S]*?)<\/w:r>/g,
-    (_match, attrs: string, inner: string) => {
-      if (inner.includes("<w:drawing")) {
-        return `<w:r${attrs}>${inner}</w:r>`;
-      }
-      return `<w:r${attrs}><w:rPr><w:b/><w:bCs/></w:rPr>${inner}</w:r>`;
-    },
-  );
+    if (run.includes("<w:rPr>")) {
+      return run.replace(/<w:rPr>([\s\S]*?)<\/w:rPr>/g, (_match, inner: string) => {
+        const withoutItalic = inner
+          .replace(/<w:i\/>/g, "")
+          .replace(/<w:iCs\/>/g, "");
+        const hasBold =
+          withoutItalic.includes("<w:b") || withoutItalic.includes("<w:bCs");
+        const boldTags = hasBold ? "" : "<w:b/><w:bCs/>";
+        return `<w:rPr>${boldTags}${withoutItalic}</w:rPr>`;
+      });
+    }
+
+    return run.replace(/<w:r(\s[^>]*)>/, `<w:r$1><w:rPr><w:b/><w:bCs/></w:rPr>`);
+  });
 }
 
 function formatEssayHeaderParagraph(paragraphXml: string) {

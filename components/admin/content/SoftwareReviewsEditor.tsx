@@ -4,6 +4,7 @@ import type { SoftwareReview } from "@/lib/cms/types";
 import { epicReviewContent } from "@/lib/cms/fallback-data";
 import { formatYouTubeLinkForEditor, normalizeYouTubeUrl } from "@/lib/youtube";
 import { adminInputClass, adminLabelClass } from "@/components/admin/admin-styles";
+import { RichTextEditor } from "@/components/admin/content/RichTextEditor";
 import { FileUploadField } from "@/components/admin/resources/FileUploadField";
 
 type SoftwareReviewsEditorProps = {
@@ -39,9 +40,10 @@ export function SoftwareReviewsEditor({
       </div>
 
       <div className="space-y-3 rounded-[10px] border border-navy-800/10 bg-paper-50 p-4">
-        <Field
+        <RichTextEditor
           label="Title"
           value={epic.title}
+          compact
           onChange={(value) => updateEpic({ title: value })}
         />
         <div className="max-w-xl">
@@ -69,16 +71,17 @@ export function SoftwareReviewsEditor({
       <div>
         <p className="text-sm font-semibold text-navy-800">Audio clip</p>
         <p className="mt-1 text-xs text-body-muted">
-          Featured audio player below the video review on the homepage.
+          Featured audio player below the video review on the homepage. Clip title
+          is shown as the audio section heading, e.g. &quot;Reading on Screens&quot;.
         </p>
       </div>
 
       <div className="space-y-3 rounded-[10px] border border-navy-800/10 bg-paper-50 p-4">
-        <Field
+        <RichTextEditor
           label="Clip title"
-          hint='Shown as the audio section heading, e.g. "Reading on Screens".'
           value={epic.audioTitle ?? epicReviewContent.audioTitle}
           placeholder={epicReviewContent.audioTitle}
+          compact
           onChange={(value) => updateEpic({ audioTitle: value })}
         />
 
@@ -137,24 +140,28 @@ function Field({
 }) {
   return (
     <div className="flex flex-col gap-1.5">
-      <label className={adminLabelClass}>{label}</label>
-      {hint ? <p className="text-xs text-body-muted">{hint}</p> : null}
       {multiline ? (
-        <textarea
-          className={`${adminInputClass} min-h-20 rounded-[10px] py-3`}
-          value={value}
-          placeholder={placeholder}
-          onChange={(event) => onChange(event.target.value)}
-          onBlur={onBlur ? (event) => onBlur(event.target.value) : undefined}
-        />
+        <>
+          {hint ? <p className="text-xs text-body-muted">{hint}</p> : null}
+          <RichTextEditor
+            label={label}
+            value={value}
+            placeholder={placeholder}
+            onChange={onChange}
+          />
+        </>
       ) : (
-        <input
+        <>
+          <label className={adminLabelClass}>{label}</label>
+          {hint ? <p className="text-xs text-body-muted">{hint}</p> : null}
+          <input
           className={adminInputClass}
           value={value}
           placeholder={placeholder}
           onChange={(event) => onChange(event.target.value)}
           onBlur={onBlur ? (event) => onBlur(event.target.value) : undefined}
         />
+        </>
       )}
     </div>
   );

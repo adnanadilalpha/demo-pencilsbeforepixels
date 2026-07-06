@@ -2,8 +2,10 @@
 
 import { ContentImage } from "@/components/ui/ContentImage";
 import { DisplayHeading } from "@/components/ui/DisplayHeading";
+import { RichTextContent } from "@/components/cms/RichTextContent";
 import { SectionLabel } from "@/components/ui/SectionLabel";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { RICH_TEXT_LINKS_LIGHT_CLASS } from "@/lib/cms/rich-text";
 import { useSiteContent } from "@/lib/cms/hooks";
 import { cn } from "@/lib/utils";
 
@@ -256,6 +258,7 @@ export function AudioReviewPlayer({
       <div
         className={cn(
           "relative overflow-hidden rounded-2xl bg-hero-dark shadow-[0_12px_48px_rgba(10,22,40,0.25)]",
+          RICH_TEXT_LINKS_LIGHT_CLASS,
           className,
         )}
       >
@@ -293,9 +296,9 @@ export function AudioReviewPlayer({
                 {title}
               </p>
               {description ? (
-                <p className="mt-1 text-xs leading-snug text-slate-200/80">
-                  {description}
-                </p>
+                <div className="mt-1 text-xs leading-snug text-slate-200/80">
+                  <RichTextContent content={description} inline />
+                </div>
               ) : null}
             </div>
           </div>
@@ -323,9 +326,10 @@ export function AudioReviewPlayer({
               {title}
             </DisplayHeading>
             {description ? (
-              <p className="max-w-xl text-base leading-relaxed text-slate-200/95 sm:text-[17px] sm:leading-[1.6]">
-                {description}
-              </p>
+              <RichTextContent
+                content={description}
+                className="max-w-xl text-base leading-relaxed text-slate-200/95 sm:text-[17px] sm:leading-[1.6]"
+              />
             ) : null}
           </div>
 
@@ -367,7 +371,7 @@ export function AudioReviewPlayer({
       className={cn(
         "relative overflow-hidden rounded-xl ring-1",
         isDark
-          ? "bg-navy-700/80 ring-white/10"
+          ? `bg-navy-700/80 ring-white/10 ${RICH_TEXT_LINKS_LIGHT_CLASS}`
           : "bg-paper-50 ring-navy-800/8 shadow-[0_1px_3px_rgba(10,22,40,0.06)]",
         className,
       )}

@@ -13,6 +13,11 @@ import {
   NAEP_GRADE_8,
   NAEP_NATIONAL_SLOPES,
 } from "@/lib/charts/naep-data";
+import {
+  DEVICE_TIME_CHART_Y_MAX,
+  DEVICE_TIME_CHART_Y_MIN,
+  DEVICE_TIME_CHART_Y_TICKS,
+} from "@/lib/research/device-time-chart";
 import type {
   ResearchChartsData,
   ScreenTimeTabData,
@@ -133,7 +138,9 @@ export const researchChartsData: ResearchChartsData = {
       yLabel: "Mean Score in Mathematics",
       xLabel: "Time Spent on Digital Devices at School",
       categories: ["None", "Up to 1 hr", "1–2 hrs", "2–3 hrs", "3–5 hrs", "5–7 hrs", ">7 hrs"],
-      yTicks: [360, 410, 460, 510],
+      yMin: DEVICE_TIME_CHART_Y_MIN,
+      yMax: DEVICE_TIME_CHART_Y_MAX,
+      yTicks: [...DEVICE_TIME_CHART_Y_TICKS],
       series: [
         {
           label: "Learning",

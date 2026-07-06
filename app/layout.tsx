@@ -1,10 +1,10 @@
 import type { Metadata, Viewport } from "next";
 import { Anton, DM_Sans } from "next/font/google";
-import { PageViewTracker } from "@/components/analytics/PageViewTracker";
 import { AppProviders } from "@/components/providers/AppProviders";
 import { brandLayoutCss } from "@/lib/brand/logo-layout";
 import { LOCAL_FAVICONS } from "@/lib/brand/favicon";
 import { getSiteContent } from "@/lib/cms/cached";
+import { stripRichTextToPlain } from "@/lib/cms/rich-text";
 import "./globals.css";
 
 export const dynamic = "force-dynamic";
@@ -27,7 +27,10 @@ export async function generateMetadata(): Promise<Metadata> {
 
   return {
     title: settings.metaTitle?.trim() || settings.siteName,
-    description: settings.metaDescription?.trim() || settings.description,
+    description:
+      stripRichTextToPlain(
+        settings.metaDescription?.trim() || settings.description || "",
+      ) || undefined,
     icons: favicon
       ? {
           icon: [{ url: favicon }],
@@ -76,7 +79,6 @@ export default async function RootLayout({
       </head>
       <body className="flex min-h-full flex-col overflow-x-clip bg-paper-50">
         <AppProviders initialContent={siteContent}>
-          <PageViewTracker />
           {children}
         </AppProviders>
       </body>

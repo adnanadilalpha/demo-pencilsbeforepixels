@@ -4,7 +4,12 @@ import type { ContentField } from "@/lib/admin/content-config";
 import { adminInputClass, adminLabelClass } from "@/components/admin/admin-styles";
 import { MediaField } from "@/components/admin/content/MediaField";
 import { TagListField } from "@/components/admin/content/TagListField";
+import { RichTextEditor } from "@/components/admin/content/RichTextEditor";
 import { ToggleField } from "@/components/admin/content/ToggleField";
+import {
+  isCompactRichTextField,
+  isRichTextDisplayField,
+} from "@/lib/admin/rich-text-fields";
 import { FileUploadField } from "@/components/admin/resources/FileUploadField";
 import { cn } from "@/lib/utils";
 
@@ -164,17 +169,16 @@ function renderField(
 
   const value = (values[field.key] as string) ?? "";
 
-  if (field.type === "textarea") {
+  if (isRichTextDisplayField(field)) {
     return (
-      <div key={field.key} className="flex flex-col gap-1.5">
-        <label className={adminLabelClass}>{field.label}</label>
-        <textarea
-          className={cn(adminInputClass, "min-h-28 resize-y rounded-[10px] py-3")}
-          value={value}
-          placeholder={field.placeholder}
-          onChange={(event) => onChange(field.key, event.target.value)}
-        />
-      </div>
+      <RichTextEditor
+        key={field.key}
+        label={field.label}
+        value={value}
+        placeholder={field.placeholder}
+        compact={isCompactRichTextField(field)}
+        onChange={(nextValue) => onChange(field.key, nextValue)}
+      />
     );
   }
 

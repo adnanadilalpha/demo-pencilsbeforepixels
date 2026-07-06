@@ -15,6 +15,7 @@ export function normalizeContentPageId(value: string | undefined): ContentPageId
 export type FieldType =
   | "text"
   | "textarea"
+  | "richText"
   | "image"
   | "pdf"
   | "toggle"
@@ -47,8 +48,8 @@ export const homepageSections: EditorSection[] = [
     sectionKey: "homepage.hero",
     fields: [
       { key: "eyebrow", label: "Eyebrow", type: "text" },
-      { key: "headline", label: "Headline", type: "textarea" },
-      { key: "body", label: "Body copy", type: "textarea" },
+      { key: "headline", label: "Headline", type: "richText" },
+      { key: "body", label: "Body copy", type: "richText" },
       { key: "primaryCta", label: "CTA text", type: "text" },
       {
         key: "backgroundImage",
@@ -80,11 +81,11 @@ export const homepageSections: EditorSection[] = [
     page: "homepage",
     sectionKey: "homepage.goal",
     fields: [
-      { key: "tagline", label: "Headline", type: "textarea" },
+      { key: "tagline", label: "Headline", type: "richText" },
       {
         key: "body",
         label: "Intro copy",
-        type: "textarea",
+        type: "richText",
         placeholder:
           "Short paragraph below the headline — e.g. how many findings and where they come from.",
       },
@@ -97,7 +98,7 @@ export const homepageSections: EditorSection[] = [
     sectionKey: "homepage.learning_apps",
     fields: [
       { key: "headline", label: "Headline", type: "text" },
-      { key: "body", label: "Body copy", type: "textarea" },
+      { key: "body", label: "Body copy", type: "richText" },
     ],
   },
   {
@@ -114,7 +115,7 @@ export const homepageSections: EditorSection[] = [
     sectionKey: "homepage.mental_health",
     fields: [
       { key: "headline", label: "Headline", type: "text" },
-      { key: "body", label: "Body copy", type: "textarea" },
+      { key: "body", label: "Body copy", type: "richText" },
       {
         key: "cta",
         label: "CTA",
@@ -137,7 +138,7 @@ export const homepageSections: EditorSection[] = [
     sectionKey: "homepage.research_library",
     fields: [
       { key: "headline", label: "Headline", type: "text" },
-      { key: "body", label: "Body copy", type: "textarea" },
+      { key: "body", label: "Body copy", type: "richText" },
     ],
   },
   {
@@ -169,7 +170,7 @@ export const homepageSections: EditorSection[] = [
           "School list, Form B default answers, and cover/essay templates are managed under Admin → Opt Out → Settings. Publish here to update homepage copy, steps, and the letter preview image.",
       },
       { key: "headline", label: "Headline", type: "text" },
-      { key: "body", label: "Body copy", type: "textarea" },
+      { key: "body", label: "Body copy", type: "richText" },
       { key: "primaryCta", label: "Primary CTA", type: "text" },
       {
         key: "letterPreviewImage",
@@ -211,7 +212,7 @@ export const nebraskaDataSections: EditorSection[] = [
     sectionKey: "evidence.nebraska",
     fields: [
       { key: "title", label: "Tab title", type: "text" },
-      { key: "subtitle", label: "Subtitle", type: "textarea" },
+      { key: "subtitle", label: "Subtitle", type: "richText" },
     ],
   },
   {
@@ -222,8 +223,8 @@ export const nebraskaDataSections: EditorSection[] = [
     fields: [
       { key: "title", label: "Tab title", type: "text" },
       { key: "tagline", label: "Tagline", type: "text" },
-      { key: "subtitle", label: "Subtitle", type: "textarea" },
-      { key: "viewDescription", label: "View description", type: "textarea" },
+      { key: "subtitle", label: "Subtitle", type: "richText" },
+      { key: "viewDescription", label: "View description", type: "richText" },
     ],
   },
 ];
@@ -255,14 +256,7 @@ export const siteSections: EditorSection[] = [
     id: "navigation",
     label: "Navigation",
     page: "site",
-    fields: [
-      {
-        key: "_note",
-        label: "Navigation links",
-        type: "text",
-        placeholder: "Header and footer links loaded from Supabase",
-      },
-    ],
+    fields: [],
   },
 ];
 
@@ -283,7 +277,7 @@ export function getSectionsForPage(page: ContentPageId): EditorSection[] {
 export function previewPathForContentPage(page: ContentPageId): string {
   if (page === "homepage" || page === "site") return "/";
   if (page === "research") return "/research";
-  return "/evidence";
+  return "/nebraska-data";
 }
 
 export function getEditorSection(id: string): EditorSection | undefined {

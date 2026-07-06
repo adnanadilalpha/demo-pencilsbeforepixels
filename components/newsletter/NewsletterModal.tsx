@@ -16,6 +16,8 @@ import {
   newsletterCopy,
   subscribeToNewsletter,
 } from "@/lib/newsletter";
+import { ANALYTICS_EVENTS } from "@/lib/analytics/event-types";
+import { trackAnalyticsEvent } from "@/lib/analytics/track-client";
 
 type NewsletterModalProps = {
   open: boolean;
@@ -39,6 +41,7 @@ export function NewsletterModal({
   const [mounted, setMounted] = useState(false);
   const [visible, setVisible] = useState(false);
   const [email, setEmail] = useState("");
+  const [company, setCompany] = useState("");
   const [error, setError] = useState("");
   const [info, setInfo] = useState("");
   const [phase, setPhase] = useState<Phase>("idle");
@@ -96,7 +99,7 @@ export function NewsletterModal({
     setPhase("submitting");
 
     try {
-      const result = await subscribeToNewsletter(email, source);
+      const result = await subscribeToNewsletter(email, source, { company });
 
       if (result.status === "already_subscribed") {
         setPhase("idle");
@@ -105,6 +108,10 @@ export function NewsletterModal({
       }
 
       setPhase("success");
+      void trackAnalyticsEvent(ANALYTICS_EVENTS.NEWSLETTER_SUBSCRIBE, {
+        label: source,
+        metadata: source ? { source } : undefined,
+      });
     } catch (submitError) {
       setPhase("idle");
       setError(
@@ -173,6 +180,21 @@ export function NewsletterModal({
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+              <div
+                className="pointer-events-none absolute -left-[9999px] h-0 w-0 overflow-hidden opacity-0"
+                aria-hidden
+              >
+                <label htmlFor="modal-newsletter-company">Company</label>
+                <input
+                  id="modal-newsletter-company"
+                  name="company"
+                  type="text"
+                  tabIndex={-1}
+                  autoComplete="off"
+                  value={company}
+                  onChange={(event) => setCompany(event.target.value)}
+                />
+              </div>
               <div className="pr-6">
                 <h2 id={titleId} className="text-lg font-semibold text-navy-800">
                   Newsletter Registration

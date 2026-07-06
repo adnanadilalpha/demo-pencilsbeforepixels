@@ -124,9 +124,7 @@ function buildFormValues(
 
   if (sectionId === "evidence_research") {
     const fallbackSections = buildFallbackSiteContent().sections;
-    const intro = state.sections["evidence.intro"] ?? {};
     const pageHeader = state.sections["evidence.research_tab"] ?? {};
-    const introFallback = fallbackSections["evidence.intro"] ?? {};
     const pageHeaderFallback = fallbackSections["evidence.research_tab"] ?? {};
 
     base = {
@@ -136,8 +134,6 @@ function buildFormValues(
         pageHeaderFallback,
         "subtitle",
       ),
-      label: resolveSectionTextField(intro, introFallback, "label"),
-      body: resolveSectionTextField(intro, introFallback, "body"),
     };
 
     for (const key of researchFieldKeys) {
@@ -195,16 +191,6 @@ function buildFormValues(
         merged,
         fallbackSections["evidence.research_tab"],
         "subtitle",
-      ),
-      label: resolveSectionTextField(
-        merged,
-        fallbackSections["evidence.intro"],
-        "label",
-      ),
-      body: resolveSectionTextField(
-        merged,
-        fallbackSections["evidence.intro"],
-        "body",
       ),
     };
   }
@@ -329,6 +315,10 @@ export function ContentEditor({
   const syncedStateRef = useRef(
     `${initialState.version}:${initialState.publishedAt}`,
   );
+  const stateRef = useRef(initialState);
+  const lastAppliedRouteRef = useRef(`${initialPage}:${initialSectionId}`);
+
+  stateRef.current = state;
 
   const evidenceScoresRef = useRef(evidenceScores);
   const siteSettingsRef = useRef(siteSettings);
@@ -378,28 +368,29 @@ export function ContentEditor({
   );
 
   const loadSection = useCallback(
-    (sectionId: string, serverState: ContentEditorState = state) => {
+    (sectionId: string, serverState?: ContentEditorState) => {
+      const server = serverState ?? stateRef.current;
       const session = getSectionFromLocalDraft(sectionId);
       setFormValues(
-        buildFormValues(serverState, sectionId, session?.content),
+        buildFormValues(server, sectionId, session?.content),
       );
 
       if (sectionId === "expert_voices") {
         setExpertQuotes(
-          session?.expertQuotes ?? serverState.expertQuotes,
+          session?.expertQuotes ?? server.expertQuotes,
         );
       }
 
       if (sectionId === "timeline") {
         setTimeline(
-          normalizeMissionTimeline(session?.timeline ?? serverState.timeline),
+          normalizeMissionTimeline(session?.timeline ?? server.timeline),
         );
       }
 
       if (sectionId === "learning_apps") {
         setSoftwareReviews(
           mergeSoftwareReviews(
-            serverState.softwareReviews,
+            server.softwareReviews,
             session?.softwareReviews,
           ),
         );
@@ -412,7 +403,7 @@ export function ContentEditor({
       ) {
         setAcademicDatasets(
           mergeAcademicDatasetEditorState(
-            serverState.academicDatasets,
+            server.academicDatasets,
             session?.academicDatasets,
           ),
         );
@@ -423,30 +414,51 @@ export function ContentEditor({
       }
 
       if (sectionId === "site_settings") {
-        setSiteSettings(session?.siteSettings ?? serverState.siteSettings);
+        setSiteSettings(session?.siteSettings ?? server.siteSettings);
       }
 
       if (sectionId === "footer") {
-        setSiteSettings(session?.siteSettings ?? serverState.siteSettings);
+        setSiteSettings(session?.siteSettings ?? server.siteSettings);
       }
 
       if (sectionId === "navigation") {
-        setNavigation(session?.navigation ?? serverState.navigation);
+        setNavigation(session?.navigation ?? server.navigation);
       }
 
       if (sectionId === "research_library") {
-        setLibraryItems(session?.libraryItems ?? serverState.libraryItems);
+        setLibraryItems(session?.libraryItems ?? server.libraryItems);
       }
 
       if (sectionId === "device_opt_out") {
-        setOptOutSteps(session?.optOutSteps ?? serverState.optOutSteps);
+        setOptOutSteps(session?.optOutSteps ?? server.optOutSteps);
       }
     },
-    [state],
+    [],
+  );
+
+  const applyRoute = useCallback(
+    (nextPage: ContentPageId, nextSectionId: string) => {
+      const routeKey = `${nextPage}:${nextSectionId}`;
+      if (routeKey === lastAppliedRouteRef.current) {
+        return;
+      }
+
+      persistCurrentSection(activeSectionIdRef.current);
+      hydratedSectionRef.current = null;
+      lastAppliedRouteRef.current = routeKey;
+      setPage(nextPage);
+      setActiveSectionId(nextSectionId);
+      loadSection(nextSectionId);
+
+      const draft = readLocalDraft() ?? { sections: {} };
+      writeLocalDraft({ ...draft, page: nextPage });
+    },
+    [loadSection, persistCurrentSection],
   );
 
   const applyServerState = useCallback(
     (serverState: ContentEditorState, sectionId: string) => {
+      stateRef.current = serverState;
       setState(serverState);
       setExpertQuotes(serverState.expertQuotes);
       setTimeline(normalizeMissionTimeline(serverState.timeline));
@@ -475,10 +487,6 @@ export function ContentEditor({
   }, [initialState, applyServerState]);
 
   useEffect(() => {
-    clearLocalDraft();
-    userEditedRef.current = false;
-    router.refresh();
-
     let cancelled = false;
 
     void fetch("/api/admin/content", { cache: "no-store" })
@@ -488,6 +496,7 @@ export function ContentEditor({
         const fingerprint = `${fresh.version}:${fresh.publishedAt}`;
         if (syncedStateRef.current === fingerprint) return;
         syncedStateRef.current = fingerprint;
+        stateRef.current = fresh;
         applyServerState(fresh, activeSectionIdRef.current);
       })
       .catch(() => undefined);
@@ -495,47 +504,35 @@ export function ContentEditor({
     return () => {
       cancelled = true;
     };
-  }, [applyServerState, router]);
+  }, [applyServerState]);
 
   useEffect(() => {
+    const pageParam =
+      normalizeContentPageId(searchParams.get("page") ?? undefined) ??
+      "homepage";
     const sectionParam = searchParams.get("section");
-    const sections = getSectionsForPage(page);
-    const firstSection = sections[0];
-    if (!firstSection) return;
-
     const targetSection =
-      resolveRouteSection(page, sectionParam ?? undefined) ?? firstSection.id;
+      resolveRouteSection(pageParam, sectionParam ?? undefined) ??
+      getSectionsForPage(pageParam)[0]?.id ??
+      "hero";
+    const routeKey = `${pageParam}:${targetSection}`;
 
-    if (targetSection === activeSectionIdRef.current) {
-      const draft = readLocalDraft() ?? { sections: {} };
-      writeLocalDraft({ ...draft, page });
+    if (routeKey === lastAppliedRouteRef.current) {
       return;
     }
 
-    persistCurrentSection(activeSectionIdRef.current);
-    setActiveSectionId(targetSection);
-    loadSection(targetSection);
-
-    const draft = readLocalDraft() ?? { sections: {} };
-    writeLocalDraft({ ...draft, page });
-  }, [page, searchParams, loadSection, persistCurrentSection]);
-
-  useEffect(() => {
-    const pageParam = normalizeContentPageId(searchParams.get("page") ?? undefined);
-    if (!pageParam || pageParam === page) {
-      return;
-    }
-
-    setPage(pageParam);
-  }, [searchParams, page]);
+    applyRoute(pageParam, targetSection);
+  }, [searchParams, applyRoute]);
 
   const selectSection = useCallback(
     (sectionId: string) => {
-      persistCurrentSection(activeSectionId);
-      setActiveSectionId(sectionId);
-      loadSection(sectionId);
+      applyRoute(page, sectionId);
+      router.replace(
+        `/admin/content?page=${page}&section=${sectionId}`,
+        { scroll: false },
+      );
     },
-    [activeSectionId, loadSection, persistCurrentSection],
+    [applyRoute, page, router],
   );
 
   useEffect(() => {
@@ -658,6 +655,7 @@ export function ContentEditor({
       clearLocalDraft();
       userEditedRef.current = false;
       syncedStateRef.current = `${latestState.version}:${latestState.publishedAt}`;
+      stateRef.current = latestState;
       setState(latestState);
       loadSection(activeSectionId, latestState);
       setPublishMessage({
@@ -676,15 +674,14 @@ export function ContentEditor({
 
   const handlePageChange = useCallback(
     (nextPage: ContentPageId) => {
-      persistCurrentSection(activeSectionIdRef.current);
       const nextSection = getSectionsForPage(nextPage)[0]?.id ?? "hero";
-      setPage(nextPage);
+      applyRoute(nextPage, nextSection);
       router.replace(
         `/admin/content?page=${nextPage}&section=${nextSection}`,
         { scroll: false },
       );
     },
-    [persistCurrentSection, router],
+    [applyRoute, router],
   );
 
   if (!activeSection) {

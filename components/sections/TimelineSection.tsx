@@ -1,6 +1,13 @@
 "use client";
 
+import { RichTextContent } from "@/components/cms/RichTextContent";
 import { ContentImage } from "@/components/ui/ContentImage";
+import {
+  RICH_TEXT_LINKS_LIGHT_CLASS,
+  stripRichTextToPlain,
+  isRichTextHtml,
+} from "@/lib/cms/rich-text";
+import { sectionPaddingX } from "@/components/ui/Container";
 import { useLenis } from "lenis/react";
 import type Lenis from "lenis";
 import {
@@ -13,7 +20,6 @@ import {
 import { normalizeMissionTimeline } from "@/lib/cms/mission-slides";
 import { useSiteContent } from "@/lib/cms/hooks";
 import type { TimelineSlide } from "@/lib/cms/types";
-import { sectionPaddingX } from "@/components/ui/Container";
 import { prefersReducedMotion, prefersNativeScroll } from "@/lib/motion";
 import {
   getDotProximity,
@@ -23,12 +29,31 @@ import {
   getTimelineProgress,
   resolveViewportHeight,
 } from "@/lib/timeline-motion";
-import { scrollToSection } from "@/lib/navigation";
+import { getSectionElement, scrollToSection } from "@/lib/navigation";
 
 const MISSION_GOAL_EMPHASIS =
   "focus over distraction and cognitive friction over swiping.";
 
-function MissionSlideDescription({ description }: { description: string }) {
+function MissionSlideDescription({
+  description,
+  className,
+  linkTone = "default",
+}: {
+  description: string;
+  className?: string;
+  linkTone?: "default" | "light";
+}) {
+  if (isRichTextHtml(description)) {
+    return (
+      <RichTextContent
+        content={description}
+        className={className}
+        inline
+        linkTone={linkTone}
+      />
+    );
+  }
+
   const index = description.indexOf(MISSION_GOAL_EMPHASIS);
   if (index === -1) {
     return <>{description}</>;
@@ -115,7 +140,6 @@ export function TimelineSection() {
   const pinRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
   const progressFillRef = useRef<HTMLDivElement>(null);
-  const eraLabelRef = useRef<HTMLSpanElement>(null);
   const copyRefs = useRef<(HTMLDivElement | null)[]>([]);
   const mediaRefs = useRef<(HTMLDivElement | null)[]>([]);
   const dotRefs = useRef<(HTMLSpanElement | null)[]>([]);
@@ -234,11 +258,6 @@ export function TimelineSection() {
     if (roundedIndex !== activeIndexRef.current) {
       activeIndexRef.current = roundedIndex;
       setActiveIndex(roundedIndex);
-
-      if (eraLabelRef.current) {
-        eraLabelRef.current.textContent =
-          timelineSlides[roundedIndex]?.era ?? "";
-      }
     }
 
     const useMotion = !reducedMotionRef.current;
@@ -369,7 +388,7 @@ export function TimelineSection() {
       const hash = link.getAttribute("href");
       if (!hash || hash === "#") return;
 
-      const target = document.querySelector(hash);
+      const target = getSectionElement(hash);
       const wrapper = wrapperRef.current;
       if (!(target instanceof HTMLElement) || !wrapper) return;
 
@@ -418,7 +437,9 @@ export function TimelineSection() {
             return (
               <article
                 key={slide.number}
-                className={`flex h-full min-h-0 shrink-0 flex-col items-center gap-5 py-8 max-lg:justify-center max-lg:gap-6 max-lg:py-10 lg:flex-row lg:gap-12 lg:py-0 ${sectionPaddingX}`}
+                className={`flex h-full min-h-0 shrink-0 flex-col items-center gap-5 py-8 max-lg:justify-center max-lg:gap-6 max-lg:py-10 lg:flex-row lg:gap-12 lg:py-0 ${sectionPaddingX} ${
+                  isLight ? RICH_TEXT_LINKS_LIGHT_CLASS : ""
+                }`}
                 style={{
                   width: `${slideShare}%`,
                   backgroundColor: slide.background,
@@ -433,19 +454,6 @@ export function TimelineSection() {
                   }`}
                 >
                   <p
-                    className={
-                      slide.eraStyle === "large"
-                        ? `font-sans text-base font-medium uppercase leading-none lg:text-base ${
-                            isLight ? "text-slate-50" : "text-navy-800"
-                          }`
-                        : `font-sans text-base font-medium uppercase tracking-[0.12em] leading-none max-lg:tracking-[0.1em] lg:text-base lg:tracking-[0.15em] ${
-                            isLight ? "text-slate-50" : "text-navy-800"
-                          }`
-                    }
-                  >
-                    {slide.era}
-                  </p>
-                  <p
                     className={`text-fluid-timeline-number font-sans font-bold leading-none lg:text-[96px] ${
                       isLight ? "text-slate-50/70" : "text-hero-dark"
                     }`}
@@ -457,14 +465,21 @@ export function TimelineSection() {
                       isLight ? "text-slate-50" : "text-hero-dark"
                     }`}
                   >
-                    {slide.title}
+                    <RichTextContent
+                      content={slide.title}
+                      inline
+                      linkTone={isLight ? "light" : "default"}
+                    />
                   </h2>
                   <p
                     className={`max-w-xl text-base leading-[1.55] max-lg:leading-[1.5] lg:text-2xl lg:leading-[1.4] ${
                       isLight ? "text-slate-200" : "text-hero-dark"
                     }`}
                   >
-                    <MissionSlideDescription description={slide.description} />
+                    <MissionSlideDescription
+                      description={slide.description}
+                      linkTone={isLight ? "light" : "default"}
+                    />
                   </p>
                 </div>
 
@@ -478,7 +493,7 @@ export function TimelineSection() {
                 >
                   <ContentImage
                     src={slide.image}
-                    alt={slide.title}
+                    alt={stripRichTextToPlain(slide.title)}
                     fill
                     className="object-cover object-center"
                     sizes="(max-width: 1024px) 50vw, 42vw"
@@ -494,19 +509,11 @@ export function TimelineSection() {
           className={`pointer-events-none absolute inset-x-0 top-20 z-20 max-lg:top-16 sm:top-24 ${sectionPaddingX}`}
           aria-hidden
         >
-          <div className="flex items-end justify-between gap-8">
-            <p
-              className={`font-sans text-sm font-medium uppercase tracking-[0.18em] max-lg:tracking-[0.14em] lg:text-base lg:tracking-[0.24em] ${paginationColors.muted}`}
-            >
-              Our Mission
-            </p>
-            <span
-              ref={eraLabelRef}
-              className={`font-sans text-sm font-medium uppercase tracking-[0.18em] transition-colors duration-500 max-lg:tracking-[0.14em] lg:text-base lg:tracking-[0.24em] ${paginationColors.label}`}
-            >
-              {timelineSlides[0].era}
-            </span>
-          </div>
+          <p
+            className={`font-sans text-sm font-medium uppercase tracking-[0.18em] max-lg:tracking-[0.14em] lg:text-base lg:tracking-[0.24em] ${paginationColors.muted}`}
+          >
+            Our Mission
+          </p>
           <div
             className={`mt-4 h-px w-full overflow-hidden ${paginationColors.track}`}
           >

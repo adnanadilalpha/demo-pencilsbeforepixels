@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { parseAdminDeleteIds } from "@/lib/admin/parse-delete-ids";
 import {
   fetchOptOutPageData,
   fetchOptOutSubmissionPayload,
@@ -41,10 +42,8 @@ export async function DELETE(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { searchParams } = new URL(request.url);
-  const id = searchParams.get("id");
-
-  if (!id) {
+  const ids = await parseAdminDeleteIds(request);
+  if (!ids.length) {
     return NextResponse.json({ error: "Missing submission id." }, { status: 400 });
   }
 
@@ -52,7 +51,7 @@ export async function DELETE(request: Request) {
   const { error } = await supabase
     .from("opt_out_submissions")
     .delete()
-    .eq("id", id);
+    .in("id", ids);
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });

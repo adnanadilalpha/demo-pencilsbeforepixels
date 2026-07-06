@@ -2,6 +2,7 @@
 
 import type { OptOutStep } from "@/lib/cms/types";
 import { adminInputClass, adminLabelClass } from "@/components/admin/admin-styles";
+import { RichTextEditor } from "@/components/admin/content/RichTextEditor";
 
 type OptOutStepsEditorProps = {
   steps: OptOutStep[];
@@ -30,22 +31,18 @@ export function OptOutStepsEditor({ steps, onChange }: OptOutStepsEditorProps) {
             value={step.number}
             onChange={(value) => updateStep(index, { number: value })}
           />
-          <Field
+          <RichTextEditor
             label="Title"
             value={step.title}
+            compact
             onChange={(value) => updateStep(index, { title: value })}
           />
           <div className="sm:col-span-2">
-            <div className="flex flex-col gap-1.5">
-              <label className={adminLabelClass}>Description</label>
-              <textarea
-                className={`${adminInputClass} min-h-20 rounded-[10px] py-3`}
-                value={step.description}
-                onChange={(event) =>
-                  updateStep(index, { description: event.target.value })
-                }
-              />
-            </div>
+            <RichTextEditor
+              label="Description"
+              value={step.description}
+              onChange={(value) => updateStep(index, { description: value })}
+            />
           </div>
         </div>
       ))}

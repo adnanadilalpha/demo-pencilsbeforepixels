@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import { RichTextContent } from "@/components/cms/RichTextContent";
 import { Container, sectionSubtextClass } from "@/components/ui/Container";
 import { DisplayHeading } from "@/components/ui/DisplayHeading";
 import { TextLink } from "@/components/ui/TextLink";
@@ -35,7 +36,7 @@ function FindingChip({
           {finding.headline ? (
             <h3 className="min-w-0 flex-1 text-pretty font-sans text-base font-semibold leading-snug text-navy-800 sm:text-lg sm:leading-snug">
               <span className="sr-only">{`Finding ${number}. `}</span>
-              {finding.headline}
+              <RichTextContent content={finding.headline} inline />
             </h3>
           ) : (
             <span className="sr-only">{`Finding ${number}`}</span>
@@ -43,9 +44,10 @@ function FindingChip({
         </div>
 
         {finding.body ? (
-          <p className="text-pretty font-sans text-sm leading-[1.55] text-navy-800/85 sm:text-[0.9375rem] sm:leading-[1.6]">
-            {finding.body}
-          </p>
+          <RichTextContent
+            content={finding.body}
+            className="text-pretty font-sans text-sm leading-[1.55] text-navy-800/85 sm:text-[0.9375rem] sm:leading-[1.6]"
+          />
         ) : null}
       </article>
     </li>
@@ -68,11 +70,12 @@ export function GoalSection() {
       <Container className="relative flex flex-col">
         <header className="mx-auto flex w-full max-w-3xl flex-col items-center gap-3 text-center max-lg:gap-4 lg:gap-4">
           <DisplayHeading as="h2" className="text-gold-accent" size="md">
-            {tagline}
+            <RichTextContent content={tagline} inline />
           </DisplayHeading>
-          <p className={`${sectionSubtextClass} text-navy-800/80 sm:leading-[1.6]`}>
-            {body}
-          </p>
+          <RichTextContent
+            content={body}
+            className={`${sectionSubtextClass} text-navy-800/80 sm:leading-[1.6]`}
+          />
         </header>
 
         <div className="mx-auto mt-8 w-full max-w-3xl max-lg:mt-7 lg:mt-10">

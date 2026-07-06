@@ -1,17 +1,18 @@
 import "server-only";
 
-import { PDFDocument, rgb } from "pdf-lib";
+import fontkit from "@pdf-lib/fontkit";
+import { PDFDocument, rgb, type PDFPage, type PDFFont } from "pdf-lib";
 import {
   buildOptOutPackageParts,
-  type OptOutPackagePartKind,
+  type OptOutPackagePart,
 } from "@/lib/opt-out/build-package-docx";
 import {
   extractDocxRenderBlocks,
   type DocxRenderBlock,
 } from "@/lib/opt-out/docx-render-blocks";
-import { embedPackageFonts } from "@/lib/opt-out/pdf-font";
+import { embedPackageFonts, type PackageFonts } from "@/lib/opt-out/pdf-font";
 import { wrapPdfText } from "@/lib/opt-out/pdf-layout";
-import { renderFormBPdf } from "@/lib/opt-out/render-form-b-pdf";
+import { appendFormBToPdf } from "@/lib/opt-out/render-form-b-pdf";
 import type { OptOutFormConfig, OptOutLetterForm } from "@/lib/opt-out/types";
 
 const PAGE_WIDTH = 612;
@@ -40,18 +41,18 @@ async function embedDocxImage(pdf: PDFDocument, data: Buffer) {
   }
 }
 
-async function renderBlocksToPdf(
+async function appendBlocksToPdf(
+  pdf: PDFDocument,
+  fonts: PackageFonts,
   blocks: DocxRenderBlock[],
   options: RenderOptions,
   pageBreakBefore: boolean,
   topMarginPt = MARGIN,
 ) {
-  const pdf = await PDFDocument.create();
-  const fonts = await embedPackageFonts(pdf);
   const { fontSize, lineHeight, blockGap } = options;
   const maxWidth = PAGE_WIDTH - MARGIN * 2;
 
-  let page: ReturnType<PDFDocument["addPage"]> | null = null;
+  let page: PDFPage | null = null;
   let y = PAGE_HEIGHT - topMarginPt;
 
   const startPage = (forceNew: boolean) => {
@@ -102,7 +103,7 @@ async function renderBlocksToPdf(
       continue;
     }
 
-    const font = block.bold ? fonts.bold : fonts.regular;
+    const font: PDFFont = block.bold ? fonts.bold : fonts.regular;
 
     for (const line of wrapPdfText(block.text, font, fontSize, maxWidth)) {
       startPage(false);
@@ -134,47 +135,45 @@ async function renderBlocksToPdf(
   if (!page) {
     pdf.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
   }
-
-  return pdf;
 }
 
-async function renderPartToPdf(
-  buffer: Buffer,
-  kind: OptOutPackagePartKind,
-  form: OptOutLetterForm,
-  config: OptOutFormConfig,
-  pageBreakBefore: boolean,
-): Promise<PDFDocument> {
-  if (kind === "formB") {
-    return renderFormBPdf(form, config.defaultAnswers, pageBreakBefore);
-  }
-
-  const blocks = extractDocxRenderBlocks(buffer);
-  const topMarginPt = kind === "cover" ? COVER_TOP_MARGIN_PT : MARGIN;
-  return renderBlocksToPdf(blocks, DEFAULT_RENDER, pageBreakBefore, topMarginPt);
-}
-
-async function buildPdfFromParts(
-  parts: Awaited<ReturnType<typeof buildOptOutPackageParts>>,
+export async function buildOptOutPackagePdfFromParts(
+  parts: OptOutPackagePart[],
   form: OptOutLetterForm,
   config: OptOutFormConfig,
 ): Promise<Buffer> {
-  let merged = await PDFDocument.create();
+  const pdf = await PDFDocument.create();
+  pdf.registerFontkit(fontkit);
+  const fonts = await embedPackageFonts(pdf);
 
   for (let index = 0; index < parts.length; index += 1) {
     const part = parts[index]!;
-    const partPdf = await renderPartToPdf(
-      part.buffer,
-      part.kind,
-      form,
-      config,
-      index > 0,
+    const pageBreakBefore = index > 0;
+
+    if (part.kind === "formB") {
+      await appendFormBToPdf(
+        pdf,
+        fonts,
+        form,
+        config.defaultAnswers,
+        pageBreakBefore,
+      );
+      continue;
+    }
+
+    const blocks = extractDocxRenderBlocks(part.buffer);
+    const topMarginPt = part.kind === "cover" ? COVER_TOP_MARGIN_PT : MARGIN;
+    await appendBlocksToPdf(
+      pdf,
+      fonts,
+      blocks,
+      DEFAULT_RENDER,
+      pageBreakBefore,
+      topMarginPt,
     );
-    const pages = await merged.copyPages(partPdf, partPdf.getPageIndices());
-    pages.forEach((page) => merged.addPage(page));
   }
 
-  return Buffer.from(await merged.save());
+  return Buffer.from(await pdf.save());
 }
 
 export async function buildOptOutPackagePdf(
@@ -182,5 +181,5 @@ export async function buildOptOutPackagePdf(
   config: OptOutFormConfig,
 ): Promise<Buffer> {
   const parts = await buildOptOutPackageParts(form, config);
-  return buildPdfFromParts(parts, form, config);
+  return buildOptOutPackagePdfFromParts(parts, form, config);
 }

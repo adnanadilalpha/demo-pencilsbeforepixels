@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useLenis } from "lenis/react";
 import { NewsletterFooterForm } from "@/components/newsletter/NewsletterFooterForm";
 import { Logo } from "@/components/layout/Logo";
@@ -11,6 +11,8 @@ import { resolvePrivacyPolicyUrl, resolveTermsOfServiceUrl } from "@/lib/cms/set
 import { useSection, useSiteContent } from "@/lib/cms/hooks";
 import { normalizePublicNavLinks } from "@/lib/cms/navigation";
 import { handleNavLinkClick } from "@/lib/navigation";
+import { ANALYTICS_EVENTS } from "@/lib/analytics/event-types";
+import { trackAnalyticsEvent } from "@/lib/analytics/track-client";
 
 type FooterProps = {
   paddingX?: string;
@@ -21,6 +23,7 @@ export function Footer({ paddingX = sectionPaddingX }: FooterProps) {
   const footerSection = useSection("homepage.footer");
   const footerLinks = normalizePublicNavLinks(navigation.footer, "footer");
   const pathname = usePathname();
+  const router = useRouter();
   const lenis = useLenis();
   const hasSocialLinks = settings.socialLinks.length > 0;
 
@@ -56,9 +59,20 @@ export function Footer({ paddingX = sectionPaddingX }: FooterProps) {
                     <Link
                       key={link.href}
                       href={link.href}
-                      onClick={(event) =>
-                        handleNavLinkClick(event, link.href, pathname, lenis)
-                      }
+                      onClick={(event) => {
+                        void trackAnalyticsEvent(ANALYTICS_EVENTS.NAV_CLICK, {
+                          label: link.label,
+                          metadata: { href: link.href, location: "footer" },
+                        });
+                        handleNavLinkClick(
+                          event,
+                          link.href,
+                          pathname,
+                          lenis,
+                          undefined,
+                          (url) => router.push(url),
+                        );
+                      }}
                       className="transition-opacity hover:opacity-70"
                     >
                       {link.label}

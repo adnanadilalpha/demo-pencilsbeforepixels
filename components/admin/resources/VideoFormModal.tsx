@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { adminInputClass } from "@/components/admin/admin-styles";
+import { RichTextEditor } from "@/components/admin/content/RichTextEditor";
 import {
   AdminModal,
   AdminModalActions,
@@ -210,32 +211,27 @@ export function VideoFormModal({
           />
         )}
 
-        <AdminModalField label="Title">
-          <input
-            type="text"
-            value={form.title}
-            onChange={(event) =>
-              setForm((current) => ({ ...current, title: event.target.value }))
-            }
-            placeholder="Video title"
-            className={adminInputClass}
-          />
-        </AdminModalField>
+        <RichTextEditor
+          label="Title"
+          value={form.title}
+          placeholder="Video title"
+          compact
+          onChange={(value) =>
+            setForm((current) => ({ ...current, title: value }))
+          }
+        />
 
-        <AdminModalField label="Description">
-          <textarea
-            value={form.description}
-            onChange={(event) =>
-              setForm((current) => ({
-                ...current,
-                description: event.target.value,
-              }))
-            }
-            placeholder="Brief description…"
-            rows={4}
-            className={cn(adminInputClass, "min-h-24 rounded-[10px] py-3")}
-          />
-        </AdminModalField>
+        <RichTextEditor
+          label="Description"
+          value={form.description}
+          placeholder="Brief description…"
+          onChange={(value) =>
+            setForm((current) => ({
+              ...current,
+              description: value,
+            }))
+          }
+        />
 
         <FileUploadField
           label="Custom thumbnail (optional)"

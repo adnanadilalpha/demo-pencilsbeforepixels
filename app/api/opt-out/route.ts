@@ -1,10 +1,12 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import {
   findOptOutSchool,
   loadOptOutFormConfig,
   loadOptOutSchools,
 } from "@/lib/opt-out/config";
 import { createOptOutDownloadToken } from "@/lib/opt-out/access-token";
+import { generateOptOutPackages } from "@/lib/opt-out/generate-packages";
+import { persistOptOutCachedPackages } from "@/lib/opt-out/persist-packages";
 import type { OptOutLetterForm, OptOutSubmissionPayload } from "@/lib/opt-out/types";
 import { getClientIp } from "@/lib/security/client-ip";
 import { checkRateLimit, rateLimitResponse } from "@/lib/security/rate-limit";
@@ -25,8 +27,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Form data is required" }, { status: 400 });
     }
 
-    const schools = await loadOptOutSchools();
-    const config = await loadOptOutFormConfig();
+    const [schools, config] = await Promise.all([
+      loadOptOutSchools(),
+      loadOptOutFormConfig(),
+    ]);
     const school = findOptOutSchool(schools, body.letter.schoolId);
 
     if (!school) {
@@ -109,8 +113,20 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Failed to create submission" }, { status: 500 });
     }
 
+    // Build the PDF/DOCX after responding so submit stays fast; download
+    // routes fall back to on-demand builds if the cache isn't ready yet.
+    after(async () => {
+      try {
+        const cachedPackages = await generateOptOutPackages(letter, config);
+        await persistOptOutCachedPackages(data.id, payload, cachedPackages);
+      } catch (generationError) {
+        console.error("Opt-out background package generation failed:", generationError);
+      }
+    });
+
     return NextResponse.json({ ok: true, id: data.id, downloadToken });
-  } catch {
-    return NextResponse.json({ error: "Invalid request" }, { status: 400 });
+  } catch (err) {
+    console.error("Opt-out submission error:", err);
+    return NextResponse.json({ error: "Failed to generate form package" }, { status: 500 });
   }
 }

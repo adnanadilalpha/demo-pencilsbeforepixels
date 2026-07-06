@@ -86,17 +86,9 @@ function mergePublishPayloads(payloads: ContentSavePayload[]): MergedPublishPayl
         ...payload.content,
       };
 
-      const introContent: SectionDraft = {};
       const pageHeaderContent: SectionDraft = {};
       for (const [key, value] of Object.entries(payload.content)) {
-        if (key === "label" || key === "body") introContent[key] = value;
         if (key === "title" || key === "subtitle") pageHeaderContent[key] = value;
-      }
-      if (Object.keys(introContent).length > 0) {
-        sectionMap.set("evidence.intro", {
-          content: introContent,
-          page: "research",
-        });
       }
       if (Object.keys(pageHeaderContent).length > 0) {
         sectionMap.set("evidence.research_tab", {

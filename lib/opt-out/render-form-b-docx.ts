@@ -42,9 +42,9 @@ import {
   FORM_B_BODY_FONT,
   FORM_B_FOOTER_COLOR,
   FORM_B_FOOTER_FONT,
-  FORM_B_SIGNATURE_FONT,
+  FORM_B_DOCX_SIGNATURE_FONT,
+  FORM_B_DOCX_SIGNATURE_FONT_FILE,
   FORM_B_SIGNATURE_FONT_DIR,
-  FORM_B_SIGNATURE_FONT_FILE,
   formBSignatureSizePt,
 } from "@/lib/opt-out/form-b-theme";
 import { parseDataUrl } from "@/lib/opt-out/embed-docx-image";
@@ -59,7 +59,11 @@ const CONTENT_WIDTH_TWIPS = convertInchesToTwip(8.5) - MARGIN_TWIPS * 2;
 const LINE_END_TWIPS = MARGIN_TWIPS + CONTENT_WIDTH_TWIPS;
 const PHONE_SPLIT_TWIPS = MARGIN_TWIPS + Math.round(CONTENT_WIDTH_TWIPS * 0.48);
 const SIGNATURE_SPLIT_TWIPS = MARGIN_TWIPS + Math.round(CONTENT_WIDTH_TWIPS * 0.55);
-const signatureFontPath = join(process.cwd(), FORM_B_SIGNATURE_FONT_DIR, FORM_B_SIGNATURE_FONT_FILE);
+const signatureFontPath = join(
+  process.cwd(),
+  FORM_B_SIGNATURE_FONT_DIR,
+  FORM_B_DOCX_SIGNATURE_FONT_FILE,
+);
 
 let signatureFontBytes: Buffer | null = null;
 
@@ -91,7 +95,7 @@ function bodyRun(text: string, scale: FormBLayoutScale, options?: { bold?: boole
 function signatureRun(text: string, scale: FormBLayoutScale) {
   return new TextRun({
     text,
-    font: FORM_B_SIGNATURE_FONT,
+    font: FORM_B_DOCX_SIGNATURE_FONT,
     size: pointsToHalfPoints(formBSignatureSizePt(scale.bodySize)),
     color: FORM_B_BODY_COLOR,
   });
@@ -319,7 +323,7 @@ export async function renderFormBDocx(
   );
 
   const doc = new Document({
-    fonts: [{ name: FORM_B_SIGNATURE_FONT, data: await loadSignatureFontBytes() }],
+    fonts: [{ name: FORM_B_DOCX_SIGNATURE_FONT, data: await loadSignatureFontBytes() }],
     sections: [
       {
         properties: {

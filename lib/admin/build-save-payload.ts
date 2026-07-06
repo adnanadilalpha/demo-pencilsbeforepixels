@@ -5,6 +5,7 @@ import { sanitizeBeforeOptOutForPublish, stripBeforeOptOutFieldsFromRecord } fro
 import { sanitizeResearchLibraryForPublish } from "@/lib/cms/research-library-content";
 import { MISSION_SLIDE_LABELS } from "@/lib/cms/mission-slides";
 import { sanitizeMentalHealthForPublish } from "@/lib/cms/site-ctas";
+import { normalizeEditorNavLinks } from "@/lib/cms/navigation";
 import { normalizeYouTubeUrl } from "@/lib/youtube";
 
 function stripEditorMetaKeys(content: Record<string, unknown>): Record<string, unknown> {
@@ -111,7 +112,22 @@ function buildSavePayload(
   }
 
   if (sectionId === "navigation" && draft.navigation) {
-    payload.navigation = draft.navigation;
+    payload.navigation = {
+      header: normalizeEditorNavLinks(
+        draft.navigation.header.map((link) => ({
+          ...link,
+          label: link.label.trim(),
+        })),
+        "header",
+      ).map((link) => ({ ...link, location: "header" as const })),
+      footer: normalizeEditorNavLinks(
+        draft.navigation.footer.map((link) => ({
+          ...link,
+          label: link.label.trim(),
+        })),
+        "footer",
+      ).map((link) => ({ ...link, location: "footer" as const })),
+    };
   }
 
   if (sectionId === "research_library" && draft.libraryItems) {

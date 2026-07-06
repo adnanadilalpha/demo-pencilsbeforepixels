@@ -1,3 +1,4 @@
+import { RichTextContent } from "@/components/cms/RichTextContent";
 import { ContentImage } from "@/components/ui/ContentImage";
 import {
   researchChartCaptionDark,
@@ -58,7 +59,9 @@ export function NaepGradeImagePanel({
 
   return (
     <div className="rounded-xl border border-navy-800/8 bg-white p-4 md:p-6 lg:p-10">
-      <p className={`mb-4 md:mb-6 lg:mb-8 ${researchChartCaptionDark}`}>{heading}</p>
+      <p className={`mb-4 md:mb-6 lg:mb-8 ${researchChartCaptionDark}`}>
+        <RichTextContent content={heading} inline />
+      </p>
 
       <div className="overflow-hidden rounded-xl border border-navy-800/10 bg-slate-50/50">
         <ContentImage

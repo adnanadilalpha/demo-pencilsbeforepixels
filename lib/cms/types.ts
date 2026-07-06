@@ -18,7 +18,6 @@ export type SectionKey =
   | "homepage.before_opt_out"
   | "homepage.device_opt_out"
   | "homepage.footer"
-  | "evidence.intro"
   | "evidence.research_tab"
   | "evidence.nebraska"
   | "evidence.district_66";

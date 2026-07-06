@@ -3,9 +3,10 @@
 import { useEffect, useState } from "react";
 import {
   hasNewsletterSubscription,
-  isValidEmail,
   newsletterCopy,
+  newsletterEmailErrorMessage,
   subscribeToNewsletter,
+  validateNewsletterEmail,
 } from "@/lib/newsletter";
 import { useSection } from "@/lib/cms/hooks";
 import { cn } from "@/lib/utils";
@@ -15,6 +16,7 @@ type Phase = "idle" | "submitting" | "success";
 export function NewsletterFooterForm() {
   const footerSection = useSection("homepage.footer");
   const [email, setEmail] = useState("");
+  const [company, setCompany] = useState("");
   const [error, setError] = useState("");
   const [info, setInfo] = useState("");
   const [phase, setPhase] = useState<Phase>("idle");
@@ -35,15 +37,16 @@ export function NewsletterFooterForm() {
     setError("");
     setInfo("");
 
-    if (!isValidEmail(email)) {
-      setError("Enter a valid email to continue.");
+    const validation = validateNewsletterEmail(email);
+    if (!validation.ok) {
+      setError(newsletterEmailErrorMessage(validation.reason));
       return;
     }
 
     setPhase("submitting");
 
     try {
-      const result = await subscribeToNewsletter(email, "footer");
+      const result = await subscribeToNewsletter(email, "footer", { company });
 
       if (result.status === "already_subscribed") {
         setPhase("idle");
@@ -71,7 +74,22 @@ export function NewsletterFooterForm() {
   }
 
   return (
-    <form className="flex w-full min-w-0 flex-col gap-2" onSubmit={handleSubmit}>
+    <form className="relative flex w-full min-w-0 flex-col gap-2" onSubmit={handleSubmit}>
+      <div
+        className="pointer-events-none absolute -left-[9999px] h-0 w-0 overflow-hidden opacity-0"
+        aria-hidden
+      >
+        <label htmlFor="footer-newsletter-company">Company</label>
+        <input
+          id="footer-newsletter-company"
+          name="company"
+          type="text"
+          tabIndex={-1}
+          autoComplete="off"
+          value={company}
+          onChange={(event) => setCompany(event.target.value)}
+        />
+      </div>
       <div className="flex w-full min-w-0 items-center gap-3">
         <input
           type="email"

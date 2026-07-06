@@ -66,6 +66,51 @@ export function HorizontalScrollRow({
     updateScrollState();
   }, [resetKey, updateScrollState]);
 
+  useEffect(() => {
+    const track = trackRef.current;
+    if (!track) return;
+
+    const onWheel = (event: WheelEvent) => {
+      const { deltaX, deltaY, shiftKey } = event;
+      const absX = Math.abs(deltaX);
+      const absY = Math.abs(deltaY);
+
+      // Prefer page scroll unless the gesture is clearly horizontal.
+      const isHorizontalIntent =
+        shiftKey || (absX > absY + 1 && absX > 2);
+
+      if (!isHorizontalIntent) {
+        return;
+      }
+
+      const horizontalDelta = shiftKey ? deltaY : deltaX;
+      if (horizontalDelta === 0) return;
+
+      const { scrollLeft, scrollWidth, clientWidth } = track;
+      const maxScrollLeft = scrollWidth - clientWidth;
+      if (maxScrollLeft <= 0) return;
+
+      const atLeft = scrollLeft <= 0;
+      const atRight = scrollLeft >= maxScrollLeft - 1;
+
+      if ((horizontalDelta < 0 && atLeft) || (horizontalDelta > 0 && atRight)) {
+        return;
+      }
+
+      track.scrollLeft += horizontalDelta;
+      event.preventDefault();
+      (
+        event as WheelEvent & { lenisStopPropagation?: boolean }
+      ).lenisStopPropagation = true;
+    };
+
+    track.addEventListener("wheel", onWheel, { passive: false });
+
+    return () => {
+      track.removeEventListener("wheel", onWheel);
+    };
+  }, [resetKey, children]);
+
   const scrollByPage = (direction: -1 | 1) => {
     const track = trackRef.current;
     if (!track) return;
@@ -120,7 +165,6 @@ export function HorizontalScrollRow({
           ref={trackRef}
           className={cn("timeline-snap-track", trackClassName)}
           aria-label={ariaLabel}
-          data-lenis-prevent
         >
           {children}
         </div>

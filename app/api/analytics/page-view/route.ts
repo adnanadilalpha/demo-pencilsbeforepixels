@@ -1,13 +1,16 @@
 import { NextResponse } from "next/server";
 import { normalizeAnalyticsPath } from "@/lib/analytics/normalize-path";
+import {
+  getRequestAnalyticsContext,
+  isValidAnalyticsId,
+} from "@/lib/analytics/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 const DEDUPE_WINDOW_MS = 10_000;
-const ID_PATTERN = /^[a-z0-9-]{16,64}$/i;
 
 type PageViewBody = {
   sessionId?: string;
-  visitorId?: string;
+  visitorId?: string | null;
   path?: string;
   pageTitle?: string;
   referrer?: string;
@@ -16,11 +19,13 @@ type PageViewBody = {
   viewId?: string;
 };
 
-function isValidId(value: string | undefined): value is string {
-  return typeof value === "string" && ID_PATTERN.test(value);
-}
-
 export async function POST(request: Request) {
+  const context = await getRequestAnalyticsContext(request);
+
+  if (!context.shouldRecord) {
+    return NextResponse.json({ ok: true, skipped: true });
+  }
+
   let body: PageViewBody;
 
   try {
@@ -32,7 +37,7 @@ export async function POST(request: Request) {
   const { sessionId, visitorId, path, pageTitle, referrer, durationSeconds, isBounce } =
     body;
 
-  if (!isValidId(sessionId) || !path) {
+  if (!isValidAnalyticsId(sessionId) || !path) {
     return NextResponse.json({ error: "Missing session or path." }, { status: 400 });
   }
 
@@ -67,10 +72,14 @@ export async function POST(request: Request) {
     .from("page_views")
     .insert({
       session_id: sessionId,
-      visitor_id: isValidId(visitorId) ? visitorId : null,
+      visitor_id: isValidAnalyticsId(visitorId ?? undefined) ? visitorId : null,
+      visitor_key: context.visitorKey,
       path: normalizedPath,
       page_title: pageTitle ?? null,
       referrer: referrer ?? null,
+      country_code: context.countryCode,
+      region: context.region,
+      city: context.city,
       duration_seconds:
         typeof durationSeconds === "number" ? Math.round(durationSeconds) : null,
       is_bounce: typeof isBounce === "boolean" ? isBounce : true,
@@ -86,6 +95,12 @@ export async function POST(request: Request) {
 }
 
 export async function PATCH(request: Request) {
+  const context = await getRequestAnalyticsContext(request);
+
+  if (!context.shouldRecord) {
+    return NextResponse.json({ ok: true, skipped: true });
+  }
+
   let body: PageViewBody;
 
   try {
@@ -96,7 +111,7 @@ export async function PATCH(request: Request) {
 
   const { viewId, durationSeconds, isBounce } = body;
 
-  if (!isValidId(viewId)) {
+  if (!isValidAnalyticsId(viewId)) {
     return NextResponse.json({ error: "Missing view id." }, { status: 400 });
   }
 

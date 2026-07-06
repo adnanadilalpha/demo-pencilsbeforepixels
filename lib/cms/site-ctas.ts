@@ -16,6 +16,7 @@ export function resolveResearchPageCta(
   if (
     !label ||
     LEGACY_RESEARCH_CTA_LABEL.test(label) ||
+    href === "/nebraska-data" ||
     href === "/evidence" ||
     href === ""
   ) {

@@ -1,69 +1,46 @@
+import {
+  coerceNavLink,
+  NAV_SLOT_COUNT,
+  NAV_DESTINATIONS,
+} from "./nav-destinations";
 import type { NavLink } from "./types";
 
-/** Canonical header navigation — order matches public site menu. */
-export const HEADER_NAV_LINKS: NavLink[] = [
-  { label: "Our Mission", href: "#mission" },
-  { label: "Research", href: "/research" },
-  { label: "Nebraska Data", href: "/evidence" },
-  { label: "Device Opt Out", href: "#opt-out" },
-];
+/** @deprecated Use NAV_DESTINATIONS — kept for fallbacks. */
+export const HEADER_NAV_LINKS: NavLink[] = NAV_DESTINATIONS.map((destination) => ({
+  label: destination.defaultLabel,
+  href: destination.headerHref,
+}));
 
-/** Canonical footer navigation — hash links use `/#` for off-homepage routes. */
-export const FOOTER_NAV_LINKS: NavLink[] = [
-  { label: "Our Mission", href: "/#mission" },
-  { label: "Research", href: "/research" },
-  { label: "Nebraska Data", href: "/evidence" },
-  { label: "Device Opt Out", href: "/#opt-out" },
-];
+/** @deprecated Use NAV_DESTINATIONS — kept for fallbacks. */
+export const FOOTER_NAV_LINKS: NavLink[] = NAV_DESTINATIONS.map((destination) => ({
+  label: destination.defaultLabel,
+  href: destination.footerHref,
+}));
 
-const NAV_ORDER = ["mission", "research", "nebraska", "opt-out"] as const;
+function isLegacyNavLink(link: { label: string; href: string }): boolean {
+  const href = link.href.trim().toLowerCase();
+  const label = link.label.trim().toLowerCase();
 
-type NavKey = (typeof NAV_ORDER)[number];
-
-function hrefToNavKey(href: string): NavKey | null {
-  const normalized = href.trim().toLowerCase();
-
-  if (normalized.includes("resources")) return null;
-  if (normalized.includes("mission")) return "mission";
-  if (normalized.includes("research")) return "research";
-  if (normalized.includes("evidence")) return "nebraska";
-  if (normalized.includes("opt-out") || normalized.includes("opt_out")) {
-    return "opt-out";
-  }
-
-  return null;
+  return (
+    href.includes("mission") ||
+    href.includes("resources") ||
+    label.includes("mission") ||
+    label.includes("resources")
+  );
 }
 
-function labelToNavKey(label: string): NavKey | null {
-  const normalized = label.trim().toLowerCase();
+function normalizeNavLinksBySlot<
+  T extends { label: string; href: string; id?: string },
+>(links: T[], location: "header" | "footer"): T[] {
+  const filtered = links.filter(
+    (link) =>
+      link.label.trim().length > 0 &&
+      link.href.trim().length > 0 &&
+      !isLegacyNavLink(link),
+  );
 
-  if (normalized.includes("mission")) return "mission";
-  if (normalized.includes("research")) return "research";
-  if (
-    normalized.includes("nebraska") ||
-    normalized.includes("evidence") ||
-    normalized.includes("data")
-  ) {
-    return "nebraska";
-  }
-  if (normalized.includes("opt out") || normalized.includes("opt-out")) {
-    return "opt-out";
-  }
-
-  return null;
-}
-
-function linkToNavKey(link: { label: string; href: string }): NavKey | null {
-  return hrefToNavKey(link.href) ?? labelToNavKey(link.label);
-}
-
-function defaultsForLocation(location: "header" | "footer"): NavLink[] {
-  return location === "header" ? HEADER_NAV_LINKS : FOOTER_NAV_LINKS;
-}
-
-function defaultByKey(location: "header" | "footer") {
-  return new Map(
-    defaultsForLocation(location).map((link) => [hrefToNavKey(link.href)!, link]),
+  return Array.from({ length: NAV_SLOT_COUNT }, (_, index) =>
+    coerceNavLink(filtered[index], index, location),
   );
 }
 
@@ -71,23 +48,10 @@ export function normalizePublicNavLinks(
   links: NavLink[],
   location: "header" | "footer",
 ): NavLink[] {
-  const defaults = defaultByKey(location);
-  const matched = new Map<NavKey, NavLink>();
-
-  for (const link of links) {
-    const key = linkToNavKey(link);
-    if (!key) continue;
-
-    const canonical = defaults.get(key);
-    if (!canonical) continue;
-
-    matched.set(key, {
-      label: canonical.label,
-      href: canonical.href,
-    });
-  }
-
-  return NAV_ORDER.map((key) => matched.get(key) ?? defaults.get(key)!);
+  return normalizeNavLinksBySlot(links, location).map(({ label, href }) => ({
+    label,
+    href,
+  }));
 }
 
 export type EditableNavLinkRow = {
@@ -100,31 +64,5 @@ export function normalizeEditorNavLinks(
   links: EditableNavLinkRow[],
   location: "header" | "footer",
 ): EditableNavLinkRow[] {
-  const defaults = defaultByKey(location);
-  const matched = new Map<NavKey, EditableNavLinkRow>();
-
-  for (const link of links) {
-    const key = linkToNavKey(link);
-    if (!key) continue;
-
-    const canonical = defaults.get(key);
-    if (!canonical) continue;
-
-    matched.set(key, {
-      id: link.id,
-      label: canonical.label,
-      href: canonical.href,
-    });
-  }
-
-  return NAV_ORDER.map((key) => {
-    const existing = matched.get(key);
-    const canonical = defaults.get(key)!;
-
-    return {
-      id: existing?.id,
-      label: canonical.label,
-      href: canonical.href,
-    };
-  });
+  return normalizeNavLinksBySlot(links, location);
 }

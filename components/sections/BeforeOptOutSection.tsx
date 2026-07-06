@@ -1,5 +1,6 @@
 "use client";
 
+import { RichTextContent } from "@/components/cms/RichTextContent";
 import { Container } from "@/components/ui/Container";
 import { ScrollReveal } from "@/components/motion/ScrollReveal";
 import { normalizeBeforeOptOutContent } from "@/lib/cms/before-opt-out-content";
@@ -27,7 +28,7 @@ export function BeforeOptOutSection() {
         <div className="mx-auto flex w-full max-w-4xl flex-col">
           <ScrollReveal>
             <h2 className="font-display text-[clamp(2rem,4.5vw,3.5rem)] leading-[1.08] text-navy-800">
-              {reflectionTitle}
+              <RichTextContent content={reflectionTitle} inline />
             </h2>
           </ScrollReveal>
 
@@ -46,10 +47,10 @@ export function BeforeOptOutSection() {
                   >
                     {String(index + 1).padStart(2, "0")}
                   </span>
-                  <p className="min-w-0 flex-1 text-pretty font-display text-[clamp(1.5rem,3.2vw,2.375rem)] leading-[1.18] text-navy-800">
+                  <div className="min-w-0 flex-1 text-pretty font-display text-[clamp(1.5rem,3.2vw,2.375rem)] leading-[1.18] text-navy-800">
                     <span className="sr-only">{`Question ${index + 1}. `}</span>
-                    {question}
-                  </p>
+                    <RichTextContent content={question} inline />
+                  </div>
                 </div>
               </ScrollReveal>
             ))}
@@ -57,12 +58,14 @@ export function BeforeOptOutSection() {
 
           <ScrollReveal delay={0.28} className="mt-12 border-t border-navy-800/10 pt-8 sm:mt-14 sm:pt-10">
             <div className="flex max-w-3xl flex-col gap-4 sm:gap-5">
-              <p className="text-pretty text-[clamp(1.125rem,2.2vw,1.625rem)] font-semibold leading-snug text-navy-800">
-                {reflectionConclusion}
-              </p>
-              <p className="text-pretty text-[clamp(1rem,1.8vw,1.25rem)] leading-relaxed text-navy-800/78">
-                {reflectionCallToAction}
-              </p>
+              <RichTextContent
+                content={reflectionConclusion}
+                className="text-pretty text-[clamp(1.125rem,2.2vw,1.625rem)] font-semibold leading-snug text-navy-800"
+              />
+              <RichTextContent
+                content={reflectionCallToAction}
+                className="text-pretty text-[clamp(1rem,1.8vw,1.25rem)] leading-relaxed text-navy-800/78"
+              />
             </div>
           </ScrollReveal>
         </div>

@@ -2,6 +2,7 @@ import "server-only";
 
 import {
   buildAnalyticsForFilters,
+  type AnalyticsEventRecord,
   type PageViewRow,
 } from "@/lib/admin/analytics";
 import { fetchAdminUser } from "@/lib/admin/fetch-user";
@@ -60,6 +61,7 @@ export async function fetchDashboardData(
     resourcesRes,
     videosRes,
     pageViewsRes,
+    analyticsEventsRes,
   ] = await Promise.all([
     supabase
       .from("newsletter_subscribers")
@@ -85,12 +87,26 @@ export async function fetchDashboardData(
       .eq("visible", true),
     supabase
       .from("page_views")
-      .select("session_id, visitor_id, path, duration_seconds, is_bounce, created_at")
+      .select(
+        "session_id, visitor_id, visitor_key, path, duration_seconds, is_bounce, country_code, region, city, created_at",
+      )
+      .gte("created_at", sixMonthsAgo.toISOString()),
+    supabase
+      .from("analytics_events")
+      .select(
+        "session_id, visitor_id, visitor_key, event_name, event_label, country_code, region, city, created_at",
+      )
       .gte("created_at", sixMonthsAgo.toISOString()),
   ]);
 
   const pageViews = (pageViewsRes.data ?? []) as PageViewRow[];
-  const analytics = buildAnalyticsForFilters(pageViews, range, metric);
+  const analyticsEvents = (analyticsEventsRes.data ?? []) as AnalyticsEventRecord[];
+  const analytics = buildAnalyticsForFilters(
+    pageViews,
+    range,
+    metric,
+    analyticsEvents,
+  );
 
   return {
     greeting: getTimeGreeting(),

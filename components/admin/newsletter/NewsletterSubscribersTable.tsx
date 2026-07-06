@@ -6,11 +6,15 @@ import {
 } from "@/lib/admin/newsletter/format";
 import type { AdminNewsletterSubscriber } from "@/lib/admin/newsletter/types";
 import { NewsletterStatusBadge } from "@/components/admin/newsletter/NewsletterStatusBadge";
+import { cn } from "@/lib/utils";
 
 type NewsletterSubscribersTableProps = {
   subscribers: AdminNewsletterSubscriber[];
   emptyMessage?: string;
   busyId?: string | null;
+  selectedIds: Set<string>;
+  onToggleRow: (id: string) => void;
+  onToggleAll: (ids: string[]) => void;
   onUnsubscribe: (subscriber: AdminNewsletterSubscriber) => void;
   onReactivate: (subscriber: AdminNewsletterSubscriber) => void;
   onDelete: (subscriber: AdminNewsletterSubscriber) => void;
@@ -20,6 +24,9 @@ export function NewsletterSubscribersTable({
   subscribers,
   emptyMessage = "No subscribers yet.",
   busyId = null,
+  selectedIds,
+  onToggleRow,
+  onToggleAll,
   onUnsubscribe,
   onReactivate,
   onDelete,
@@ -32,12 +39,29 @@ export function NewsletterSubscribersTable({
     );
   }
 
+  const rowIds = subscribers.map((subscriber) => subscriber.id);
+  const allSelected =
+    rowIds.length > 0 && rowIds.every((id) => selectedIds.has(id));
+  const someSelected = rowIds.some((id) => selectedIds.has(id));
+
   return (
     <div className="overflow-hidden rounded-[14px] border border-navy-800/8 bg-white">
       <div className="overflow-x-auto">
-        <table className="min-w-[860px] w-full border-collapse text-left">
+        <table className="min-w-[920px] w-full border-collapse text-left">
           <thead>
             <tr className="border-b border-navy-800/6">
+              <th className="w-10 px-4 py-3">
+                <input
+                  type="checkbox"
+                  checked={allSelected}
+                  ref={(input) => {
+                    if (input) input.indeterminate = !allSelected && someSelected;
+                  }}
+                  onChange={() => onToggleAll(rowIds)}
+                  className="size-4 rounded border-navy-800/20"
+                  aria-label="Select all subscribers"
+                />
+              </th>
               <th className="px-5 py-3 font-mono text-[11px] font-medium uppercase tracking-wider text-body-muted">
                 Email
               </th>
@@ -57,13 +81,26 @@ export function NewsletterSubscribersTable({
           </thead>
           <tbody>
             {subscribers.map((subscriber) => {
-              const isBusy = busyId === subscriber.id;
+              const isBusy = busyId === subscriber.id || busyId === "bulk";
 
               return (
                 <tr
                   key={subscriber.id}
-                  className="border-b border-navy-800/4 last:border-b-0"
+                  className={cn(
+                    "border-b border-navy-800/4 last:border-b-0",
+                    selectedIds.has(subscriber.id) && "bg-gold-500/[0.05]",
+                  )}
                 >
+                  <td className="px-4 py-4">
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.has(subscriber.id)}
+                      disabled={isBusy}
+                      onChange={() => onToggleRow(subscriber.id)}
+                      className="size-4 rounded border-navy-800/20"
+                      aria-label={`Select ${subscriber.email}`}
+                    />
+                  </td>
                   <td className="px-5 py-4 text-sm text-navy-800">
                     {subscriber.email}
                   </td>

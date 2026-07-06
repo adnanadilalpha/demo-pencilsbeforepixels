@@ -14,6 +14,7 @@ type MobileNavProps = {
   onHashNavClick?: (
     event: React.MouseEvent<HTMLAnchorElement>,
     href: string,
+    label?: string,
   ) => void;
 };
 
@@ -75,7 +76,7 @@ export function MobileNav({
                 key={link.href}
                 href={href}
                 onClick={(event) => {
-                  onHashNavClick?.(event, href);
+                  onHashNavClick?.(event, href, link.label);
                   onClose();
                 }}
                 className={`group flex items-start gap-4 border-l-[2.5px] py-4 pl-5 pr-2 transition-colors ${

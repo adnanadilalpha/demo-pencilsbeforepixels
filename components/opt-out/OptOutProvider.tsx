@@ -9,9 +9,11 @@ import {
   type ReactNode,
 } from "react";
 import { OptOutLetterModal } from "@/components/opt-out/OptOutLetterModal";
+import { ANALYTICS_EVENTS } from "@/lib/analytics/event-types";
+import { trackAnalyticsEvent } from "@/lib/analytics/track-client";
 
 type OptOutContextValue = {
-  openOptOut: () => void;
+  openOptOut: (source?: string) => void;
   closeOptOut: () => void;
   isOpen: boolean;
 };
@@ -21,7 +23,11 @@ const OptOutContext = createContext<OptOutContextValue | null>(null);
 export function OptOutProvider({ children }: { children: ReactNode }) {
   const [isOpen, setIsOpen] = useState(false);
 
-  const openOptOut = useCallback(() => {
+  const openOptOut = useCallback((source?: string) => {
+    void trackAnalyticsEvent(ANALYTICS_EVENTS.OPT_OUT_OPEN, {
+      label: source,
+      metadata: source ? { source } : undefined,
+    });
     setIsOpen(true);
   }, []);
 

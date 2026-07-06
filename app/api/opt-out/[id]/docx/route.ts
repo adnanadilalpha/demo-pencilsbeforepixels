@@ -1,8 +1,10 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import { buildOptOutPackageDocx } from "@/lib/opt-out/build-package-docx";
-import { packageFilename } from "@/lib/opt-out/filenames";
 import { loadOptOutFormConfig } from "@/lib/opt-out/config";
-import type { OptOutLetterForm, OptOutSubmissionPayload } from "@/lib/opt-out/types";
+import { packageFilename } from "@/lib/opt-out/filenames";
+import { readCachedOptOutPackage } from "@/lib/opt-out/generate-packages";
+import { persistOptOutCachedPackage } from "@/lib/opt-out/persist-packages";
+import type { OptOutLetterForm } from "@/lib/opt-out/types";
 import { getVerifiedOptOutPayload } from "@/lib/opt-out/verify-access";
 import { getClientIp } from "@/lib/security/client-ip";
 import { checkRateLimit, rateLimitResponse } from "@/lib/security/rate-limit";
@@ -32,21 +34,29 @@ export async function GET(request: Request, context: RouteContext) {
       return NextResponse.json({ error: "Form data missing" }, { status: 400 });
     }
 
-    const config = await loadOptOutFormConfig();
-    config.defaultAnswers = payload.defaultAnswers ?? config.defaultAnswers;
+    let buffer = readCachedOptOutPackage(payload.cachedPackages, "docx");
 
-    const buffer = await buildOptOutPackageDocx(letter, config);
+    if (!buffer) {
+      const config = await loadOptOutFormConfig();
+      config.defaultAnswers = payload.defaultAnswers ?? config.defaultAnswers;
+      const built = await buildOptOutPackageDocx(letter, config);
+      buffer = built;
+      after(() =>
+        persistOptOutCachedPackage(id, payload, "docx", built).catch(() => {}),
+      );
+    }
+
     const filename = packageFilename(letter.studentName, "docx");
-
     return new NextResponse(new Uint8Array(buffer), {
       headers: {
         "Content-Type":
           "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
         "Content-Disposition": `attachment; filename="${filename}"`,
+        "Cache-Control": "private, max-age=31536000, immutable",
       },
     });
   } catch (err) {
-    console.error("DOCX generation error:", err);
-    return NextResponse.json({ error: "Failed to generate DOCX" }, { status: 500 });
+    console.error("DOCX download error:", err);
+    return NextResponse.json({ error: "Failed to download DOCX" }, { status: 500 });
   }
 }

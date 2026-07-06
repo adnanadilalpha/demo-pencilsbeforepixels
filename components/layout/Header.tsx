@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useLenis } from "lenis/react";
 import { useEffect, useState } from "react";
 import { Logo } from "@/components/layout/Logo";
@@ -12,11 +12,13 @@ import {
   sectionPaddingX,
 } from "@/components/ui/Container";
 import { isFixedHeaderRoute } from "@/lib/legal/constants";
-import { handleNavLinkClick, resolveNavHref, scrollToSection } from "@/lib/navigation";
+import { handleNavLinkClick, parseNavHref, resolveNavHref } from "@/lib/navigation";
 import { useSiteContent } from "@/lib/cms/hooks";
+import { ANALYTICS_EVENTS } from "@/lib/analytics/event-types";
+import { trackAnalyticsEvent } from "@/lib/analytics/track-client";
 
 const SCROLL_THRESHOLD = 48;
-const SECTION_IDS = ["mission", "resources", "opt-out"] as const;
+const SECTION_IDS = ["resources", "opt-out"] as const;
 
 function getActiveSectionHash(): string {
   const triggerY = window.innerHeight * 0.35;
@@ -47,16 +49,22 @@ function isNavLinkActive(
   pathname: string,
   activeHash: string,
 ): boolean {
-  if (href === "/evidence") {
-    return pathname === "/evidence" || pathname.startsWith("/evidence/");
+  if (href === "/nebraska-data" || href === "/evidence") {
+    return (
+      pathname === "/nebraska-data" ||
+      pathname.startsWith("/nebraska-data/") ||
+      pathname === "/evidence" ||
+      pathname.startsWith("/evidence/")
+    );
   }
 
   if (href === "/research") {
     return pathname === "/research" || pathname.startsWith("/research/");
   }
 
-  if (href.startsWith("#")) {
-    return pathname === "/" && activeHash === href;
+  const { path, hash } = parseNavHref(href);
+  if (hash) {
+    return pathname === path && activeHash === hash;
   }
 
   return pathname === href;
@@ -66,28 +74,30 @@ export function Header() {
   const { navigation } = useSiteContent();
   const navLinks = navigation.header;
   const pathname = usePathname();
+  const router = useRouter();
   const isFixedHeaderPage = isFixedHeaderRoute(pathname);
   const [isScrolled, setIsScrolled] = useState(isFixedHeaderPage);
   const [activeHash, setActiveHash] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
   const lenis = useLenis();
 
-  useEffect(() => {
-    if (pathname !== "/" || !lenis || !window.location.hash) return;
-
-    const hash = window.location.hash;
-    const frame = window.requestAnimationFrame(() => {
-      scrollToSection(hash, lenis);
-    });
-
-    return () => window.cancelAnimationFrame(frame);
-  }, [lenis, pathname]);
-
   const handleHashNavClick = (
     event: React.MouseEvent<HTMLAnchorElement>,
     href: string,
+    label?: string,
   ) => {
-    handleNavLinkClick(event, href, pathname, lenis, setActiveHash);
+    void trackAnalyticsEvent(ANALYTICS_EVENTS.NAV_CLICK, {
+      label,
+      metadata: { href },
+    });
+    handleNavLinkClick(
+      event,
+      href,
+      pathname,
+      lenis,
+      setActiveHash,
+      (url) => router.push(url),
+    );
   };
 
   useEffect(() => {
@@ -207,7 +217,7 @@ export function Header() {
                   <Link
                     key={link.href}
                     href={href}
-                    onClick={(event) => handleHashNavClick(event, href)}
+                    onClick={(event) => handleHashNavClick(event, href, link.label)}
                     className={`text-base font-medium leading-none transition-colors ${
                       isActive
                         ? "text-gold-500"

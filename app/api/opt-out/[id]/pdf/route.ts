@@ -1,10 +1,10 @@
-import { NextResponse } from "next/server";
-import {
-  buildOptOutPackagePdf,
-} from "@/lib/opt-out/build-package-pdf";
-import { packageFilename } from "@/lib/opt-out/filenames";
+import { NextResponse, after } from "next/server";
+import { buildOptOutPackagePdf } from "@/lib/opt-out/build-package-pdf";
 import { loadOptOutFormConfig } from "@/lib/opt-out/config";
-import type { OptOutLetterForm, OptOutSubmissionPayload } from "@/lib/opt-out/types";
+import { packageFilename } from "@/lib/opt-out/filenames";
+import { readCachedOptOutPackage } from "@/lib/opt-out/generate-packages";
+import { persistOptOutCachedPackage } from "@/lib/opt-out/persist-packages";
+import type { OptOutLetterForm } from "@/lib/opt-out/types";
 import { getVerifiedOptOutPayload } from "@/lib/opt-out/verify-access";
 import { getClientIp } from "@/lib/security/client-ip";
 import { checkRateLimit, rateLimitResponse } from "@/lib/security/rate-limit";
@@ -34,20 +34,28 @@ export async function GET(request: Request, context: RouteContext) {
       return NextResponse.json({ error: "Form data missing" }, { status: 400 });
     }
 
-    const config = await loadOptOutFormConfig();
-  config.defaultAnswers = payload.defaultAnswers ?? config.defaultAnswers;
+    let buffer = readCachedOptOutPackage(payload.cachedPackages, "pdf");
 
-    const buffer = await buildOptOutPackagePdf(letter, config);
+    if (!buffer) {
+      const config = await loadOptOutFormConfig();
+      config.defaultAnswers = payload.defaultAnswers ?? config.defaultAnswers;
+      const built = await buildOptOutPackagePdf(letter, config);
+      buffer = built;
+      after(() =>
+        persistOptOutCachedPackage(id, payload, "pdf", built).catch(() => {}),
+      );
+    }
+
     const filename = packageFilename(letter.studentName, "pdf");
-
     return new NextResponse(new Uint8Array(buffer), {
       headers: {
         "Content-Type": "application/pdf",
         "Content-Disposition": `attachment; filename="${filename}"`,
+        "Cache-Control": "private, max-age=31536000, immutable",
       },
     });
   } catch (err) {
-    console.error("PDF generation error:", err);
-    return NextResponse.json({ error: "Failed to generate PDF" }, { status: 500 });
+    console.error("PDF download error:", err);
+    return NextResponse.json({ error: "Failed to download PDF" }, { status: 500 });
   }
 }

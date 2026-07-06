@@ -3,6 +3,7 @@
 import type { ExpertQuote } from "@/lib/cms/types";
 import { adminInputClass, adminLabelClass } from "@/components/admin/admin-styles";
 import { MediaField } from "@/components/admin/content/MediaField";
+import { RichTextEditor } from "@/components/admin/content/RichTextEditor";
 
 type ExpertQuotesEditorProps = {
   quotes: ExpertQuote[];
@@ -43,21 +44,17 @@ export function ExpertQuotesEditor({
                   onChange={(value) => updateQuote(index, { name: value })}
                 />
               </div>
-              <Field
+              <RichTextEditor
                 label="Title"
                 value={quote.title}
+                compact
                 onChange={(value) => updateQuote(index, { title: value })}
               />
-              <div className="flex flex-col gap-1.5">
-                <label className={adminLabelClass}>Quote</label>
-                <textarea
-                  className={`${adminInputClass} min-h-20 rounded-[10px] py-3`}
-                  value={quote.quote}
-                  onChange={(event) =>
-                    updateQuote(index, { quote: event.target.value })
-                  }
-                />
-              </div>
+              <RichTextEditor
+                label="Quote"
+                value={quote.quote}
+                onChange={(value) => updateQuote(index, { quote: value })}
+              />
             </div>
 
             <div className="min-w-0 lg:sticky lg:top-0">

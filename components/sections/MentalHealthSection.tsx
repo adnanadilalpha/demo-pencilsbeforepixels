@@ -1,6 +1,8 @@
 "use client";
 
 import { ResearchMentalHealthChart } from "@/components/evidence/research/ResearchMentalHealthChart";
+import { RichTextContent } from "@/components/cms/RichTextContent";
+import { RICH_TEXT_LINKS_LIGHT_CLASS } from "@/lib/cms/rich-text";
 import { Container, sectionSubtextClass } from "@/components/ui/Container";
 import { DisplayHeading } from "@/components/ui/DisplayHeading";
 import { TextLink } from "@/components/ui/TextLink";
@@ -40,15 +42,19 @@ export function MentalHealthSection() {
   );
 
   return (
-    <section className="w-full bg-[#0b1e2e] py-16 max-lg:py-16 lg:py-24">
+    <section
+      className={`w-full bg-[#0b1e2e] py-16 max-lg:py-16 lg:py-24 ${RICH_TEXT_LINKS_LIGHT_CLASS}`}
+    >
       <Container className="flex flex-col gap-10 max-lg:gap-8 lg:gap-12">
         <ScrollReveal className="mx-auto flex w-full max-w-3xl flex-col items-center gap-5 text-center max-lg:gap-4 lg:gap-6">
           <DisplayHeading as="h2" className="text-gold-accent">
-            {headline}
+            <RichTextContent content={headline} inline />
           </DisplayHeading>
-          <p className={`${sectionSubtextClass} text-white/70 sm:leading-[1.6]`}>
-            {body}
-          </p>
+          <RichTextContent
+            content={body}
+            linkTone="light"
+            className={`${sectionSubtextClass} text-white/70 sm:leading-[1.6]`}
+          />
         </ScrollReveal>
 
         <ScrollReveal delay={0.12} offset={32} className="flex w-full flex-col gap-12 max-lg:gap-10 lg:gap-16">

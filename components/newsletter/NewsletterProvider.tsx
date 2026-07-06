@@ -12,6 +12,8 @@ import {
   type NewsletterSource,
   type OpenOptions,
 } from "@/components/newsletter/newsletter-context";
+import { ANALYTICS_EVENTS } from "@/lib/analytics/event-types";
+import { trackAnalyticsEvent } from "@/lib/analytics/track-client";
 
 export function NewsletterProvider({ children }: { children: ReactNode }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -19,6 +21,10 @@ export function NewsletterProvider({ children }: { children: ReactNode }) {
   const [prefillEmail, setPrefillEmail] = useState("");
 
   const openNewsletter = useCallback((options?: OpenOptions) => {
+    void trackAnalyticsEvent(ANALYTICS_EVENTS.NEWSLETTER_OPEN, {
+      label: options?.source,
+      metadata: options?.source ? { source: options.source } : undefined,
+    });
     setSource(options?.source);
     setPrefillEmail(options?.email ?? "");
     setIsOpen(true);

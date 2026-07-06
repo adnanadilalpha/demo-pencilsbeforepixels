@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { parseAdminDeleteIds } from "@/lib/admin/parse-delete-ids";
 import { fetchNewsletterPageData } from "@/lib/admin/newsletter/fetch";
 import type { NewsletterSubscriberStatus } from "@/lib/admin/newsletter/types";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -73,10 +74,8 @@ export async function DELETE(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { searchParams } = new URL(request.url);
-  const id = searchParams.get("id");
-
-  if (!id) {
+  const ids = await parseAdminDeleteIds(request);
+  if (!ids.length) {
     return NextResponse.json({ error: "Missing subscriber id." }, { status: 400 });
   }
 
@@ -84,7 +83,7 @@ export async function DELETE(request: Request) {
   const { error } = await supabase
     .from("newsletter_subscribers")
     .delete()
-    .eq("id", id);
+    .in("id", ids);
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });

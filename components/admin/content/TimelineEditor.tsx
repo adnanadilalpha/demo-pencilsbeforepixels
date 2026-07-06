@@ -7,6 +7,8 @@ import {
 } from "@/lib/cms/mission-slides";
 import { adminInputClass, adminLabelClass } from "@/components/admin/admin-styles";
 import { MediaField } from "@/components/admin/content/MediaField";
+import { RichTextEditor } from "@/components/admin/content/RichTextEditor";
+import { stripRichTextToPlain } from "@/lib/cms/rich-text";
 
 type TimelineEditorProps = {
   slides: TimelineSlide[];
@@ -41,21 +43,17 @@ export function TimelineEditor({ slides, onChange }: TimelineEditorProps) {
                 value={slide.number}
                 onChange={(value) => updateSlide(index, { number: value })}
               />
-              <Field
+              <RichTextEditor
                 label="Title"
                 value={slide.title}
+                compact
                 onChange={(value) => updateSlide(index, { title: value })}
               />
-              <div className="flex flex-col gap-1.5">
-                <label className={adminLabelClass}>Description</label>
-                <textarea
-                  className={`${adminInputClass} min-h-20 rounded-[10px] py-3`}
-                  value={slide.description}
-                  onChange={(event) =>
-                    updateSlide(index, { description: event.target.value })
-                  }
-                />
-              </div>
+              <RichTextEditor
+                label="Description"
+                value={slide.description}
+                onChange={(value) => updateSlide(index, { description: value })}
+              />
             </div>
 
             <div className="min-w-0 lg:sticky lg:top-0">
@@ -64,7 +62,7 @@ export function TimelineEditor({ slides, onChange }: TimelineEditorProps) {
                 value={slide.image}
                 folder="timeline"
                 filename={`mission-slide-${slide.number || index + 1}.jpg`}
-                altText={slide.title}
+                altText={stripRichTextToPlain(slide.title)}
                 onChange={(url) => updateSlide(index, { image: url })}
               />
             </div>

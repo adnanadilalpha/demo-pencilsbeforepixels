@@ -45,11 +45,17 @@ export type OptOutLetterMetrics = {
   lastDownloadFormat?: "pdf" | "docx";
 };
 
+export type OptOutCachedPackages = {
+  docx?: string;
+  pdf?: string;
+};
+
 export type OptOutSubmissionPayload = {
   letter: OptOutLetterForm;
   metrics: OptOutLetterMetrics;
   downloadToken?: string;
   defaultAnswers?: OptOutDefaultAnswers;
+  cachedPackages?: OptOutCachedPackages;
 };
 
 export function createDefaultForm(): OptOutLetterForm {

@@ -1,9 +1,13 @@
 import { NextResponse } from "next/server";
+import {
+  newsletterEmailErrorMessage,
+  validateNewsletterEmail,
+} from "@/lib/newsletter/validate-email";
 import { getClientIp } from "@/lib/security/client-ip";
 import { checkRateLimit, rateLimitResponse } from "@/lib/security/rate-limit";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-const HOURLY_LIMIT = 10;
+const HOURLY_LIMIT = 5;
 
 export async function POST(request: Request) {
   try {
@@ -16,11 +20,30 @@ export async function POST(request: Request) {
     const body = (await request.json()) as {
       email?: string;
       source?: string;
+      company?: string;
     };
 
-    const email = body.email?.trim().toLowerCase();
-    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      return NextResponse.json({ error: "Valid email required" }, { status: 400 });
+    // Honeypot — bots fill hidden fields; pretend success so they do not adapt.
+    if (body.company?.trim()) {
+      return NextResponse.json({ ok: true, status: "subscribed" });
+    }
+
+    const validation = validateNewsletterEmail(body.email ?? "");
+    if (!validation.ok) {
+      return NextResponse.json(
+        { error: newsletterEmailErrorMessage(validation.reason) },
+        { status: 400 },
+      );
+    }
+
+    const email = validation.email;
+    const perEmailLimit = checkRateLimit(
+      `newsletter-email:${email}`,
+      3,
+      60 * 60 * 1000,
+    );
+    if (!perEmailLimit.ok) {
+      return rateLimitResponse(perEmailLimit.retryAfterSeconds ?? 60);
     }
 
     const supabase = createAdminClient();

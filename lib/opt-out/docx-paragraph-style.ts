@@ -34,20 +34,20 @@ export function ensureTextRunsArial(
 ) {
   const fontXml = arialRunPropertiesXml(sizeHalfPoints);
 
-  const withRunProps = paragraphXml.replace(
-    /<w:rPr>([\s\S]*?)<\/w:rPr>/g,
-    (_match, inner: string) => `<w:rPr>${mergeRunProperties(inner, fontXml)}</w:rPr>`,
-  );
+  return paragraphXml.replace(/<w:r[\s\S]*?<\/w:r>/g, (run) => {
+    if (run.includes("<w:drawing") || !run.includes("<w:t")) {
+      return run;
+    }
 
-  return withRunProps.replace(
-    /<w:r(\s[^>]*)>((?![\s\S]*?<w:rPr>)[\s\S]*?<w:t[\s\S]*?<\/w:t>[\s\S]*?)<\/w:r>/g,
-    (_match, attrs: string, inner: string) => {
-      if (inner.includes("<w:drawing")) {
-        return `<w:r${attrs}>${inner}</w:r>`;
-      }
-      return `<w:r${attrs}><w:rPr>${fontXml}</w:rPr>${inner}</w:r>`;
-    },
-  );
+    if (run.includes("<w:rPr>")) {
+      return run.replace(
+        /<w:rPr>([\s\S]*?)<\/w:rPr>/,
+        (_match, inner: string) => `<w:rPr>${mergeRunProperties(inner, fontXml)}</w:rPr>`,
+      );
+    }
+
+    return run.replace(/<w:r(\s[^>]*)>/, `<w:r$1><w:rPr>${fontXml}</w:rPr>`);
+  });
 }
 
 type ParagraphSpacingOptions = {

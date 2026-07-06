@@ -32,6 +32,7 @@ export const LEGAL_CONTACT = {
 
 export function isFixedHeaderRoute(pathname: string) {
   return (
+    pathname.startsWith("/nebraska-data") ||
     pathname.startsWith("/evidence") ||
     pathname.startsWith("/research") ||
     pathname.startsWith("/privacy") ||

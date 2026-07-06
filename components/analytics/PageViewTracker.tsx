@@ -5,6 +5,7 @@ import {
   PAGE_VIEW_DEDUPE_MS,
   touchSession,
 } from "@/lib/analytics/client-session";
+import { canTrackAnalytics } from "@/lib/analytics/track-client";
 import { normalizeAnalyticsPath } from "@/lib/analytics/normalize-path";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef } from "react";
@@ -37,19 +38,21 @@ function writeLastTrack(track: LastTrack) {
 
 function shouldSkipDuplicate(path: string, now: number) {
   const last = readLastTrack();
-  return (
-    last?.path === path && now - last.at < PAGE_VIEW_DEDUPE_MS
-  );
+  return last?.path === path && now - last.at < PAGE_VIEW_DEDUPE_MS;
 }
 
 async function trackPageView(path: string) {
+  if (!canTrackAnalytics()) return;
+
   const session = getOrRefreshSession();
+  if (!session.id) return;
+
   const response = await fetch("/api/analytics/page-view", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       sessionId: session.id,
-      visitorId: session.visitorId,
+      visitorId: session.visitorId || null,
       path,
       pageTitle: document.title,
       referrer: document.referrer || null,
@@ -59,7 +62,9 @@ async function trackPageView(path: string) {
 
   if (!response.ok) return;
 
-  const payload = (await response.json()) as { id?: string };
+  const payload = (await response.json()) as { id?: string; skipped?: boolean };
+  if (payload.skipped) return;
+
   if (payload.id) {
     sessionStorage.setItem(VIEW_KEY, payload.id);
   }
@@ -69,6 +74,8 @@ async function trackPageView(path: string) {
 }
 
 async function updateDuration(startedAt: number, isBounce: boolean) {
+  if (!canTrackAnalytics()) return;
+
   const viewId = sessionStorage.getItem(VIEW_KEY);
   if (!viewId) return;
 
@@ -94,7 +101,7 @@ export function PageViewTracker() {
   const trackingRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!pathname || pathname.startsWith("/admin")) {
+    if (!pathname || pathname.startsWith("/admin") || !canTrackAnalytics()) {
       return;
     }
 

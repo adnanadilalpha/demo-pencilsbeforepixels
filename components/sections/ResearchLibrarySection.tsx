@@ -4,6 +4,7 @@ import { ContentImage } from "@/components/ui/ContentImage";
 import { BookCoverFrame } from "@/components/books/BookCoverFrame";
 import { useEffect, useState, type ReactNode } from "react";
 import { ScrollReveal } from "@/components/motion/ScrollReveal";
+import { RichTextContent } from "@/components/cms/RichTextContent";
 import { Container, sectionSubtextClass } from "@/components/ui/Container";
 import { DisplayHeading } from "@/components/ui/DisplayHeading";
 import { HorizontalScrollRow } from "@/components/ui/HorizontalScrollRow";
@@ -381,11 +382,12 @@ export function ResearchLibrarySection() {
       <Container className="flex flex-col gap-10 max-lg:gap-8 lg:gap-12">
         <ScrollReveal className="flex flex-col gap-3 max-lg:gap-3 lg:gap-4">
           <DisplayHeading as="h2" className="text-[#18263a]">
-            {headline}
+            <RichTextContent content={headline} inline />
           </DisplayHeading>
-          <p className={`${sectionSubtextClass} text-body-muted`}>
-            {body}
-          </p>
+          <RichTextContent
+            content={body}
+            className={`${sectionSubtextClass} text-body-muted`}
+          />
         </ScrollReveal>
 
         <div className="flex w-full flex-col items-stretch gap-8 max-lg:gap-7 lg:flex-row lg:items-start lg:gap-10">

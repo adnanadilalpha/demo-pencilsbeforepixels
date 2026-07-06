@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { RichTextContent } from "@/components/cms/RichTextContent";
 import { EvidenceLineChart } from "@/components/charts/EvidenceLineChart";
 import { PISA_CHART_LABELS } from "@/lib/charts/pisa-data";
 import type { AcademicChart } from "@/lib/academic-data/types";
@@ -30,8 +31,10 @@ export function PisaChartsSection({
   return (
     <div className={cn("flex flex-col gap-4 sm:gap-5", className)}>
       <div className="flex max-w-2xl flex-col gap-1.5 lg:gap-2">
-        <h3 className={researchSectionHeading}>{headerTitle}</h3>
-        <p className={researchBodyText}>{headerDescription}</p>
+        <h3 className={researchSectionHeading}>
+          <RichTextContent content={headerTitle} inline />
+        </h3>
+        <RichTextContent content={headerDescription} className={researchBodyText} />
       </div>
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 sm:gap-6 lg:gap-10">
         <EvidenceLineChart

@@ -20,10 +20,7 @@ export function DashboardView({ initialData }: DashboardViewProps) {
     const response = await fetch("/api/admin/dashboard", { cache: "no-store" });
     if (!response.ok) return;
     const nextData = (await response.json()) as DashboardData;
-    setData((current) => ({
-      ...nextData,
-      analytics: current.analytics,
-    }));
+    setData(nextData);
   }, []);
 
   useEffect(() => {
@@ -111,7 +108,7 @@ export function DashboardView({ initialData }: DashboardViewProps) {
         />
       </section>
 
-      <AnalyticsSection initialAnalytics={initialData.analytics} />
+      <AnalyticsSection initialAnalytics={data.analytics} />
     </div>
   );
 }

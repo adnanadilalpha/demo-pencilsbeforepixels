@@ -1,5 +1,6 @@
 "use client";
 
+import { RichTextContent } from "@/components/cms/RichTextContent";
 import { ContentImage } from "@/components/ui/ContentImage";
 import { Container } from "@/components/ui/Container";
 import { DisplayHeading } from "@/components/ui/DisplayHeading";
@@ -20,7 +21,7 @@ export function ExpertQuotesSection() {
               as="h2"
               className="uppercase text-navy-800 max-lg:leading-[1.08]"
             >
-              {headline}
+              <RichTextContent content={headline} inline />
             </DisplayHeading>
           </ScrollReveal>
 
@@ -40,7 +41,9 @@ export function ExpertQuotesSection() {
                 <div className="relative min-w-0 flex-1 lg:grid lg:grid-cols-[minmax(0,1fr)_140px] lg:items-start lg:gap-12">
                   <div className="min-w-0">
                     <blockquote className="text-xl leading-[1.35] tracking-[-0.01em] text-navy-800 max-lg:text-[clamp(1.125rem,3.8vw,1.5rem)] md:text-2xl md:leading-[1.32] lg:text-[32px] lg:leading-[1.3]">
-                      &ldquo;{expert.quote}&rdquo;
+                      &ldquo;
+                      <RichTextContent content={expert.quote} inline />
+                      &rdquo;
                     </blockquote>
 
                     <div
@@ -52,7 +55,7 @@ export function ExpertQuotesSection() {
                         {expert.name}
                       </cite>
                       <p className="text-base leading-snug text-navy-800/70">
-                        {expert.title}
+                        <RichTextContent content={expert.title} inline />
                       </p>
                     </div>
                   </div>

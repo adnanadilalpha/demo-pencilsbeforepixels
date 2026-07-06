@@ -21,7 +21,8 @@ export const LENIS_OPTIONS: LenisOptions = {
   wheelMultiplier: 0.92,
   touchMultiplier: 1,
   autoRaf: true,
-  allowNestedScroll: true,
+  // Horizontal overflow-x rows handle their own wheel; nested detection blocks page scroll.
+  allowNestedScroll: false,
   overscroll: false,
   syncTouch: false,
 };

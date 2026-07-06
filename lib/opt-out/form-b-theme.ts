@@ -2,6 +2,9 @@
 export const FORM_B_BODY_FONT = "Arial";
 export const FORM_B_SIGNATURE_FONT = "Agustina Signature";
 export const FORM_B_SIGNATURE_FONT_FILE = "Agustina-Signature.otf";
+/** Typed name signature in generated DOCX (embedded TTF). */
+export const FORM_B_DOCX_SIGNATURE_FONT = "Momo Signature";
+export const FORM_B_DOCX_SIGNATURE_FONT_FILE = "MomoSignature-Regular.ttf";
 /** Served from `public/fonts` — same file used for modal, PDF, and DOCX. */
 export const FORM_B_SIGNATURE_FONT_DIR = "public/fonts";
 export const FORM_B_SIGNATURE_FONT_URL = `/fonts/${FORM_B_SIGNATURE_FONT_FILE}`;

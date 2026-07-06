@@ -183,19 +183,11 @@ async function saveResearchSectionContent(content: SectionDraft) {
 }
 
 async function saveEvidenceResearchBundle(content: SectionDraft) {
-  const introKeys = ["label", "body"];
   const pageHeaderKeys = ["title", "subtitle"];
-
-  const introContent: SectionDraft = {};
   const pageHeaderContent: SectionDraft = {};
 
   for (const [key, value] of Object.entries(content)) {
-    if (introKeys.includes(key)) introContent[key] = value;
     if (pageHeaderKeys.includes(key)) pageHeaderContent[key] = value;
-  }
-
-  if (Object.keys(introContent).length > 0) {
-    await upsertSectionContent("evidence.intro", introContent, "research");
   }
 
   if (Object.keys(pageHeaderContent).length > 0) {
@@ -685,7 +677,6 @@ export async function fetchContentEditorState(): Promise<ContentEditorState> {
 
   for (const key of [
     "evidence.research_tab",
-    "evidence.intro",
     "evidence.nebraska",
     "evidence.district_66",
   ] as SectionKey[]) {

@@ -425,6 +425,17 @@ export async function renderFormBPdf(
 ): Promise<PDFDocument> {
   const pdf = await PDFDocument.create();
   const fonts = await embedPackageFonts(pdf);
+  await appendFormBToPdf(pdf, fonts, form, answers, pageBreakBefore);
+  return pdf;
+}
+
+export async function appendFormBToPdf(
+  pdf: PDFDocument,
+  fonts: PackageFonts,
+  form: OptOutLetterForm,
+  answers: OptOutDefaultAnswers,
+  pageBreakBefore: boolean,
+): Promise<void> {
   const availableHeight = PAGE_HEIGHT - MARGIN - FOOTER_MIN_Y;
 
   let scale = FORM_B_LAYOUT_SCALES[FORM_B_LAYOUT_SCALES.length - 1]!;
@@ -436,5 +447,4 @@ export async function renderFormBPdf(
   }
 
   await layoutFormB(pdf, form, answers, fonts, scale, pageBreakBefore);
-  return pdf;
 }

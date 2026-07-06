@@ -28,6 +28,20 @@ export type PopularPageRow = {
   views: number;
 };
 
+export type VisitorLocationRow = {
+  key: string;
+  label: string;
+  detail?: string;
+  visitors: number;
+};
+
+export type AnalyticsEventRow = {
+  eventName: string;
+  label: string;
+  count: number;
+  uniqueVisitors: number;
+};
+
 export type AdminUserSummary = {
   id: string;
   name: string;
@@ -51,6 +65,8 @@ export type DashboardData = {
     bounceRate: AnalyticsStatCard;
     visitorsOverTime: AnalyticsTimePoint[];
     popularPages: PopularPageRow[];
+    visitorLocations: VisitorLocationRow[];
+    topEvents: AnalyticsEventRow[];
     range: AnalyticsRange;
     metric: AnalyticsMetric;
   };

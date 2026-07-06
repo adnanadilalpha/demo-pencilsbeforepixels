@@ -1,9 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { TrendingUp } from "lucide-react";
 import { AdminStatCard } from "@/components/admin/AdminStatCard";
 import { PopularPagesChart } from "@/components/admin/dashboard/PopularPagesChart";
+import { TopEventsChart } from "@/components/admin/dashboard/TopEventsChart";
+import { VisitorLocationsChart } from "@/components/admin/dashboard/VisitorLocationsChart";
 import { VisitorsChart } from "@/components/admin/dashboard/VisitorsChart";
 import type {
   AnalyticsMetric,
@@ -59,7 +61,6 @@ export function AnalyticsSection({ initialAnalytics }: AnalyticsSectionProps) {
   const [range, setRange] = useState<AnalyticsRange>(initialAnalytics.range);
   const [metric, setMetric] = useState<AnalyticsMetric>(initialAnalytics.metric);
   const [isLoading, setIsLoading] = useState(false);
-  const skipInitialFetch = useRef(true);
 
   const loadAnalytics = useCallback(async (nextRange: AnalyticsRange, nextMetric: AnalyticsMetric) => {
     setIsLoading(true);
@@ -83,11 +84,6 @@ export function AnalyticsSection({ initialAnalytics }: AnalyticsSectionProps) {
   }, []);
 
   useEffect(() => {
-    if (skipInitialFetch.current) {
-      skipInitialFetch.current = false;
-      return;
-    }
-
     void loadAnalytics(range, metric);
   }, [range, metric, loadAnalytics]);
 
@@ -99,6 +95,13 @@ export function AnalyticsSection({ initialAnalytics }: AnalyticsSectionProps) {
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "page_views" },
+        () => {
+          void loadAnalytics(range, metric);
+        },
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "analytics_events" },
         () => {
           void loadAnalytics(range, metric);
         },
@@ -116,7 +119,7 @@ export function AnalyticsSection({ initialAnalytics }: AnalyticsSectionProps) {
         <div>
           <h2 className="text-sm font-semibold text-navy-800">Site analytics</h2>
           <p className="mt-1 text-sm text-body-muted">
-            Filter traffic trends and top pages for the selected period.
+            First-party usage analytics with page views, approximate location, and CTA events.
           </p>
         </div>
 
@@ -187,6 +190,19 @@ export function AnalyticsSection({ initialAnalytics }: AnalyticsSectionProps) {
           <h3 className="text-sm font-semibold text-navy-800">Popular pages</h3>
           <div className="mt-5">
             <PopularPagesChart pages={analytics.popularPages} />
+          </div>
+        </article>
+        <article className="rounded-[14px] border border-navy-800/8 bg-white p-5 shadow-[0_1px_3px_rgba(10,22,40,0.06)] sm:p-6">
+          <h3 className="text-sm font-semibold text-navy-800">Visitor locations</h3>
+          <div className="mt-5">
+            <VisitorLocationsChart locations={analytics.visitorLocations} />
+          </div>
+        </article>
+
+        <article className="rounded-[14px] border border-navy-800/8 bg-white p-5 shadow-[0_1px_3px_rgba(10,22,40,0.06)] sm:p-6">
+          <h3 className="text-sm font-semibold text-navy-800">CTA &amp; action events</h3>
+          <div className="mt-5">
+            <TopEventsChart events={analytics.topEvents} />
           </div>
         </article>
       </div>

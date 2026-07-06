@@ -1,6 +1,7 @@
 "use client";
 
 import { adminInputClass, adminLabelClass } from "@/components/admin/admin-styles";
+import { RichTextEditor } from "@/components/admin/content/RichTextEditor";
 import { MediaField } from "@/components/admin/content/MediaField";
 import { BrandLogoPreview } from "@/components/admin/settings/BrandLogoPreview";
 import { SocialLinksEditor } from "@/components/admin/settings/SocialLinksEditor";
@@ -155,20 +156,11 @@ export function GeneralSettingsTab({
             onChange={(value) => update("metaTitle", value)}
           />
 
-          <div className="flex flex-col gap-1.5">
-            <label className={adminLabelClass}>Meta description</label>
-            <textarea
-              value={general.metaDescription}
-              onChange={(event) =>
-                update("metaDescription", event.target.value)
-              }
-              rows={4}
-              className={cn(
-                adminInputClass,
-                "min-h-28 resize-y rounded-[10px] px-3 py-2.5",
-              )}
-            />
-          </div>
+          <RichTextEditor
+            label="Meta description"
+            value={general.metaDescription}
+            onChange={(value) => update("metaDescription", value)}
+          />
         </div>
       </SettingsCard>
 

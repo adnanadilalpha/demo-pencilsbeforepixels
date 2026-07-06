@@ -1,5 +1,6 @@
 "use client";
 
+import { RichTextContent } from "@/components/cms/RichTextContent";
 import { DualLineChartsWithLegend } from "@/components/charts/DualLineChartsWithLegend";
 import { LineChartWithLegend } from "@/components/charts/LineChartWithLegend";
 import { PisaChartsSection } from "@/components/charts/PisaChartsSection";
@@ -21,7 +22,7 @@ import {
   researchSectionTitle,
 } from "@/components/charts/chart-theme";
 import { NAEP_GRADE_CHART_IMAGES } from "@/lib/charts/naep-data";
-import { useSiteContent, useSection } from "@/lib/cms/hooks";
+import { useSiteContent } from "@/lib/cms/hooks";
 import { mergeResearchWithFallback } from "@/lib/research/merge";
 
 function NationalSlopeCard({ label, slope }: { label: string; slope: string }) {
@@ -38,46 +39,24 @@ function NationalSlopeCard({ label, slope }: { label: string; slope: string }) {
   );
 }
 
-function splitBodyParagraphs(body: string): string[] {
-  return body
-    .split(/\n\s*\n/)
-    .map((paragraph) => paragraph.trim())
-    .filter(Boolean);
-}
-
 export function EvidenceResearchTab() {
   const { research } = useSiteContent();
   const data = mergeResearchWithFallback(research);
-  const intro = useSection("evidence.intro");
-  const introLabel =
-    (intro.label as string) ?? "Nebraska in a National Context";
-  const introBody =
-    (intro.body as string) ??
-    "How does Nebraska's trend compare to the broader national pattern?";
 
   return (
     <div className="flex flex-col">
       <ResearchChartSection showDivider={false} noTopPadding>
         <div className="flex flex-col gap-8 lg:gap-12">
-          <div className="flex flex-col gap-3 lg:gap-4">
-            <p className={`${researchChartCaptionDark} text-gold-500`}>
-              {introLabel}
-            </p>
-            <p className={`max-w-3xl ${researchBodyText}`}>
-              {introBody}
-            </p>
-          </div>
-
           <div className="flex flex-col gap-6 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:items-start lg:gap-8">
             <div className="flex flex-col gap-4 lg:gap-6">
               <h2 className={researchSectionTitle}>
-                {data.naepNarrative.heading}
+                <RichTextContent content={data.naepNarrative.heading} inline />
               </h2>
-              <div className={`flex flex-col gap-3 md:gap-4 ${researchBodyText}`}>
-                {splitBodyParagraphs(data.naepNarrative.body).map((paragraph) => (
-                  <p key={paragraph}>{paragraph}</p>
-                ))}
-              </div>
+              <RichTextContent
+                content={data.naepNarrative.body}
+                className={`flex flex-col gap-3 md:gap-4 ${researchBodyText}`}
+                splitPlainParagraphs
+              />
             </div>
 
             <div className="grid grid-cols-2 gap-2.5 md:gap-3 lg:gap-4">
@@ -112,18 +91,22 @@ export function EvidenceResearchTab() {
           reading={data.grade8.reading}
         />
         <div className="mx-auto mt-4 max-w-3xl rounded-lg border border-[#e9e6df] bg-white px-4 py-4 text-center md:mt-5 lg:mt-6">
-          <p className={researchBodyTextItalic}>{data.naepNarrative.footnote}</p>
+          <RichTextContent
+            content={data.naepNarrative.footnote}
+            className={researchBodyTextItalic}
+          />
         </div>
       </ResearchChartSection>
 
       <ResearchChartSection>
         <div className="flex flex-col gap-3 lg:gap-4">
           <h2 className={researchSectionTitle}>
-            {data.internationalNarrative.heading}
+            <RichTextContent content={data.internationalNarrative.heading} inline />
           </h2>
-          <p className={`max-w-3xl ${researchBodyText}`}>
-            {data.internationalNarrative.body}
-          </p>
+          <RichTextContent
+            content={data.internationalNarrative.body}
+            className={`max-w-3xl ${researchBodyText}`}
+          />
         </div>
         <ResearchChartCard className="mt-4 md:mt-5 lg:mt-6">
           <PisaChartsSection
@@ -133,9 +116,10 @@ export function EvidenceResearchTab() {
             reading={data.pisa.reading}
             callout={
               <div className="mt-3 rounded-lg border border-navy-50 bg-navy-50 px-3 py-2.5 text-center md:mt-4 md:px-4 md:py-3 lg:mt-6">
-                <p className={researchBodyText}>
-                  {data.pisa.callout}
-                </p>
+                <RichTextContent
+                  content={data.pisa.callout}
+                  className={researchBodyText}
+                />
               </div>
             }
           />
@@ -146,11 +130,12 @@ export function EvidenceResearchTab() {
         <ResearchChartCard>
           <div className="mb-4 flex flex-col gap-1.5 lg:mb-8 lg:gap-2">
             <h3 className={researchSectionHeading}>
-              {data.oecd.title}
+              <RichTextContent content={data.oecd.title} inline />
             </h3>
-            <p className={researchBodyText}>
-              {data.oecd.subtitle}
-            </p>
+            <RichTextContent
+              content={data.oecd.subtitle}
+              className={researchBodyText}
+            />
           </div>
           <ResearchOecdScatter chart={data.oecd} />
         </ResearchChartCard>
@@ -161,9 +146,12 @@ export function EvidenceResearchTab() {
           <ResearchChartCard>
             <div className="mb-4 flex flex-col gap-1.5 lg:mb-8 lg:gap-2">
               <h3 className={researchSectionHeading}>
-                {data.timss.title}
+                <RichTextContent content={data.timss.title} inline />
               </h3>
-              <p className={researchBodyText}>{data.timss.description}</p>
+              <RichTextContent
+                content={data.timss.description}
+                className={researchBodyText}
+              />
             </div>
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-3 lg:gap-4">
               <ResearchBarChart
@@ -182,13 +170,18 @@ export function EvidenceResearchTab() {
           <ResearchChartCard>
             <div className="mb-4 flex flex-col gap-1.5 lg:mb-8 lg:gap-2">
               <h3 className={researchSectionHeading}>
-                {data.pirls.title}
+                <RichTextContent content={data.pirls.title} inline />
               </h3>
-              <p className={researchBodyText}>{data.pirls.description}</p>
+              <RichTextContent
+                content={data.pirls.description}
+                className={researchBodyText}
+              />
               {data.pirls.subtitle ? (
-                <p className={researchChartCaptionMutedDark}>
-                  {data.pirls.subtitle}
-                </p>
+                <RichTextContent
+                  content={data.pirls.subtitle}
+                  className={researchChartCaptionMutedDark}
+                  inline
+                />
               ) : null}
             </div>
             <ResearchBarChart
@@ -206,11 +199,12 @@ export function EvidenceResearchTab() {
         <ResearchChartCard>
           <div className="mb-4 flex flex-col gap-1.5 lg:mb-8 lg:gap-2">
             <h3 className={researchSectionHeading}>
-              {data.deviceTime.title}
+              <RichTextContent content={data.deviceTime.title} inline />
             </h3>
-            <p className={researchBodyText}>
-              {data.deviceTime.description}
-            </p>
+            <RichTextContent
+              content={data.deviceTime.description}
+              className={researchBodyText}
+            />
           </div>
           <LineChartWithLegend chart={data.deviceTime.chart} />
         </ResearchChartCard>
@@ -220,11 +214,12 @@ export function EvidenceResearchTab() {
         <ResearchChartCard>
           <div className="mb-4 flex flex-col gap-1.5 lg:mb-8 lg:gap-2">
             <h3 className={researchSectionHeading}>
-              {data.parcc.title}
+              <RichTextContent content={data.parcc.title} inline />
             </h3>
-            <p className={researchBodyText}>
-              {data.parcc.description}
-            </p>
+            <RichTextContent
+              content={data.parcc.description}
+              className={researchBodyText}
+            />
           </div>
           <DualLineChartsWithLegend
             left={data.parcc.math}
@@ -238,11 +233,12 @@ export function EvidenceResearchTab() {
         <ResearchChartCard>
           <div className="mb-4 flex flex-col gap-1.5 lg:mb-8 lg:gap-2">
             <h3 className={researchSectionHeading}>
-              {data.screenTime.title}
+              <RichTextContent content={data.screenTime.title} inline />
             </h3>
-            <p className={researchBodyText}>
-              {data.screenTime.description}
-            </p>
+            <RichTextContent
+              content={data.screenTime.description}
+              className={researchBodyText}
+            />
           </div>
           <ResearchScreenTimeChart data={data.screenTime} />
         </ResearchChartCard>

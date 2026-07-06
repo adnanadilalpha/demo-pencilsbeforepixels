@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Download } from "lucide-react";
+import { Download, Trash2 } from "lucide-react";
 import { AdminConfirmDeleteModal } from "@/components/admin/AdminConfirmDeleteModal";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { AdminStatCard } from "@/components/admin/AdminStatCard";
@@ -28,6 +28,10 @@ type OptOutViewProps = {
 
 type OptOutTab = "submissions" | "settings";
 
+type PendingDelete =
+  | { mode: "single"; submission: AdminOptOutSubmission }
+  | { mode: "bulk"; count: number };
+
 const TABS: { id: OptOutTab; label: string }[] = [
   { id: "submissions", label: "Submissions" },
   { id: "settings", label: "Schools & templates" },
@@ -38,8 +42,8 @@ export function OptOutView({ initialData }: OptOutViewProps) {
   const [activeTab, setActiveTab] = useState<OptOutTab>("submissions");
   const [query, setQuery] = useState("");
   const [busyId, setBusyId] = useState<string | null>(null);
-  const [pendingDelete, setPendingDelete] =
-    useState<AdminOptOutSubmission | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [pendingDelete, setPendingDelete] = useState<PendingDelete | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [schools, setSchools] = useState<OptOutSchool[]>([]);
   const [config, setConfig] = useState<OptOutFormConfig | null>(null);
@@ -115,6 +119,28 @@ export function OptOutView({ initialData }: OptOutViewProps) {
     });
   }, [data.submissions, query]);
 
+  const selectedSubmissions = useMemo(
+    () => filteredSubmissions.filter((submission) => selectedIds.has(submission.id)),
+    [filteredSubmissions, selectedIds],
+  );
+
+  const toggleRow = (id: string) => {
+    setSelectedIds((current) => {
+      const next = new Set(current);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleAll = (ids: string[]) => {
+    setSelectedIds((current) => {
+      const allSelected = ids.every((id) => current.has(id));
+      if (allSelected) return new Set();
+      return new Set(ids);
+    });
+  };
+
   const handleExport = () => {
     const csv = submissionsToCsv(filteredSubmissions);
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
@@ -168,17 +194,16 @@ export function OptOutView({ initialData }: OptOutViewProps) {
     }
   };
 
-  const confirmDelete = async () => {
-    if (!pendingDelete) return;
-
-    setBusyId(pendingDelete.id);
+  const deleteSubmissions = async (submissions: AdminOptOutSubmission[]) => {
+    setBusyId(submissions.length === 1 ? submissions[0].id : "bulk");
     setActionError(null);
 
     try {
-      const response = await fetch(
-        `/api/admin/opt-out?id=${encodeURIComponent(pendingDelete.id)}`,
-        { method: "DELETE" },
-      );
+      const response = await fetch("/api/admin/opt-out", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: submissions.map((submission) => submission.id) }),
+      });
 
       if (!response.ok) {
         const body = (await response.json()) as { error?: string };
@@ -188,6 +213,7 @@ export function OptOutView({ initialData }: OptOutViewProps) {
       const next = (await response.json()) as OptOutPageData;
       setData(next);
       setPendingDelete(null);
+      setSelectedIds(new Set());
     } catch (error) {
       setActionError(
         error instanceof Error ? error.message : "Failed to delete submission.",
@@ -233,6 +259,13 @@ export function OptOutView({ initialData }: OptOutViewProps) {
   };
 
   const { stats } = data;
+
+  const deleteLabel =
+    pendingDelete?.mode === "bulk"
+      ? `${pendingDelete.count} selected submission${pendingDelete.count === 1 ? "" : "s"}`
+      : pendingDelete?.mode === "single"
+        ? pendingDelete.submission.parentName
+        : "";
 
   return (
     <div className="flex w-full flex-col gap-8">
@@ -320,11 +353,41 @@ export function OptOutView({ initialData }: OptOutViewProps) {
         <p className="text-sm text-red-600">{actionError}</p>
       ) : null}
 
+      {selectedIds.size > 0 ? (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-[14px] border border-gold-500/20 bg-gold-500/10 px-4 py-3">
+          <p className="text-sm font-medium text-navy-800">
+            {selectedIds.size} submission{selectedIds.size === 1 ? "" : "s"} selected
+          </p>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setSelectedIds(new Set())}
+              className="rounded-[10px] px-3 py-2 text-sm font-medium text-body-muted transition-colors hover:text-navy-800"
+            >
+              Clear
+            </button>
+            <button
+              type="button"
+              onClick={() =>
+                setPendingDelete({ mode: "bulk", count: selectedIds.size })
+              }
+              className="inline-flex items-center gap-2 rounded-[10px] border border-red-600/20 bg-white px-3 py-2 text-sm font-medium text-red-600 transition-colors hover:bg-red-50"
+            >
+              <Trash2 className="size-4" />
+              Delete selected
+            </button>
+          </div>
+        </div>
+      ) : null}
+
       <OptOutSubmissionsTable
         submissions={filteredSubmissions}
         query={query}
         onQueryChange={setQuery}
         busyId={busyId}
+        selectedIds={selectedIds}
+        onToggleRow={toggleRow}
+        onToggleAll={toggleAll}
         emptyMessage={
           query.trim()
             ? "No submissions match your search."
@@ -333,19 +396,31 @@ export function OptOutView({ initialData }: OptOutViewProps) {
         onDownload={(submission, format) =>
           void handleDownload(submission, format)
         }
-        onDelete={setPendingDelete}
+        onDelete={(submission) =>
+          setPendingDelete({ mode: "single", submission })
+        }
       />
 
       <AdminConfirmDeleteModal
         open={pendingDelete !== null}
-        title="Delete submission"
-        itemName={pendingDelete?.parentName ?? "this submission"}
-        confirming={busyId !== null && pendingDelete?.id === busyId}
+        title={
+          pendingDelete?.mode === "bulk" ? "Delete submissions" : "Delete submission"
+        }
+        itemName={deleteLabel}
+        confirming={busyId !== null}
         onClose={() => {
           if (busyId) return;
           setPendingDelete(null);
         }}
-        onConfirm={() => void confirmDelete()}
+        onConfirm={() => {
+          if (pendingDelete?.mode === "bulk") {
+            void deleteSubmissions(selectedSubmissions);
+            return;
+          }
+          if (pendingDelete?.mode === "single") {
+            void deleteSubmissions([pendingDelete.submission]);
+          }
+        }}
       />
         </>
       )}

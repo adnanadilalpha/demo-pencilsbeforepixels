@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import type { AcademicDatasetCopy } from "@/lib/admin/academic-dataset-defaults";
 import { adminInputClass, adminLabelClass } from "@/components/admin/admin-styles";
+import { RichTextEditor } from "@/components/admin/content/RichTextEditor";
 import { cn } from "@/lib/utils";
 
 type AcademicDatasetsEditorProps = {
@@ -98,9 +99,10 @@ export function AcademicDatasetsEditor({
             value={activeDataset.label}
             onChange={(value) => updateDataset(resolvedIndex, { label: value })}
           />
-          <Field
+          <RichTextEditor
             label="Title"
             value={activeDataset.title}
+            compact
             onChange={(value) => updateDataset(resolvedIndex, { title: value })}
           />
           <Field
@@ -136,19 +138,17 @@ function Field({
 }) {
   return (
     <div className="flex flex-col gap-1.5">
-      <label className={adminLabelClass}>{label}</label>
       {multiline ? (
-        <textarea
-          className={`${adminInputClass} min-h-24 rounded-[10px] border-navy-800/12 bg-white py-3`}
-          value={value}
-          onChange={(event) => onChange(event.target.value)}
-        />
+        <RichTextEditor label={label} value={value} onChange={onChange} />
       ) : (
-        <input
-          className={`${adminInputClass} border-navy-800/12 bg-white`}
-          value={value}
-          onChange={(event) => onChange(event.target.value)}
-        />
+        <>
+          <label className={adminLabelClass}>{label}</label>
+          <input
+            className={`${adminInputClass} border-navy-800/12 bg-white`}
+            value={value}
+            onChange={(event) => onChange(event.target.value)}
+          />
+        </>
       )}
     </div>
   );

@@ -1,19 +1,41 @@
 import { getPageLabel } from "@/lib/admin/page-labels";
+import {
+  ANALYTICS_EVENT_LABELS,
+  type AnalyticsEventName,
+} from "@/lib/analytics/event-types";
 import type {
+  AnalyticsEventRow,
   AnalyticsMetric,
   AnalyticsRange,
   AnalyticsStatCard,
   AnalyticsTimePoint,
   PopularPageRow,
+  VisitorLocationRow,
 } from "@/lib/admin/types";
 import { formatCount, formatDuration, formatPercentChange } from "@/lib/admin/format";
 
 export type PageViewRow = {
   session_id: string;
   visitor_id?: string | null;
+  visitor_key?: string | null;
   path: string;
   duration_seconds: number | null;
   is_bounce: boolean;
+  country_code?: string | null;
+  region?: string | null;
+  city?: string | null;
+  created_at: string;
+};
+
+export type AnalyticsEventRecord = {
+  event_name: string;
+  event_label?: string | null;
+  visitor_id?: string | null;
+  visitor_key?: string | null;
+  session_id: string;
+  country_code?: string | null;
+  region?: string | null;
+  city?: string | null;
   created_at: string;
 };
 
@@ -172,15 +194,21 @@ function countUniqueSessions(views: PageViewRow[]): number {
   return new Set(views.map((view) => view.session_id)).size;
 }
 
+function getVisitorDedupKey(row: {
+  visitor_id?: string | null;
+  visitor_key?: string | null;
+  session_id: string;
+}): string {
+  if (row.visitor_id) return `v:${row.visitor_id}`;
+  if (row.visitor_key) return `k:${row.visitor_key}`;
+  return `s:${row.session_id}`;
+}
+
 function countUniqueVisitors(views: PageViewRow[]): number {
   const ids = new Set<string>();
 
   for (const view of views) {
-    if (view.visitor_id) {
-      ids.add(view.visitor_id);
-      continue;
-    }
-    ids.add(`session:${view.session_id}`);
+    ids.add(getVisitorDedupKey(view));
   }
 
   return ids.size;
@@ -251,6 +279,89 @@ export function buildPopularPages(
     }));
 }
 
+function formatCountryLabel(countryCode: string | null | undefined): string {
+  if (!countryCode || countryCode === "ZZ") return "Unknown";
+  if (countryCode === "LOCAL") return "Local testing";
+
+  try {
+    return (
+      new Intl.DisplayNames(["en"], { type: "region" }).of(countryCode) ??
+      countryCode
+    );
+  } catch {
+    return countryCode;
+  }
+}
+
+export function buildVisitorLocations(
+  views: PageViewRow[],
+  limit = 6,
+): VisitorLocationRow[] {
+  const grouped = new Map<string, { visitors: Set<string>; detail?: string }>();
+
+  for (const view of views) {
+    const country = view.country_code?.trim().toUpperCase();
+    if (!country || country === "ZZ") continue;
+
+    const entry = grouped.get(country) ?? { visitors: new Set<string>() };
+    entry.visitors.add(getVisitorDedupKey(view));
+
+    if (view.city || view.region) {
+      entry.detail = [view.city, view.region].filter(Boolean).join(", ");
+    }
+
+    grouped.set(country, entry);
+  }
+
+  return [...grouped.entries()]
+    .map(([key, entry]) => ({
+      key,
+      label:
+        key === "LOCAL" ? "Local testing" : formatCountryLabel(key),
+      detail: entry.detail,
+      visitors: entry.visitors.size,
+    }))
+    .sort((a, b) => b.visitors - a.visitors)
+    .slice(0, limit);
+}
+
+export function buildTopEvents(
+  events: AnalyticsEventRecord[],
+  limit = 6,
+): AnalyticsEventRow[] {
+  const grouped = new Map<
+    string,
+    { count: number; visitors: Set<string>; label?: string | null }
+  >();
+
+  for (const event of events) {
+    const existing = grouped.get(event.event_name) ?? {
+      count: 0,
+      visitors: new Set<string>(),
+      label: event.event_label,
+    };
+
+    existing.count += 1;
+    existing.visitors.add(getVisitorDedupKey(event));
+    if (event.event_label) {
+      existing.label = event.event_label;
+    }
+
+    grouped.set(event.event_name, existing);
+  }
+
+  return [...grouped.entries()]
+    .map(([eventName, entry]) => ({
+      eventName,
+      label:
+        ANALYTICS_EVENT_LABELS[eventName as AnalyticsEventName] ?? eventName,
+      count: entry.count,
+      uniqueVisitors: entry.visitors.size,
+    }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, limit);
+}
+
 export function computeBounceRate(views: PageViewRow[]): number {
   const sessions = new Map<string, { count: number; bounced: boolean }>();
 
@@ -278,6 +389,7 @@ export function computeBounceRate(views: PageViewRow[]): number {
 export function buildAnalyticsSummary(
   allViews: PageViewRow[],
   range: AnalyticsRange,
+  allEvents: AnalyticsEventRecord[] = [],
   reference = new Date(),
 ): {
   totalVisitors: AnalyticsStatCard;
@@ -286,8 +398,11 @@ export function buildAnalyticsSummary(
   bounceRate: AnalyticsStatCard;
   visitorsOverTime: AnalyticsTimePoint[];
   popularPages: PopularPageRow[];
+  visitorLocations: VisitorLocationRow[];
+  topEvents: AnalyticsEventRow[];
 } {
   const currentViews = filterViewsByRange(allViews, range, reference);
+  const currentEvents = filterEventsByRange(allEvents, range, reference);
   const currentStart = getRangeStart(range, reference);
   const previousStart = getPreviousRangeStart(range, reference);
   const previousViews = filterViewsBetween(allViews, previousStart, currentStart);
@@ -323,16 +438,28 @@ export function buildAnalyticsSummary(
     },
     visitorsOverTime: buildVisitorsOverTime(currentViews, range, "sessions"),
     popularPages: buildPopularPages(currentViews),
+    visitorLocations: buildVisitorLocations(currentViews),
+    topEvents: buildTopEvents(currentEvents),
   };
+}
+
+function filterEventsByRange(
+  events: AnalyticsEventRecord[],
+  range: AnalyticsRange,
+  reference = new Date(),
+): AnalyticsEventRecord[] {
+  const start = getRangeStart(range, reference);
+  return events.filter((event) => new Date(event.created_at) >= start);
 }
 
 export function buildAnalyticsForFilters(
   allViews: PageViewRow[],
   range: AnalyticsRange,
   metric: AnalyticsMetric,
+  allEvents: AnalyticsEventRecord[] = [],
   reference = new Date(),
 ) {
-  const summary = buildAnalyticsSummary(allViews, range, reference);
+  const summary = buildAnalyticsSummary(allViews, range, allEvents, reference);
 
   return {
     ...summary,

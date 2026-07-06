@@ -115,8 +115,12 @@ export function PrivacyPolicyContent() {
           ]}
         />
         <p>
-          You can control cookies through your browser settings. Disabling some
-          cookies may affect how certain parts of the site work.
+          We use first-party analytics similar to common web analytics tools: a
+          persistent device identifier in local storage, page views, and
+          approximate location inferred from your connection (country/region/city).
+          We do not store your raw IP address in analytics reports. You can
+          control cookies through your browser settings. Disabling storage may
+          affect how certain parts of the site work.
         </p>
       </LegalSection>
 
@@ -128,7 +132,7 @@ export function PrivacyPolicyContent() {
         <LegalList
           items={[
             "YouTube for embedded educational videos",
-            "Analytics providers such as Google Analytics",
+            "First-party analytics on our own infrastructure (usage and approximate location)",
             "Email and newsletter delivery services",
             "Hosting and infrastructure providers, including Supabase and Vercel",
           ]}

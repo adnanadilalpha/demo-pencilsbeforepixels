@@ -11,6 +11,9 @@ type OptOutSubmissionsTableProps = {
   query: string;
   onQueryChange: (value: string) => void;
   busyId?: string | null;
+  selectedIds: Set<string>;
+  onToggleRow: (id: string) => void;
+  onToggleAll: (ids: string[]) => void;
   emptyMessage?: string;
   onDownload: (submission: AdminOptOutSubmission, format: "pdf" | "docx") => void;
   onDelete: (submission: AdminOptOutSubmission) => void;
@@ -21,10 +24,18 @@ export function OptOutSubmissionsTable({
   query,
   onQueryChange,
   busyId = null,
+  selectedIds,
+  onToggleRow,
+  onToggleAll,
   emptyMessage = "No submissions yet.",
   onDownload,
   onDelete,
 }: OptOutSubmissionsTableProps) {
+  const rowIds = submissions.map((submission) => submission.id);
+  const allSelected =
+    rowIds.length > 0 && rowIds.every((id) => selectedIds.has(id));
+  const someSelected = rowIds.some((id) => selectedIds.has(id));
+
   return (
     <div className="overflow-hidden rounded-[14px] border border-navy-800/8 bg-white">
       <div className="border-b border-navy-800/6 px-5 py-4">
@@ -47,9 +58,21 @@ export function OptOutSubmissionsTable({
 
       {submissions.length ? (
         <div className="overflow-x-auto">
-          <table className="min-w-[920px] w-full border-collapse text-left">
+          <table className="min-w-[980px] w-full border-collapse text-left">
             <thead>
               <tr className="border-b border-navy-800/6">
+                <th className="w-10 px-4 py-3">
+                  <input
+                    type="checkbox"
+                    checked={allSelected}
+                    ref={(input) => {
+                      if (input) input.indeterminate = !allSelected && someSelected;
+                    }}
+                    onChange={() => onToggleAll(rowIds)}
+                    className="size-4 rounded border-navy-800/20"
+                    aria-label="Select all submissions"
+                  />
+                </th>
                 <th className="px-5 py-3 font-mono text-[11px] font-medium uppercase tracking-[0.05em] text-body-muted">
                   Parent
                 </th>
@@ -72,13 +95,26 @@ export function OptOutSubmissionsTable({
             </thead>
             <tbody>
               {submissions.map((submission) => {
-                const isBusy = busyId === submission.id;
+                const isBusy = busyId === submission.id || busyId === "bulk";
 
                 return (
                   <tr
                     key={submission.id}
-                    className="border-b border-navy-800/4 last:border-b-0"
+                    className={cn(
+                      "border-b border-navy-800/4 last:border-b-0",
+                      selectedIds.has(submission.id) && "bg-gold-500/[0.05]",
+                    )}
                   >
+                    <td className="px-4 py-4">
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.has(submission.id)}
+                        disabled={isBusy}
+                        onChange={() => onToggleRow(submission.id)}
+                        className="size-4 rounded border-navy-800/20"
+                        aria-label={`Select ${submission.parentName}`}
+                      />
+                    </td>
                     <td className="px-5 py-4 text-sm font-medium text-navy-800">
                       {submission.parentName}
                     </td>

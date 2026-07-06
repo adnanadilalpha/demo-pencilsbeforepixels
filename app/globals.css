@@ -274,7 +274,7 @@ input.font-agustina-signature {
 
 .timeline-snap-slide {
   scroll-snap-align: start;
-  scroll-snap-stop: always;
+  scroll-snap-stop: normal;
 }
 
 /* —— Story-driven button motion (pencil press + graphite shimmer) —— */
@@ -510,4 +510,114 @@ input.font-agustina-signature {
     opacity: 1 !important;
     transform: none !important;
   }
+}
+
+/* Rich text editor (admin CMS) */
+.rich-text-editor .ProseMirror,
+.rich-text-editor__content {
+  box-sizing: border-box;
+  min-height: 7rem;
+  padding: 1rem;
+  font-family: inherit;
+  font-size: 0.875rem;
+  line-height: 1.55;
+  color: var(--color-navy-800);
+  outline: none;
+}
+
+.rich-text-editor__content--compact,
+.rich-text-editor .ProseMirror.rich-text-editor__content--compact {
+  min-height: 3rem;
+}
+
+.rich-text-editor .ProseMirror p,
+.rich-text-editor__content p {
+  margin: 0;
+}
+
+.rich-text-editor .ProseMirror p + p,
+.rich-text-editor__content p + p {
+  margin-top: 0.75rem;
+}
+
+.rich-text-editor .ProseMirror p.is-editor-empty:first-child::before,
+.rich-text-editor__content p.is-editor-empty:first-child::before {
+  color: rgb(15 31 61 / 0.4);
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
+/* Rich text content (public site) */
+.rich-text-content p {
+  margin: 0;
+}
+
+.rich-text-content p + p {
+  margin-top: 0.75rem;
+}
+
+.rich-text-content strong {
+  font-weight: 600;
+}
+
+.rich-text-content em {
+  font-style: italic;
+}
+
+.rich-text-content u {
+  text-decoration: underline;
+}
+
+.rich-text-editor .ProseMirror a,
+.rich-text-editor__link {
+  color: #1c4fd9;
+  cursor: pointer;
+  font-weight: 500;
+  text-decoration: underline;
+  text-decoration-color: #1c4fd9;
+  text-underline-offset: 2px;
+}
+
+.rich-text-editor .ProseMirror a:hover,
+.rich-text-editor__link:hover {
+  background-color: rgb(28 79 217 / 0.08);
+  color: #0f2f8a;
+  text-decoration-color: #0f2f8a;
+}
+
+.rich-text-content a {
+  color: var(--color-navy-500);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.rich-text-content a:hover {
+  color: var(--color-navy-800);
+}
+
+.rich-text-links-light .rich-text-content a,
+.rich-text-content.rich-text-content--links-light a {
+  color: var(--color-gold-accent);
+  text-decoration-color: var(--color-gold-accent);
+}
+
+.rich-text-links-light .rich-text-content a:hover,
+.rich-text-content.rich-text-content--links-light a:hover {
+  color: #fff;
+  text-decoration-color: #fff;
+}
+
+/* Gold headings on dark sections — white links for contrast */
+.rich-text-links-light .text-gold-accent .rich-text-content a,
+.rich-text-links-light .text-gold-500 .rich-text-content a {
+  color: #fff;
+  text-decoration-color: rgb(255 255 255 / 0.85);
+}
+
+.rich-text-links-light .text-gold-accent .rich-text-content a:hover,
+.rich-text-links-light .text-gold-500 .rich-text-content a:hover {
+  color: #fff;
+  text-decoration-color: #fff;
 }

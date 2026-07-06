@@ -15,7 +15,7 @@ const text = (key: string, label: string): ContentField => ({
 const area = (key: string, label: string): ContentField => ({
   key,
   label,
-  type: "textarea",
+  type: "richText",
 });
 
 const pdf = (key: string, label: string): ContentField => ({

@@ -1,6 +1,7 @@
 "use client";
 
 import { adminInputClass, adminLabelClass } from "@/components/admin/admin-styles";
+import { RichTextEditor } from "@/components/admin/content/RichTextEditor";
 import {
   BEFORE_OPT_OUT_QUESTION_COUNT,
   type BeforeOptOutContent,
@@ -39,9 +40,10 @@ export function BeforeOptOutEditor({
         </p>
       </div>
 
-      <Field
+      <RichTextEditor
         label="Heading"
         value={value.reflectionTitle}
+        compact
         onChange={(next) => onChange({ ...value, reflectionTitle: next })}
       />
 
@@ -51,33 +53,22 @@ export function BeforeOptOutEditor({
             key={index}
             className="rounded-[12px] border border-navy-800/10 bg-paper-50 p-4"
           >
-            <label
-              htmlFor={`before-opt-out-question-${index}`}
-              className="mb-2 block text-sm font-semibold text-navy-800"
-            >
-              Question {index + 1}
-            </label>
-            <textarea
-              id={`before-opt-out-question-${index}`}
-              rows={3}
+            <RichTextEditor
+              label={`Question ${index + 1}`}
               value={question}
-              onChange={(event) => updateQuestion(index, event.target.value)}
-              className={cn(
-                adminInputClass,
-                "min-h-24 resize-y rounded-[10px] px-3 py-2.5",
-              )}
+              onChange={(value) => updateQuestion(index, value)}
             />
           </li>
         ))}
       </ol>
 
-      <TextAreaField
+      <RichTextEditor
         label="Conclusion"
         value={value.reflectionConclusion}
         onChange={(next) => onChange({ ...value, reflectionConclusion: next })}
       />
 
-      <TextAreaField
+      <RichTextEditor
         label="Call to action"
         value={value.reflectionCallToAction}
         onChange={(next) => onChange({ ...value, reflectionCallToAction: next })}
@@ -103,31 +94,6 @@ function Field({
         value={value}
         onChange={(event) => onChange(event.target.value)}
         className={cn(adminInputClass, "h-11 rounded-[10px] px-3")}
-      />
-    </div>
-  );
-}
-
-function TextAreaField({
-  label,
-  value,
-  onChange,
-}: {
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-}) {
-  return (
-    <div className="flex flex-col gap-1.5">
-      <label className={adminLabelClass}>{label}</label>
-      <textarea
-        rows={3}
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        className={cn(
-          adminInputClass,
-          "min-h-24 resize-y rounded-[10px] px-3 py-2.5",
-        )}
       />
     </div>
   );

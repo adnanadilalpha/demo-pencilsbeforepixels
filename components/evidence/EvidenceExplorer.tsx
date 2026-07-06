@@ -1,5 +1,6 @@
 "use client";
 
+import { RichTextContent } from "@/components/cms/RichTextContent";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -423,16 +424,17 @@ export function EvidenceExplorer({ bootstrap }: { bootstrap: EvidenceBootstrap }
       <div className="flex flex-col gap-8">
         <div className="flex min-w-0 flex-col gap-4 border-b border-[#e9e6df] pb-6 sm:pb-8">
           <h1 className="font-display text-[32px] leading-display text-[#18263a] sm:text-[40px] lg:text-[48px]">
-            {copy.title}
+            <RichTextContent content={copy.title} inline />
           </h1>
           {copy.tagline ? (
             <p className="text-base leading-ui-label text-[#6b7280] sm:leading-single">
-              {copy.tagline}
+              <RichTextContent content={copy.tagline} inline />
             </p>
           ) : (
-            <p className="max-w-3xl text-base leading-snug text-[#6b7280] lg:text-lg">
-              {copy.subtitle}
-            </p>
+            <RichTextContent
+              content={copy.subtitle}
+              className="max-w-3xl text-base leading-snug text-[#6b7280] lg:text-lg"
+            />
           )}
         </div>
 
@@ -466,9 +468,10 @@ export function EvidenceExplorer({ bootstrap }: { bootstrap: EvidenceBootstrap }
                 </button>
               </div>
               {copy.viewDescription && view === "performance" ? (
-                <p className="max-w-3xl text-base leading-snug text-[#6b7280] lg:text-lg">
-                  {copy.viewDescription}
-                </p>
+                <RichTextContent
+                  content={copy.viewDescription}
+                  className="max-w-3xl text-base leading-snug text-[#6b7280] lg:text-lg"
+                />
               ) : null}
             </div>
 

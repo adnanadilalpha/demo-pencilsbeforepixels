@@ -41,6 +41,12 @@ import {
 } from "@/lib/charts/use-chart-zoom";
 
 import { PISA_CPU_MINUTES } from "@/lib/charts/pisa-data";
+import {
+  DEVICE_TIME_CHART_Y_MAX,
+  DEVICE_TIME_CHART_Y_MIN,
+  DEVICE_TIME_CHART_Y_TICKS,
+  isDeviceTimeChart,
+} from "@/lib/research/device-time-chart";
 import type {
   AcademicChart,
   ChartMarkerShape,
@@ -169,8 +175,13 @@ export function EvidenceLineChart({
     ? researchChartCategoryLabelDark
     : tickClass;
   const titleClass = research ? researchChartTitleDark : chartTitleDark;
-  const yMin = chart.yMin ?? chart.yTicks[0];
-  const yMax = chart.yMax ?? chart.yTicks[chart.yTicks.length - 1];
+  const isDeviceTime = isDeviceTimeChart(chart);
+  const yMin = isDeviceTime
+    ? DEVICE_TIME_CHART_Y_MIN
+    : chart.yMin ?? chart.yTicks[0];
+  const yMax = isDeviceTime
+    ? DEVICE_TIME_CHART_Y_MAX
+    : chart.yMax ?? chart.yTicks[chart.yTicks.length - 1];
   const { dataPlotLeft, dataPlotWidth } = getDataPlotBounds(layout);
   const categoryCount = Math.max(chart.categories.length, 1);
   const fullDomain = useMemo(
@@ -212,7 +223,9 @@ export function EvidenceLineChart({
   const viewYMax = enableZoom ? viewDomain.yMax : yMax;
   const yTicks = enableZoom && isZoomed
     ? generateZoomYTicks(viewYMin, viewYMax)
-    : chart.yTicks;
+    : isDeviceTime
+      ? [...DEVICE_TIME_CHART_Y_TICKS]
+      : chart.yTicks;
   const indexToX = (index: number) =>
     enableZoom
       ? dataToPixelX(index)
@@ -226,9 +239,6 @@ export function EvidenceLineChart({
   const isPisaMath = titleUpper === "MATH";
   const isPisaReading = titleUpper === "READING";
   const isParcc = chart.yLabel === "Std. Achievement";
-  const isDeviceTime =
-    chart.yLabel === "Mean Score in Mathematics" &&
-    chart.series.length === 2;
   const isPerformance = chart.yLabel === "Average Scale Score";
 
   const buildPointTooltip = (

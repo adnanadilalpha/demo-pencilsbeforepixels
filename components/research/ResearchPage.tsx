@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
+import { RichTextContent } from "@/components/cms/RichTextContent";
 import { EvidenceResearchTab } from "@/components/evidence/research/EvidenceResearchTab";
 import { contentMaxWidthClass, sectionPaddingX } from "@/components/ui/Container";
 import { useSection } from "@/lib/cms/hooks";
@@ -46,12 +47,13 @@ export function ResearchPage() {
 
           <div className="flex flex-col gap-4 pb-2">
             <h1 className="font-display text-[32px] leading-display text-[#18263a] sm:text-[40px] lg:text-[48px]">
-              {title}
+              <RichTextContent content={title} inline />
             </h1>
             {subtitle ? (
-              <p className="max-w-3xl text-base leading-snug text-[#6b7280] lg:text-[17px] lg:leading-[1.55]">
-                {subtitle}
-              </p>
+              <RichTextContent
+                content={subtitle}
+                className="max-w-3xl text-base leading-snug text-[#6b7280] lg:text-[17px] lg:leading-[1.55]"
+              />
             ) : null}
           </div>
         </div>

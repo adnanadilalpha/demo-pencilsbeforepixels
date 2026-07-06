@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Download, Search } from "lucide-react";
+import { Download, Search, Trash2 } from "lucide-react";
 import { AdminConfirmDeleteModal } from "@/components/admin/AdminConfirmDeleteModal";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { NewsletterSubscribersTable } from "@/components/admin/newsletter/NewsletterSubscribersTable";
@@ -20,12 +20,16 @@ type NewsletterViewProps = {
   initialData: NewsletterPageData;
 };
 
+type PendingDelete =
+  | { mode: "single"; subscriber: AdminNewsletterSubscriber }
+  | { mode: "bulk"; count: number };
+
 export function NewsletterView({ initialData }: NewsletterViewProps) {
   const [data, setData] = useState(initialData);
   const [query, setQuery] = useState("");
   const [busyId, setBusyId] = useState<string | null>(null);
-  const [pendingDelete, setPendingDelete] =
-    useState<AdminNewsletterSubscriber | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [pendingDelete, setPendingDelete] = useState<PendingDelete | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
@@ -71,6 +75,28 @@ export function NewsletterView({ initialData }: NewsletterViewProps) {
     });
   }, [data.subscribers, query]);
 
+  const selectedSubscribers = useMemo(
+    () => filteredSubscribers.filter((subscriber) => selectedIds.has(subscriber.id)),
+    [filteredSubscribers, selectedIds],
+  );
+
+  const toggleRow = (id: string) => {
+    setSelectedIds((current) => {
+      const next = new Set(current);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleAll = (ids: string[]) => {
+    setSelectedIds((current) => {
+      const allSelected = ids.every((id) => current.has(id));
+      if (allSelected) return new Set();
+      return new Set(ids);
+    });
+  };
+
   const updateStatus = async (
     subscriber: AdminNewsletterSubscriber,
     status: "active" | "unsubscribed",
@@ -101,17 +127,16 @@ export function NewsletterView({ initialData }: NewsletterViewProps) {
     }
   };
 
-  const confirmDelete = async () => {
-    if (!pendingDelete) return;
-
-    setBusyId(pendingDelete.id);
+  const deleteSubscribers = async (subscribers: AdminNewsletterSubscriber[]) => {
+    setBusyId(subscribers.length === 1 ? subscribers[0].id : "bulk");
     setActionError(null);
 
     try {
-      const response = await fetch(
-        `/api/admin/newsletter?id=${encodeURIComponent(pendingDelete.id)}`,
-        { method: "DELETE" },
-      );
+      const response = await fetch("/api/admin/newsletter", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: subscribers.map((subscriber) => subscriber.id) }),
+      });
 
       if (!response.ok) {
         const body = (await response.json()) as { error?: string };
@@ -121,6 +146,7 @@ export function NewsletterView({ initialData }: NewsletterViewProps) {
       const next = (await response.json()) as NewsletterPageData;
       setData(next);
       setPendingDelete(null);
+      setSelectedIds(new Set());
     } catch (error) {
       setActionError(
         error instanceof Error ? error.message : "Failed to delete subscriber.",
@@ -142,6 +168,13 @@ export function NewsletterView({ initialData }: NewsletterViewProps) {
     link.click();
     URL.revokeObjectURL(url);
   };
+
+  const deleteLabel =
+    pendingDelete?.mode === "bulk"
+      ? `${pendingDelete.count} selected subscriber${pendingDelete.count === 1 ? "" : "s"}`
+      : pendingDelete?.mode === "single"
+        ? pendingDelete.subscriber.email
+        : "";
 
   return (
     <div className="flex w-full flex-col gap-5">
@@ -182,9 +215,39 @@ export function NewsletterView({ initialData }: NewsletterViewProps) {
         <p className="text-sm text-red-600">{actionError}</p>
       ) : null}
 
+      {selectedIds.size > 0 ? (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-[14px] border border-gold-500/20 bg-gold-500/10 px-4 py-3">
+          <p className="text-sm font-medium text-navy-800">
+            {selectedIds.size} subscriber{selectedIds.size === 1 ? "" : "s"} selected
+          </p>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setSelectedIds(new Set())}
+              className="rounded-[10px] px-3 py-2 text-sm font-medium text-body-muted transition-colors hover:text-navy-800"
+            >
+              Clear
+            </button>
+            <button
+              type="button"
+              onClick={() =>
+                setPendingDelete({ mode: "bulk", count: selectedIds.size })
+              }
+              className="inline-flex items-center gap-2 rounded-[10px] border border-red-600/20 bg-white px-3 py-2 text-sm font-medium text-red-600 transition-colors hover:bg-red-50"
+            >
+              <Trash2 className="size-4" />
+              Delete selected
+            </button>
+          </div>
+        </div>
+      ) : null}
+
       <NewsletterSubscribersTable
         subscribers={filteredSubscribers}
         busyId={busyId}
+        selectedIds={selectedIds}
+        onToggleRow={toggleRow}
+        onToggleAll={toggleAll}
         emptyMessage={
           query.trim()
             ? "No subscribers match your search."
@@ -194,19 +257,31 @@ export function NewsletterView({ initialData }: NewsletterViewProps) {
           void updateStatus(subscriber, "unsubscribed")
         }
         onReactivate={(subscriber) => void updateStatus(subscriber, "active")}
-        onDelete={setPendingDelete}
+        onDelete={(subscriber) =>
+          setPendingDelete({ mode: "single", subscriber })
+        }
       />
 
       <AdminConfirmDeleteModal
         open={pendingDelete !== null}
-        title="Delete subscriber"
-        itemName={pendingDelete?.email ?? "this subscriber"}
-        confirming={busyId !== null && pendingDelete?.id === busyId}
+        title={
+          pendingDelete?.mode === "bulk" ? "Delete subscribers" : "Delete subscriber"
+        }
+        itemName={deleteLabel}
+        confirming={busyId !== null}
         onClose={() => {
           if (busyId) return;
           setPendingDelete(null);
         }}
-        onConfirm={() => void confirmDelete()}
+        onConfirm={() => {
+          if (pendingDelete?.mode === "bulk") {
+            void deleteSubscribers(selectedSubscribers);
+            return;
+          }
+          if (pendingDelete?.mode === "single") {
+            void deleteSubscribers([pendingDelete.subscriber]);
+          }
+        }}
       />
     </div>
   );

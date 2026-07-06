@@ -5,6 +5,20 @@ const supabaseHostname = process.env.NEXT_PUBLIC_SUPABASE_URL
   : null;
 
 const nextConfig: NextConfig = {
+  async redirects() {
+    return [
+      {
+        source: "/evidence",
+        destination: "/nebraska-data",
+        permanent: true,
+      },
+      {
+        source: "/nebraska",
+        destination: "/nebraska-data",
+        permanent: true,
+      },
+    ];
+  },
   experimental: {
     serverActions: {
       bodySizeLimit: "64mb",

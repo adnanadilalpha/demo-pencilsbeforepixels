@@ -1,5 +1,11 @@
 import { researchChartsData } from "@/lib/research/data";
 import type { AcademicChart } from "@/lib/academic-data/types";
+import {
+  applyDeviceTimeChartAxis,
+  DEVICE_TIME_CHART_Y_MAX,
+  DEVICE_TIME_CHART_Y_MIN,
+  DEVICE_TIME_CHART_Y_TICKS,
+} from "@/lib/research/device-time-chart";
 import type {
   BarChartData,
   NaepGradeSection,
@@ -119,7 +125,9 @@ export function mergeResearchWithFallback(
       title: db.deviceTime?.title || base.deviceTime.title,
       description: db.deviceTime?.description || base.deviceTime.description,
       pdfUrl: db.deviceTime?.pdfUrl ?? base.deviceTime.pdfUrl,
-      chart: mergeChartPdf(base.deviceTime.chart, db.deviceTime?.chart),
+      chart: applyDeviceTimeChartAxis(
+        mergeChartPdf(base.deviceTime.chart, db.deviceTime?.chart),
+      ),
     },
     parcc: {
       title: db.parcc?.title || base.parcc.title,

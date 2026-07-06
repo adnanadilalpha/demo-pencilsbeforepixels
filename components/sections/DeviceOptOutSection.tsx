@@ -3,6 +3,8 @@
 import { ContentImage } from "@/components/ui/ContentImage";
 import { Button } from "@/components/ui/Button";
 import { useOptOut } from "@/components/opt-out/OptOutProvider";
+import { RichTextContent } from "@/components/cms/RichTextContent";
+import { RICH_TEXT_LINKS_LIGHT_CLASS } from "@/lib/cms/rich-text";
 import { Container, sectionSubtextClass } from "@/components/ui/Container";
 import { DisplayHeading } from "@/components/ui/DisplayHeading";
 import { ScrollReveal } from "@/components/motion/ScrollReveal";
@@ -20,15 +22,22 @@ export function DeviceOptOutSection() {
   const primaryCta = (section.primaryCta as string) ?? "Sign Opt Out Letter";
 
   return (
-    <section id="opt-out" className="w-full bg-navy-700 py-16 max-lg:py-16 lg:py-24">
+    <section
+      id="opt-out"
+      className={`w-full bg-navy-700 py-16 max-lg:py-16 lg:py-24 ${RICH_TEXT_LINKS_LIGHT_CLASS}`}
+    >
       <Container>
         <div className="flex w-full flex-col items-start justify-between gap-10 max-lg:gap-10 lg:flex-row lg:gap-12">
           <div className="flex flex-1 flex-col gap-8 max-lg:gap-7 lg:gap-8">
             <ScrollReveal className="flex flex-col gap-5 text-slate-50 max-lg:gap-4 lg:gap-6">
               <DisplayHeading as="h2" className="text-slate-50">
-                {headline}
+                <RichTextContent content={headline} inline linkTone="light" />
               </DisplayHeading>
-              <p className={sectionSubtextClass}>{body}</p>
+              <RichTextContent
+                content={body}
+                linkTone="light"
+                className={sectionSubtextClass}
+              />
             </ScrollReveal>
 
             <ol className="flex flex-col">
@@ -49,18 +58,22 @@ export function DeviceOptOutSection() {
                   </span>
                   <div className="flex min-w-0 flex-1 flex-col gap-1.5 text-slate-50 sm:gap-2">
                     <p className="text-base font-semibold leading-snug sm:text-lg sm:leading-display">
-                      {step.title}
+                      <RichTextContent content={step.title} inline />
                     </p>
-                    <p className="text-base leading-relaxed sm:leading-snug lg:text-base">
-                      {step.description}
-                    </p>
+                    <RichTextContent
+                      content={step.description}
+                      linkTone="light"
+                      className="text-base leading-relaxed sm:leading-snug lg:text-base"
+                    />
                   </div>
                 </ScrollReveal>
               ))}
             </ol>
 
             <ScrollReveal delay={0.35}>
-              <Button onClick={openOptOut}>{primaryCta}</Button>
+              <Button onClick={() => openOptOut("device-opt-out-section")}>
+                {primaryCta}
+              </Button>
             </ScrollReveal>
           </div>
 

@@ -2,6 +2,7 @@
 
 import type { SiteSettingsDraft } from "@/lib/admin/cms-entity-types";
 import { adminInputClass, adminLabelClass } from "@/components/admin/admin-styles";
+import { RichTextEditor } from "@/components/admin/content/RichTextEditor";
 
 type SiteSettingsEditorProps = {
   settings: SiteSettingsDraft;
@@ -28,12 +29,11 @@ export function SiteSettingsEditor({
         value={settings.copyright}
         onChange={(value) => update("copyright", value)}
       />
-      <div className="flex flex-col gap-1.5 sm:col-span-2">
-        <label className={adminLabelClass}>Site description</label>
-        <textarea
-          className={`${adminInputClass} min-h-24 rounded-[10px] py-3`}
+      <div className="sm:col-span-2">
+        <RichTextEditor
+          label="Site description"
           value={settings.description}
-          onChange={(event) => update("description", event.target.value)}
+          onChange={(value) => update("description", value)}
         />
       </div>
       <Field

@@ -1,11 +1,11 @@
 "use client";
 
 import { adminInputClass, adminLabelClass } from "@/components/admin/admin-styles";
+import { RichTextEditor } from "@/components/admin/content/RichTextEditor";
 import {
   WHAT_TO_DO_FINDINGS_COUNT,
   type GoalFinding,
 } from "@/lib/cms/goal-section-content";
-import { cn } from "@/lib/utils";
 
 type WhatToDoFindingsEditorProps = {
   value: GoalFinding[];
@@ -55,44 +55,20 @@ export function WhatToDoFindingsEditor({
             </p>
 
             <div className="flex flex-col gap-3">
-              <div className="flex flex-col gap-1.5">
-                <label
-                  htmlFor={`goal-finding-headline-${index}`}
-                  className="text-sm font-medium text-navy-800/70"
-                >
-                  Headline
-                </label>
-                <input
-                  id={`goal-finding-headline-${index}`}
-                  className={adminInputClass}
-                  value={item.headline}
-                  placeholder="−1.45 pts/yr"
-                  onChange={(event) =>
-                    updateItem(index, "headline", event.target.value)
-                  }
-                />
-              </div>
+              <RichTextEditor
+                label="Headline"
+                value={item.headline}
+                placeholder="−1.45 pts/yr"
+                compact
+                onChange={(value) => updateItem(index, "headline", value)}
+              />
 
-              <div className="flex flex-col gap-1.5">
-                <label
-                  htmlFor={`goal-finding-body-${index}`}
-                  className="text-sm font-medium text-navy-800/70"
-                >
-                  Body copy
-                </label>
-                <textarea
-                  id={`goal-finding-body-${index}`}
-                  className={cn(
-                    adminInputClass,
-                    "min-h-[5.5rem] resize-y rounded-[10px] py-3",
-                  )}
-                  value={item.body}
-                  placeholder="National decline in Grade 4 NAEP math scores since classroom devices scaled up widely across U.S. schools."
-                  onChange={(event) =>
-                    updateItem(index, "body", event.target.value)
-                  }
-                />
-              </div>
+              <RichTextEditor
+                label="Body copy"
+                value={item.body}
+                placeholder="National decline in Grade 4 NAEP math scores since classroom devices scaled up widely across U.S. schools."
+                onChange={(value) => updateItem(index, "body", value)}
+              />
             </div>
           </li>
         ))}

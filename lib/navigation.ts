@@ -36,30 +36,61 @@ export function parseNavHref(href: string): { path: string; hash: string | null 
   return { path: path === "" ? "/" : path, hash };
 }
 
+export function getSectionElement(hash: string): HTMLElement | null {
+  if (!hash || hash === "#") return null;
+
+  const id = decodeURIComponent(hash.replace(/^#/, ""));
+  if (!id) return null;
+
+  const target = document.getElementById(id);
+  return target instanceof HTMLElement ? target : null;
+}
+
+export function isSectionScrollAligned(hash: string): boolean {
+  const target = getSectionElement(hash);
+  if (!target) return false;
+
+  const headerHeight = -getHeaderScrollOffset();
+  const top = target.getBoundingClientRect().top;
+
+  return Math.abs(top - headerHeight) < 48;
+}
+
 export function handleNavLinkClick(
   event: { preventDefault: () => void },
   href: string,
   pathname: string,
   lenis?: Lenis | null,
   onHashScroll?: (hash: string) => void,
+  navigate?: (url: string) => void,
 ): boolean {
   const { path, hash } = parseNavHref(href);
   if (!hash) return false;
 
-  if (pathname !== path) return false;
+  const targetUrl = buildHashNavUrl(path, hash);
 
-  event.preventDefault();
-  scrollToSection(hash, lenis);
-  window.history.pushState(null, "", path === "/" ? hash : `${path}${hash}`);
-  onHashScroll?.(hash);
-  return true;
+  if (pathname === path) {
+    event.preventDefault();
+    scheduleHashSectionScroll(hash, lenis);
+    window.history.pushState(null, "", targetUrl);
+    onHashScroll?.(hash);
+    return true;
+  }
+
+  if (navigate) {
+    event.preventDefault();
+    navigate(targetUrl);
+    return true;
+  }
+
+  return false;
 }
 
 export function scrollToSection(hash: string, lenis?: Lenis | null) {
   if (!hash || hash === "#") return false;
 
-  const target = document.querySelector(hash);
-  if (!(target instanceof HTMLElement)) return false;
+  const target = getSectionElement(hash);
+  if (!target) return false;
 
   if (lenis) {
     const current = lenis.scroll;
@@ -86,4 +117,59 @@ export function scrollToSection(hash: string, lenis?: Lenis | null) {
   });
 
   return true;
+}
+
+const HASH_SCROLL_MAX_ATTEMPTS = 24;
+const HASH_SCROLL_RETRY_MS = [0, 50, 100, 150, 200, 300, 400, 500, 650, 800, 1000, 1200];
+
+/** Retry scroll until the section is aligned under the header (post client navigation / Lenis init). */
+export function scheduleHashSectionScroll(
+  hash: string,
+  lenis?: Lenis | null,
+): () => void {
+  if (!hash || hash === "#") return () => {};
+
+  let cancelled = false;
+  let attempts = 0;
+  let timer = 0;
+
+  const tryScroll = () => {
+    if (cancelled) return;
+
+    if (!getSectionElement(hash)) {
+      scheduleRetry();
+      return;
+    }
+
+    scrollToSection(hash, lenis);
+
+    if (isSectionScrollAligned(hash)) {
+      return;
+    }
+
+    scheduleRetry();
+  };
+
+  const scheduleRetry = () => {
+    attempts += 1;
+    if (attempts >= HASH_SCROLL_MAX_ATTEMPTS) {
+      return;
+    }
+
+    const delay =
+      HASH_SCROLL_RETRY_MS[Math.min(attempts, HASH_SCROLL_RETRY_MS.length - 1)] ??
+      150;
+    timer = window.setTimeout(tryScroll, delay);
+  };
+
+  tryScroll();
+
+  return () => {
+    cancelled = true;
+    window.clearTimeout(timer);
+  };
+}
+
+export function buildHashNavUrl(path: string, hash: string) {
+  return `${path}${hash}`;
 }
