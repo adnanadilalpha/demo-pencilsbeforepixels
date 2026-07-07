@@ -1,4 +1,5 @@
 import { resolveSiteCacheSettings } from "@/lib/cache/resolve";
+import { normalizeMissionTimeline } from "./mission-slides";
 import type { SiteContent } from "./types";
 
 /** Backfill fields missing from older cached CMS payloads. */
@@ -7,5 +8,6 @@ export function ensureSiteContentShape(content: SiteContent): SiteContent {
     ...content,
     assetsRevision: content.assetsRevision ?? "0",
     cache: resolveSiteCacheSettings(content.cache),
+    timeline: normalizeMissionTimeline(content.timeline ?? []),
   };
 }

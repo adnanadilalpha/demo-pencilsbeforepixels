@@ -14,7 +14,7 @@ export type AnalyticsStatCard = {
 };
 
 export type AnalyticsRange = "7d" | "30d" | "90d" | "6m";
-export type AnalyticsMetric = "views" | "sessions";
+export type AnalyticsMetric = "users" | "sessions" | "views";
 
 export type AnalyticsTimePoint = {
   key: string;
@@ -25,7 +25,8 @@ export type AnalyticsTimePoint = {
 export type PopularPageRow = {
   path: string;
   label: string;
-  views: number;
+  visitors: number;
+  pageLoads: number;
 };
 
 export type VisitorLocationRow = {
@@ -33,6 +34,12 @@ export type VisitorLocationRow = {
   label: string;
   detail?: string;
   visitors: number;
+  views: number;
+  countryCode: string;
+  region?: string | null;
+  city?: string | null;
+  latitude: number | null;
+  longitude: number | null;
 };
 
 export type AnalyticsEventRow = {
@@ -59,8 +66,10 @@ export type DashboardData = {
     videos: DashboardStatCard;
   };
   analytics: {
+    activeUsers: AnalyticsStatCard;
     totalVisitors: AnalyticsStatCard;
     uniqueSessions: AnalyticsStatCard;
+    pageViews: AnalyticsStatCard;
     avgTimeOnSite: AnalyticsStatCard;
     bounceRate: AnalyticsStatCard;
     visitorsOverTime: AnalyticsTimePoint[];

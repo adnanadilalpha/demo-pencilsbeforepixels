@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { TrendingUp } from "lucide-react";
+import { Radio, TrendingUp } from "lucide-react";
 import { AdminStatCard } from "@/components/admin/AdminStatCard";
 import { PopularPagesChart } from "@/components/admin/dashboard/PopularPagesChart";
 import { TopEventsChart } from "@/components/admin/dashboard/TopEventsChart";
@@ -23,13 +23,37 @@ const RANGE_OPTIONS: Array<{ value: AnalyticsRange; label: string }> = [
 ];
 
 const METRIC_OPTIONS: Array<{ value: AnalyticsMetric; label: string }> = [
+  { value: "users", label: "Users" },
   { value: "sessions", label: "Sessions" },
-  { value: "views", label: "Page views" },
+  { value: "views", label: "Page loads" },
 ];
 
 type AnalyticsSectionProps = {
   initialAnalytics: DashboardData["analytics"];
 };
+
+const PANEL_CARD_CLASS =
+  "flex h-full flex-col rounded-[14px] border border-navy-800/8 bg-white p-5 shadow-[0_1px_3px_rgba(10,22,40,0.06)] sm:p-6";
+
+function DashboardPanel({
+  title,
+  description,
+  children,
+}: {
+  title: string;
+  description?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <article className={PANEL_CARD_CLASS}>
+      <header className="shrink-0">
+        <h3 className="text-sm font-semibold text-navy-800">{title}</h3>
+        <p className="mt-1 min-h-8 text-xs text-body-muted">{description ?? ""}</p>
+      </header>
+      <div className="mt-5 flex min-h-[280px] flex-1 flex-col">{children}</div>
+    </article>
+  );
+}
 
 function FilterChip({
   active,
@@ -119,7 +143,8 @@ export function AnalyticsSection({ initialAnalytics }: AnalyticsSectionProps) {
         <div>
           <h2 className="text-sm font-semibold text-navy-800">Site analytics</h2>
           <p className="mt-1 text-sm text-body-muted">
-            First-party usage analytics with page views, approximate location, and CTA events.
+            Audience metrics are deduplicated by user and session. Page loads are
+            tracked separately and no longer inflate on refresh.
           </p>
         </div>
 
@@ -151,10 +176,18 @@ export function AnalyticsSection({ initialAnalytics }: AnalyticsSectionProps) {
 
       <div
         className={cn(
-          "grid gap-4 sm:grid-cols-2 xl:grid-cols-4 transition-opacity duration-200",
+          "grid items-stretch gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6 transition-opacity duration-200",
           isLoading && "opacity-60",
         )}
       >
+        <AdminStatCard
+          label={analytics.activeUsers.label}
+          value={analytics.activeUsers.value}
+          trend={analytics.activeUsers.trend}
+          showTrendIcon={false}
+          trendPositive={false}
+          icon={<Radio className="size-3.5" />}
+        />
         <AdminStatCard
           label={analytics.totalVisitors.label}
           value={analytics.totalVisitors.value}
@@ -169,6 +202,12 @@ export function AnalyticsSection({ initialAnalytics }: AnalyticsSectionProps) {
           trendPositive={analytics.uniqueSessions.trendPositive}
         />
         <AdminStatCard
+          label={analytics.pageViews.label}
+          value={analytics.pageViews.value}
+          trend={analytics.pageViews.trend}
+          trendPositive={analytics.pageViews.trendPositive}
+        />
+        <AdminStatCard
           label={analytics.avgTimeOnSite.label}
           value={analytics.avgTimeOnSite.value}
         />
@@ -178,33 +217,34 @@ export function AnalyticsSection({ initialAnalytics }: AnalyticsSectionProps) {
         />
       </div>
 
-      <div className="grid items-start gap-4 lg:grid-cols-2">
-        <article className="rounded-[14px] border border-navy-800/8 bg-white p-5 shadow-[0_1px_3px_rgba(10,22,40,0.06)] sm:p-6">
-          <h3 className="text-sm font-semibold text-navy-800">Visitors over time</h3>
-          <div className="mt-5">
-            <VisitorsChart data={analytics.visitorsOverTime} metric={metric} />
-          </div>
-        </article>
+      <div className="grid items-stretch gap-4 lg:grid-cols-2">
+        <DashboardPanel
+          title="Audience over time"
+          description="Deduped audience metrics. Refreshing the site does not add users or sessions."
+        >
+          <VisitorsChart data={analytics.visitorsOverTime} metric={metric} />
+        </DashboardPanel>
 
-        <article className="rounded-[14px] border border-navy-800/8 bg-white p-5 shadow-[0_1px_3px_rgba(10,22,40,0.06)] sm:p-6">
-          <h3 className="text-sm font-semibold text-navy-800">Popular pages</h3>
-          <div className="mt-5">
-            <PopularPagesChart pages={analytics.popularPages} />
-          </div>
-        </article>
-        <article className="rounded-[14px] border border-navy-800/8 bg-white p-5 shadow-[0_1px_3px_rgba(10,22,40,0.06)] sm:p-6">
-          <h3 className="text-sm font-semibold text-navy-800">Visitor locations</h3>
-          <div className="mt-5">
-            <VisitorLocationsChart locations={analytics.visitorLocations} />
-          </div>
-        </article>
+        <DashboardPanel
+          title="Top pages"
+          description="Ranked by unique users. Loads are shown separately."
+        >
+          <PopularPagesChart pages={analytics.popularPages} />
+        </DashboardPanel>
 
-        <article className="rounded-[14px] border border-navy-800/8 bg-white p-5 shadow-[0_1px_3px_rgba(10,22,40,0.06)] sm:p-6">
-          <h3 className="text-sm font-semibold text-navy-800">CTA &amp; action events</h3>
-          <div className="mt-5">
-            <TopEventsChart events={analytics.topEvents} />
-          </div>
-        </article>
+        <DashboardPanel
+          title="CTA & action events"
+          description="Tracked actions from navigation, forms, and opt-out flows."
+        >
+          <TopEventsChart events={analytics.topEvents} />
+        </DashboardPanel>
+
+        <DashboardPanel
+          title="Visitor locations"
+          description="Click a city to zoom the map. Ranked by unique visitors."
+        >
+          <VisitorLocationsChart locations={analytics.visitorLocations} />
+        </DashboardPanel>
       </div>
     </section>
   );

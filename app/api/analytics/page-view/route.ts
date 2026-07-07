@@ -1,12 +1,11 @@
 import { NextResponse } from "next/server";
+import { isInternalAnalyticsRequest } from "@/lib/analytics/internal-traffic";
 import { normalizeAnalyticsPath } from "@/lib/analytics/normalize-path";
 import {
   getRequestAnalyticsContext,
   isValidAnalyticsId,
 } from "@/lib/analytics/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-
-const DEDUPE_WINDOW_MS = 10_000;
 
 type PageViewBody = {
   sessionId?: string;
@@ -48,24 +47,39 @@ export async function POST(request: Request) {
   }
 
   const supabase = createAdminClient();
-  const dedupeSince = new Date(Date.now() - DEDUPE_WINDOW_MS).toISOString();
+  const isInternal = isInternalAnalyticsRequest(context.visitorKey, request);
+  const now = new Date().toISOString();
 
-  const { data: recentRows, error: recentError } = await supabase
+  const { data: sessionView, error: sessionViewError } = await supabase
     .from("page_views")
     .select("id")
     .eq("session_id", sessionId)
     .eq("path", normalizedPath)
-    .gte("created_at", dedupeSince)
     .order("created_at", { ascending: false })
-    .limit(1);
+    .limit(1)
+    .maybeSingle();
 
-  if (recentError) {
-    return NextResponse.json({ error: recentError.message }, { status: 500 });
+  if (sessionViewError) {
+    return NextResponse.json({ error: sessionViewError.message }, { status: 500 });
   }
 
-  const recent = recentRows?.[0];
-  if (recent?.id) {
-    return NextResponse.json({ ok: true, id: recent.id, deduped: true });
+  if (sessionView?.id) {
+    const { error: touchError } = await supabase
+      .from("page_views")
+      .update({
+        last_seen_at: now,
+        page_title: pageTitle ?? null,
+        referrer: referrer ?? null,
+        is_bounce: false,
+        is_internal: isInternal,
+      })
+      .eq("id", sessionView.id);
+
+    if (touchError) {
+      return NextResponse.json({ error: touchError.message }, { status: 500 });
+    }
+
+    return NextResponse.json({ ok: true, id: sessionView.id, deduped: true });
   }
 
   const { data, error } = await supabase
@@ -80,9 +94,14 @@ export async function POST(request: Request) {
       country_code: context.countryCode,
       region: context.region,
       city: context.city,
+      latitude: context.latitude,
+      longitude: context.longitude,
       duration_seconds:
         typeof durationSeconds === "number" ? Math.round(durationSeconds) : null,
       is_bounce: typeof isBounce === "boolean" ? isBounce : true,
+      is_internal: isInternal,
+      view_count: 1,
+      last_seen_at: now,
     })
     .select("id")
     .single();
@@ -116,7 +135,9 @@ export async function PATCH(request: Request) {
   }
 
   const supabase = createAdminClient();
-  const updates: Record<string, unknown> = {};
+  const updates: Record<string, unknown> = {
+    last_seen_at: new Date().toISOString(),
+  };
 
   if (typeof durationSeconds === "number") {
     updates.duration_seconds = Math.round(durationSeconds);

@@ -5,7 +5,6 @@ import { ContentImage } from "@/components/ui/ContentImage";
 import {
   RICH_TEXT_LINKS_LIGHT_CLASS,
   stripRichTextToPlain,
-  isRichTextHtml,
 } from "@/lib/cms/rich-text";
 import { sectionPaddingX } from "@/components/ui/Container";
 import { useLenis } from "lenis/react";
@@ -29,50 +28,25 @@ import {
   getTimelineProgress,
   resolveViewportHeight,
 } from "@/lib/timeline-motion";
+import { isValidMediaSrc } from "@/lib/media/src";
 import { getSectionElement, scrollToSectionSmooth } from "@/lib/navigation";
-
-const MISSION_GOAL_EMPHASIS =
-  "focus over distraction and cognitive friction over swiping.";
-
-function MissionSlideDescription({
-  description,
-  className,
-  linkTone = "default",
-}: {
-  description: string;
-  className?: string;
-  linkTone?: "default" | "light";
-}) {
-  if (isRichTextHtml(description)) {
-    return (
-      <RichTextContent
-        content={description}
-        className={className}
-        inline
-        linkTone={linkTone}
-      />
-    );
-  }
-
-  const index = description.indexOf(MISSION_GOAL_EMPHASIS);
-  if (index === -1) {
-    return <>{description}</>;
-  }
-
-  return (
-    <>
-      {description.slice(0, index)}
-      <strong className="font-bold italic">{MISSION_GOAL_EMPHASIS}</strong>
-      {description.slice(index + MISSION_GOAL_EMPHASIS.length)}
-    </>
-  );
-}
 
 function getAbsoluteTop(element: HTMLElement) {
   return element.getBoundingClientRect().top + window.scrollY;
 }
 
-function getPaginationColors(slide: TimelineSlide) {
+function getPaginationColors(slide: TimelineSlide | undefined) {
+  if (!slide?.background) {
+    return {
+      track: "bg-navy-800/15",
+      fill: "bg-gold-500",
+      active: "bg-gold-500",
+      inactive: "bg-black/35",
+      label: "text-navy-800",
+      muted: "text-navy-800/55",
+    };
+  }
+
   const isGoldBackground = slide.background.includes("gold");
 
   if (isGoldBackground) {
@@ -129,20 +103,101 @@ function setMediaVars(
   element.style.setProperty("--timeline-media-scale", String(motion.imageScale));
 }
 
+function TimelineSlideMedia({
+  slide,
+  index,
+  mediaRef,
+}: {
+  slide: TimelineSlide;
+  index: number;
+  mediaRef: (node: HTMLDivElement | null) => void;
+}) {
+  const isLight = slide.textColor === "light";
+  const hasImage = isValidMediaSrc(slide.image);
+
+  return (
+    <div
+      ref={mediaRef}
+      className={`timeline-slide-media relative h-[min(38vh,280px)] w-full max-w-xl shrink-0 overflow-hidden rounded-sm shadow-[0_28px_90px_rgba(10,22,40,0.22)] sm:h-[min(42vh,320px)] lg:h-[min(72vh,560px)] lg:max-w-none lg:flex-1 ${
+        isLight ? "ring-1 ring-white/15" : "ring-1 ring-navy-800/10"
+      }`}
+    >
+      {hasImage ? (
+        <ContentImage
+          src={slide.image}
+          alt={stripRichTextToPlain(slide.title) || `Mission slide ${index + 1}`}
+          fill
+          className="object-cover object-center"
+          sizes="(max-width: 1024px) 50vw, 42vw"
+          priority={index === 0}
+        />
+      ) : (
+        <div
+          className={`flex h-full w-full items-center justify-center ${
+            isLight ? "bg-white/10 text-slate-200/70" : "bg-navy-800/5 text-navy-800/45"
+          }`}
+          aria-hidden
+        >
+          <span className="text-sm font-medium">Image coming soon</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function applyPaginationTheme(
+  index: number,
+  slides: TimelineSlide[],
+  refs: {
+    missionLabel: HTMLParagraphElement | null;
+    progressTrack: HTMLDivElement | null;
+    progressFill: HTMLDivElement | null;
+    dots: (HTMLSpanElement | null)[];
+  },
+) {
+  const colors = getPaginationColors(slides[index] ?? slides[0]);
+  const mutedClass = `font-sans text-xs font-medium uppercase tracking-[0.14em] max-lg:leading-tight lg:text-base lg:tracking-[0.24em] ${colors.muted}`;
+  const trackClass = `mt-2 h-px w-full overflow-hidden lg:mt-4 ${colors.track}`;
+  const fillClass = `h-full origin-left ${colors.fill}`;
+  const dotBase =
+    "h-[0.375rem] w-[0.375rem] rounded-full transition-[background-color] duration-500";
+
+  if (refs.missionLabel) refs.missionLabel.className = mutedClass;
+  if (refs.progressTrack) refs.progressTrack.className = trackClass;
+  if (refs.progressFill) refs.progressFill.className = fillClass;
+
+  refs.dots.forEach((dot, dotIndex) => {
+    if (!dot) return;
+    dot.className = `${dotBase} ${
+      dotIndex === index ? colors.active : colors.inactive
+    }`;
+  });
+}
+
 export function TimelineSection() {
   const { timeline: rawTimelineSlides } = useSiteContent();
   const timelineSlides = normalizeMissionTimeline(rawTimelineSlides);
   const slideCount = timelineSlides.length;
   const maxIndex = Math.max(0, slideCount - 1);
   const slideShare = slideCount > 0 ? 100 / slideCount : 100;
+  const timelineSignature = timelineSlides
+    .map((slide) => `${slide.number}:${slide.background}:${slide.image}`)
+    .join("|");
 
   const wrapperRef = useRef<HTMLElement>(null);
   const pinRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
   const progressFillRef = useRef<HTMLDivElement>(null);
+  const progressTrackRef = useRef<HTMLDivElement>(null);
+  const missionLabelRef = useRef<HTMLParagraphElement>(null);
   const copyRefs = useRef<(HTMLDivElement | null)[]>([]);
   const mediaRefs = useRef<(HTMLDivElement | null)[]>([]);
   const dotRefs = useRef<(HTMLSpanElement | null)[]>([]);
+  const timelineSlidesRef = useRef(timelineSlides);
+  const slideCountRef = useRef(slideCount);
+  const maxIndexRef = useRef(maxIndex);
+  const slideShareRef = useRef(slideShare);
+  const paginationIndexRef = useRef(-1);
 
   const sectionTopRef = useRef(0);
   const metricsRef = useRef({
@@ -158,13 +213,14 @@ export function TimelineSection() {
   const lenisRef = useRef<Lenis | null>(null);
   const viewportHeightRef = useRef(0);
   const lastMeasureWidthRef = useRef<number | null>(null);
+  const pendingScrollYRef = useRef<number | undefined>(undefined);
 
   const [wrapperHeight, setWrapperHeight] = useState(0);
-  const [activeIndex, setActiveIndex] = useState(0);
 
-  const paginationColors = getPaginationColors(
-    timelineSlides[activeIndex] ?? timelineSlides[0]!,
-  );
+  timelineSlidesRef.current = timelineSlides;
+  slideCountRef.current = slideCount;
+  maxIndexRef.current = maxIndex;
+  slideShareRef.current = slideShare;
 
   const measure = useCallback(() => {
     const wrapper = wrapperRef.current;
@@ -228,10 +284,15 @@ export function TimelineSection() {
   }, []);
 
   const applyFrame = useCallback((scrollY: number) => {
-    const wrapper = wrapperRef.current;
+    const track = trackRef.current;
     const { scrollDistance } = metricsRef.current;
-    if (scrollDistance <= 0 || !trackRef.current) return;
+    const currentMaxIndex = maxIndexRef.current;
+    const currentSlideShare = slideShareRef.current;
+    const currentSlideCount = slideCountRef.current;
 
+    if (scrollDistance <= 0 || !track || currentSlideCount <= 0) return;
+
+    const wrapper = wrapperRef.current;
     if (wrapper) {
       sectionTopRef.current = getAbsoluteTop(wrapper);
     }
@@ -240,29 +301,37 @@ export function TimelineSection() {
 
     const pinStart = sectionTopRef.current;
     const progress = getTimelineProgress(scrollY, pinStart, scrollDistance);
-    const slideFloat = progress * maxIndex;
-    const translatePercent = progress * maxIndex * slideShare;
+    const slideFloat = progress * currentMaxIndex;
+    const translatePercent = progress * currentMaxIndex * currentSlideShare;
 
     progressRef.current = progress;
-    trackRef.current.style.transform = `translate3d(-${translatePercent}%, 0, 0)`;
+    track.style.transform = `translate3d(-${translatePercent}%, 0, 0)`;
 
     if (progressFillRef.current) {
       progressFillRef.current.style.transform = `scaleX(${progress})`;
     }
 
     const roundedIndex = Math.min(
-      maxIndex,
+      currentMaxIndex,
       Math.max(0, Math.round(slideFloat)),
     );
 
     if (roundedIndex !== activeIndexRef.current) {
       activeIndexRef.current = roundedIndex;
-      setActiveIndex(roundedIndex);
+      if (paginationIndexRef.current !== roundedIndex) {
+        paginationIndexRef.current = roundedIndex;
+        applyPaginationTheme(roundedIndex, timelineSlidesRef.current, {
+          missionLabel: missionLabelRef.current,
+          progressTrack: progressTrackRef.current,
+          progressFill: progressFillRef.current,
+          dots: dotRefs.current,
+        });
+      }
     }
 
     const useMotion = !reducedMotionRef.current;
 
-    timelineSlides.forEach((_, index) => {
+    for (let index = 0; index < currentSlideCount; index += 1) {
       const motion = useMotion
         ? getSlideMotion(slideFloat, index)
         : {
@@ -278,7 +347,7 @@ export function TimelineSection() {
       setMediaVars(mediaRefs.current[index], motion);
 
       const dot = dotRefs.current[index];
-      if (!dot) return;
+      if (!dot) continue;
 
       const proximity = getDotProximity(slideFloat, index);
       const scale = 1 + proximity * 0.55;
@@ -288,8 +357,8 @@ export function TimelineSection() {
       dot.style.transform = `scale(${scale})`;
       dot.style.width = proximity > 0.72 ? "1.25rem" : "0.375rem";
       dot.style.height = proximity > 0.72 ? "0.375rem" : "0.375rem";
-    });
-  }, [applyPinStyles, maxIndex, slideShare, timelineSlides]);
+    }
+  }, [applyPinStyles]);
 
   const syncProgress = useCallback(
     (scrollY = window.scrollY) => {
@@ -300,21 +369,40 @@ export function TimelineSection() {
 
   const scheduleSync = useCallback(
     (scrollY?: number) => {
+      pendingScrollYRef.current = scrollY;
+
       if (rafRef.current !== null) return;
 
       rafRef.current = window.requestAnimationFrame(() => {
         rafRef.current = null;
-        syncProgress(scrollY);
+        syncProgress(
+          pendingScrollYRef.current ?? lenisScrollRef.current ?? window.scrollY,
+        );
       });
     },
     [syncProgress],
   );
 
   useLayoutEffect(() => {
+    copyRefs.current.length = slideCount;
+    mediaRefs.current.length = slideCount;
+    dotRefs.current.length = slideCount;
+
+    const clampedIndex = Math.min(activeIndexRef.current, maxIndex);
+    activeIndexRef.current = clampedIndex;
+    paginationIndexRef.current = -1;
+
     reducedMotionRef.current = prefersReducedMotion();
     measure();
-    syncProgress();
-  }, [measure, syncProgress]);
+    syncProgress(lenisScrollRef.current || window.scrollY);
+    applyPaginationTheme(clampedIndex, timelineSlidesRef.current, {
+      missionLabel: missionLabelRef.current,
+      progressTrack: progressTrackRef.current,
+      progressFill: progressFillRef.current,
+      dots: dotRefs.current,
+    });
+    paginationIndexRef.current = clampedIndex;
+  }, [measure, maxIndex, slideCount, syncProgress, timelineSignature]);
 
   useEffect(() => {
     const remeasure = () => {
@@ -411,6 +499,10 @@ export function TimelineSection() {
     return () => document.removeEventListener("click", onAnchorClick);
   }, []);
 
+  if (slideCount <= 0) {
+    return null;
+  }
+
   return (
     <section
       id="mission"
@@ -426,17 +518,14 @@ export function TimelineSection() {
         <div
           ref={trackRef}
           className="flex h-full will-change-transform"
-          style={{
-            width: `${slideCount * 100}%`,
-            transform: "translate3d(0, 0, 0)",
-          }}
+          style={{ width: `${slideCount * 100}%` }}
         >
           {timelineSlides.map((slide, index) => {
             const isLight = slide.textColor === "light";
 
             return (
               <article
-                key={slide.number}
+                key={`${index}-${slide.number}`}
                 className={`flex h-full min-h-0 shrink-0 flex-col items-stretch gap-5 py-8 max-lg:justify-start max-lg:gap-5 max-lg:pb-6 max-lg:pt-[calc(var(--header-height)+4.75rem)] lg:flex-row lg:items-center lg:gap-12 lg:py-0 ${sectionPaddingX} ${
                   isLight ? RICH_TEXT_LINKS_LIGHT_CLASS : ""
                 }`}
@@ -476,30 +565,21 @@ export function TimelineSection() {
                       isLight ? "text-slate-200" : "text-hero-dark"
                     }`}
                   >
-                    <MissionSlideDescription
-                      description={slide.description}
+                    <RichTextContent
+                      content={slide.description}
+                      inline
                       linkTone={isLight ? "light" : "default"}
                     />
                   </p>
                 </div>
 
-                <div
-                  ref={(node) => {
+                <TimelineSlideMedia
+                  slide={slide}
+                  index={index}
+                  mediaRef={(node) => {
                     mediaRefs.current[index] = node;
                   }}
-                  className={`timeline-slide-media relative h-[min(38vh,280px)] w-full max-w-xl shrink-0 overflow-hidden rounded-sm shadow-[0_28px_90px_rgba(10,22,40,0.22)] sm:h-[min(42vh,320px)] lg:h-[min(72vh,560px)] lg:max-w-none lg:flex-1 ${
-                    isLight ? "ring-1 ring-white/15" : "ring-1 ring-navy-800/10"
-                  }`}
-                >
-                  <ContentImage
-                    src={slide.image}
-                    alt={stripRichTextToPlain(slide.title)}
-                    fill
-                    className="object-cover object-center"
-                    sizes="(max-width: 1024px) 50vw, 42vw"
-                    priority={slide.number === "01"}
-                  />
-                </div>
+                />
               </article>
             );
           })}
@@ -510,17 +590,18 @@ export function TimelineSection() {
           aria-hidden
         >
           <p
-            className={`font-sans text-xs font-medium uppercase tracking-[0.14em] max-lg:leading-tight lg:text-base lg:tracking-[0.24em] ${paginationColors.muted}`}
+            ref={missionLabelRef}
+            className="font-sans text-xs font-medium uppercase tracking-[0.14em] text-navy-800/55 max-lg:leading-tight lg:text-base lg:tracking-[0.24em]"
           >
             Our Mission
           </p>
           <div
-            className={`mt-2 h-px w-full overflow-hidden lg:mt-4 ${paginationColors.track}`}
+            ref={progressTrackRef}
+            className="mt-2 h-px w-full overflow-hidden bg-navy-800/15 lg:mt-4"
           >
             <div
               ref={progressFillRef}
-              className={`h-full origin-left ${paginationColors.fill}`}
-              style={{ transform: "scaleX(0)" }}
+              className="h-full origin-left bg-gold-500"
             />
           </div>
         </div>
@@ -540,21 +621,11 @@ export function TimelineSection() {
         >
           {timelineSlides.map((slide, index) => (
             <span
-              key={slide.number}
+              key={`${index}-${slide.number}`}
               ref={(node) => {
                 dotRefs.current[index] = node;
               }}
-              className={`rounded-full transition-[background-color] duration-500 ${
-                index === activeIndex
-                  ? paginationColors.active
-                  : paginationColors.inactive
-              }`}
-              style={{
-                width: index === 0 ? "1.25rem" : "0.375rem",
-                height: "0.375rem",
-                opacity: index === 0 ? 1 : 0.35,
-                transform: index === 0 ? "scale(1)" : "scale(1)",
-              }}
+              className="h-[0.375rem] w-[0.375rem] rounded-full bg-black/35 transition-[background-color] duration-500"
             />
           ))}
         </div>

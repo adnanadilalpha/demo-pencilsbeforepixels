@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
 import { isSiteCacheEnabledFromSettings } from "@/lib/cache/resolve";
 import { setClientSiteCacheEnabled } from "@/lib/cache/client-state";
 import { mergeResearchWithFallback } from "@/lib/research/merge";
@@ -31,11 +31,16 @@ export function SiteContentProvider({
 }: SiteContentProviderProps) {
   const cacheEnabled = isSiteCacheEnabledFromSettings(initialContent.cache);
 
+  // Module-level flag must match before child images render on server and on hydrate.
   setClientSiteCacheEnabled(cacheEnabled);
 
   const [content, setContent] = useState<SiteContent>(() =>
     normalizeSiteContent(initialContent),
   );
+
+  useLayoutEffect(() => {
+    setClientSiteCacheEnabled(cacheEnabled);
+  }, [cacheEnabled]);
 
   useEffect(() => {
     if (!cacheEnabled) {

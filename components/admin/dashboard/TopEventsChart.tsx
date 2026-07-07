@@ -11,14 +11,14 @@ export function TopEventsChart({ events }: TopEventsChartProps) {
 
   if (events.length === 0) {
     return (
-      <div className="flex min-h-[220px] items-center justify-center rounded-xl border border-dashed border-paper-300 bg-paper-50/60 px-6 text-center text-sm text-body-muted">
+      <div className="flex h-full min-h-[220px] flex-1 items-center justify-center rounded-xl border border-dashed border-paper-300 bg-paper-50/60 px-6 text-center text-sm text-body-muted">
         Action events will appear here after visitors interact with CTAs.
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col">
+    <div className="flex h-full flex-col">
       <div className="mb-4 flex items-center justify-between text-xs text-body-muted">
         <span className="font-medium uppercase tracking-[0.08em]">Top actions</span>
         <span>{formatCount(totalCount)} events</span>

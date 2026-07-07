@@ -9,14 +9,26 @@ type VisitorsChartProps = {
   metric: AnalyticsMetric;
 };
 
+const METRIC_LABELS: Record<AnalyticsMetric, string> = {
+  users: "unique users",
+  sessions: "sessions",
+  views: "page loads",
+};
+
+const METRIC_HEADINGS: Record<AnalyticsMetric, string> = {
+  users: "Unique users",
+  sessions: "Sessions",
+  views: "Page loads",
+};
+
 export function VisitorsChart({ data, metric }: VisitorsChartProps) {
   const maxValue = Math.max(...data.map((point) => point.value), 1);
   const hasData = data.some((point) => point.value > 0);
-  const metricLabel = metric === "sessions" ? "sessions" : "page views";
+  const metricLabel = METRIC_LABELS[metric];
 
   if (!hasData) {
     return (
-      <div className="flex min-h-[220px] items-center justify-center rounded-xl border border-dashed border-paper-300 bg-paper-50/60 px-6 text-center text-sm text-body-muted">
+      <div className="flex h-full min-h-[220px] flex-1 items-center justify-center rounded-xl border border-dashed border-paper-300 bg-paper-50/60 px-6 text-center text-sm text-body-muted">
         No {metricLabel} in this period yet. Browse the public site to generate
         traffic.
       </div>
@@ -26,10 +38,10 @@ export function VisitorsChart({ data, metric }: VisitorsChartProps) {
   const labelInterval = data.length > 14 ? Math.ceil(data.length / 7) : 1;
 
   return (
-    <div className="flex min-h-[220px] flex-col">
+    <div className="flex h-full min-h-[220px] flex-col">
       <div className="mb-3 flex items-center justify-between text-xs text-body-muted">
         <span className="font-medium uppercase tracking-[0.08em]">
-          {metric === "sessions" ? "Unique sessions" : "Page views"}
+          {METRIC_HEADINGS[metric]}
         </span>
         <span>Peak: {formatCount(maxValue)}</span>
       </div>

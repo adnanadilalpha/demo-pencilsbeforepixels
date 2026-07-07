@@ -2,6 +2,7 @@
 
 import Image, { type ImageProps } from "next/image";
 import { isClientSiteCacheEnabled } from "@/lib/cache/client-state";
+import { isValidMediaSrc } from "@/lib/media/src";
 
 export type ContentImageProps = ImageProps;
 
@@ -15,17 +16,26 @@ export function ContentImage({
   loading,
   fetchPriority,
   unoptimized,
+  src,
   ...props
 }: ContentImageProps) {
+  if (!isValidMediaSrc(src)) {
+    return null;
+  }
+
+  const resolvedSrc = src as ImageProps["src"];
   const bypassOptimization = unoptimized ?? !isClientSiteCacheEnabled();
 
   if (priority) {
-    return <Image {...props} priority unoptimized={bypassOptimization} />;
+    return (
+      <Image {...props} src={resolvedSrc} priority unoptimized={bypassOptimization} />
+    );
   }
 
   return (
     <Image
       {...props}
+      src={resolvedSrc}
       loading={loading ?? "lazy"}
       fetchPriority={fetchPriority ?? "low"}
       unoptimized={bypassOptimization}

@@ -71,7 +71,7 @@ export const homepageSections: EditorSection[] = [
         label: "Mission slides",
         type: "text",
         placeholder:
-          "Three slides: The Problem, The Goal, and The Solution. Edit copy and images below.",
+          "Mission carousel slides. Add or remove slides, edit copy, images, and background colors below.",
       },
     ],
   },

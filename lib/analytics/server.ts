@@ -88,6 +88,8 @@ export type RequestGeo = {
   countryCode: string | null;
   region: string | null;
   city: string | null;
+  latitude: number | null;
+  longitude: number | null;
 };
 
 function decodeGeoHeader(value: string | null | undefined): string | null {
@@ -98,6 +100,12 @@ function decodeGeoHeader(value: string | null | undefined): string | null {
   } catch {
     return value.trim();
   }
+}
+
+function parseCoordinate(value: string | null | undefined): number | null {
+  if (!value) return null;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
 }
 
 function geoFromHeaders(request: Request): RequestGeo {
@@ -111,11 +119,15 @@ function geoFromHeaders(request: Request): RequestGeo {
   );
 
   const city = decodeGeoHeader(request.headers.get("x-vercel-ip-city"));
+  const latitude = parseCoordinate(request.headers.get("x-vercel-ip-latitude"));
+  const longitude = parseCoordinate(request.headers.get("x-vercel-ip-longitude"));
 
   return {
     countryCode: countryCode ? countryCode.toUpperCase() : null,
     region,
     city,
+    latitude,
+    longitude,
   };
 }
 
@@ -124,8 +136,8 @@ async function lookupGeoFromIp(ip: string): Promise<RequestGeo> {
   try {
     const query = ip && !isPrivateIp(ip) ? encodeURIComponent(ip) : "";
     const url = query
-      ? `http://ip-api.com/json/${query}?fields=status,countryCode,regionName,city`
-      : "http://ip-api.com/json/?fields=status,countryCode,regionName,city";
+      ? `http://ip-api.com/json/${query}?fields=status,countryCode,regionName,city,lat,lon`
+      : "http://ip-api.com/json/?fields=status,countryCode,regionName,city,lat,lon";
 
     const response = await fetch(url, {
       signal: AbortSignal.timeout(2500),
@@ -133,7 +145,13 @@ async function lookupGeoFromIp(ip: string): Promise<RequestGeo> {
     });
 
     if (!response.ok) {
-      return { countryCode: null, region: null, city: null };
+      return {
+        countryCode: null,
+        region: null,
+        city: null,
+        latitude: null,
+        longitude: null,
+      };
     }
 
     const data = (await response.json()) as {
@@ -141,35 +159,66 @@ async function lookupGeoFromIp(ip: string): Promise<RequestGeo> {
       countryCode?: string;
       regionName?: string;
       city?: string;
+      lat?: number;
+      lon?: number;
     };
 
     if (data.status !== "success" || !data.countryCode) {
-      return { countryCode: null, region: null, city: null };
+      return {
+        countryCode: null,
+        region: null,
+        city: null,
+        latitude: null,
+        longitude: null,
+      };
     }
 
     return {
       countryCode: data.countryCode.toUpperCase(),
       region: data.regionName ?? null,
       city: data.city ?? null,
+      latitude: typeof data.lat === "number" ? data.lat : null,
+      longitude: typeof data.lon === "number" ? data.lon : null,
     };
   } catch {
-    return { countryCode: null, region: null, city: null };
+    return {
+      countryCode: null,
+      region: null,
+      city: null,
+      latitude: null,
+      longitude: null,
+    };
   }
 }
 
 export async function getRequestGeo(request: Request): Promise<RequestGeo> {
   const fromHeaders = geoFromHeaders(request);
-  if (fromHeaders.countryCode) {
-    return fromHeaders;
-  }
-
   const ip = getClientIp(request);
-  const fromIp = await lookupGeoFromIp(ip);
-  if (fromIp.countryCode) {
-    return fromIp;
+  const needsIpLookup =
+    !fromHeaders.countryCode ||
+    fromHeaders.latitude == null ||
+    fromHeaders.longitude == null;
+  const fromIp = needsIpLookup ? await lookupGeoFromIp(ip) : null;
+  const countryCode =
+    fromHeaders.countryCode ?? fromIp?.countryCode ?? null;
+
+  if (!countryCode) {
+    return {
+      countryCode: null,
+      region: null,
+      city: null,
+      latitude: null,
+      longitude: null,
+    };
   }
 
-  return fromHeaders;
+  return {
+    countryCode,
+    region: fromHeaders.region ?? fromIp?.region ?? null,
+    city: fromHeaders.city ?? fromIp?.city ?? null,
+    latitude: fromHeaders.latitude ?? fromIp?.latitude ?? null,
+    longitude: fromHeaders.longitude ?? fromIp?.longitude ?? null,
+  };
 }
 
 export type RequestAnalyticsContext = RequestGeo & {

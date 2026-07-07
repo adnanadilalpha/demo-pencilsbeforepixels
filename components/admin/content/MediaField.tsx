@@ -180,7 +180,7 @@ export function MediaField({
               className="max-w-md"
             />
           </div>
-        ) : value ? (
+        ) : value.trim() ? (
           <div
             className={cn(
               "relative flex w-full items-center justify-center",

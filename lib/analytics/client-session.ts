@@ -3,7 +3,6 @@
 export const VISITOR_STORAGE_KEY = "pbp.analytics.visitor";
 export const SESSION_STORAGE_KEY = "pbp.analytics.session";
 export const SESSION_TIMEOUT_MS = 30 * 60 * 1000;
-export const PAGE_VIEW_DEDUPE_MS = 4_000;
 
 type StoredSession = {
   id: string;

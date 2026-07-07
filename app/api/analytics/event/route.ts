@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { ANALYTICS_EVENTS, type AnalyticsEventName } from "@/lib/analytics/event-types";
+import { isInternalAnalyticsRequest } from "@/lib/analytics/internal-traffic";
 import { normalizeAnalyticsPath } from "@/lib/analytics/normalize-path";
 import {
   getRequestAnalyticsContext,
@@ -55,6 +56,8 @@ export async function POST(request: Request) {
   }
 
   const supabase = createAdminClient();
+  const isInternal = isInternalAnalyticsRequest(context.visitorKey, request);
+
   const { error } = await supabase.from("analytics_events").insert({
     session_id: sessionId,
     visitor_id: isValidAnalyticsId(visitorId ?? undefined) ? visitorId : null,
@@ -66,6 +69,7 @@ export async function POST(request: Request) {
     country_code: context.countryCode,
     region: context.region,
     city: context.city,
+    is_internal: isInternal,
   });
 
   if (error) {

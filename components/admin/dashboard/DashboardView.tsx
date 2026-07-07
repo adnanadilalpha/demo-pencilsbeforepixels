@@ -79,7 +79,7 @@ export function DashboardView({ initialData }: DashboardViewProps) {
         }
       />
 
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <section className="grid items-stretch gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <AdminStatCard
           label={data.stats.newsletter.label}
           value={data.stats.newsletter.value}

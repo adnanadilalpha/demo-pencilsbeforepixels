@@ -15,7 +15,7 @@ import { getTimeGreeting, getTodayStartIso } from "@/lib/admin/format";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 const DEFAULT_RANGE: AnalyticsRange = "30d";
-const DEFAULT_METRIC: AnalyticsMetric = "sessions";
+const DEFAULT_METRIC: AnalyticsMetric = "users";
 
 function parseRange(value: string | null | undefined): AnalyticsRange {
   if (value === "7d" || value === "30d" || value === "90d" || value === "6m") {
@@ -26,7 +26,7 @@ function parseRange(value: string | null | undefined): AnalyticsRange {
 }
 
 function parseMetric(value: string | null | undefined): AnalyticsMetric {
-  if (value === "views" || value === "sessions") {
+  if (value === "users" || value === "views" || value === "sessions") {
     return value;
   }
 
@@ -88,20 +88,20 @@ export async function fetchDashboardData(
     supabase
       .from("page_views")
       .select(
-        "session_id, visitor_id, visitor_key, path, duration_seconds, is_bounce, country_code, region, city, created_at",
+        "session_id, visitor_id, visitor_key, path, duration_seconds, is_bounce, is_internal, view_count, last_seen_at, country_code, region, city, latitude, longitude, created_at",
       )
       .gte("created_at", sixMonthsAgo.toISOString()),
     supabase
       .from("analytics_events")
       .select(
-        "session_id, visitor_id, visitor_key, event_name, event_label, country_code, region, city, created_at",
+        "session_id, visitor_id, visitor_key, event_name, event_label, is_internal, country_code, region, city, created_at",
       )
       .gte("created_at", sixMonthsAgo.toISOString()),
   ]);
 
   const pageViews = (pageViewsRes.data ?? []) as PageViewRow[];
   const analyticsEvents = (analyticsEventsRes.data ?? []) as AnalyticsEventRecord[];
-  const analytics = buildAnalyticsForFilters(
+  const analytics = await buildAnalyticsForFilters(
     pageViews,
     range,
     metric,

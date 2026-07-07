@@ -6,28 +6,30 @@ type PopularPagesChartProps = {
 };
 
 export function PopularPagesChart({ pages }: PopularPagesChartProps) {
-  const maxViews = Math.max(...pages.map((page) => page.views), 1);
-  const totalViews = pages.reduce((sum, page) => sum + page.views, 0);
+  const maxVisitors = Math.max(...pages.map((page) => page.visitors), 1);
+  const totalVisitors = pages.reduce((sum, page) => sum + page.visitors, 0);
 
   if (pages.length === 0) {
     return (
-      <div className="flex min-h-[220px] items-center justify-center rounded-xl border border-dashed border-paper-300 bg-paper-50/60 px-6 text-center text-sm text-body-muted">
-        No page views in this period yet.
+      <div className="flex h-full min-h-[220px] flex-1 items-center justify-center rounded-xl border border-dashed border-paper-300 bg-paper-50/60 px-6 text-center text-sm text-body-muted">
+        No audience page data in this period yet.
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col">
+    <div className="flex h-full flex-col">
       <div className="mb-4 flex items-center justify-between text-xs text-body-muted">
-        <span className="font-medium uppercase tracking-[0.08em]">Top pages</span>
-        <span>{formatCount(totalViews)} views total</span>
+        <span className="font-medium uppercase tracking-[0.08em]">
+          Top pages by users
+        </span>
+        <span>{formatCount(totalVisitors)} users across top pages</span>
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:gap-x-6">
         {pages.map((page) => {
-          const widthPercent = Math.max((page.views / maxViews) * 100, 6);
-          const share = Math.round((page.views / totalViews) * 100);
+          const widthPercent = Math.max((page.visitors / maxVisitors) * 100, 6);
+          const share = Math.round((page.visitors / totalVisitors) * 100);
 
           return (
             <div key={page.path} className="min-w-0">
@@ -40,9 +42,11 @@ export function PopularPagesChart({ pages }: PopularPagesChartProps) {
                 </div>
                 <div className="shrink-0 text-right">
                   <p className="font-mono text-xs text-navy-800">
-                    {formatCount(page.views)}
+                    {formatCount(page.visitors)}
                   </p>
-                  <p className="text-[11px] text-body-muted">{share}%</p>
+                  <p className="text-[11px] text-body-muted">
+                    {share}% users · {formatCount(page.pageLoads)} loads
+                  </p>
                 </div>
               </div>
               <div className="mt-2 h-2 shrink-0 rounded-full bg-navy-50">

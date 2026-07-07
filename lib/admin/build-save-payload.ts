@@ -3,7 +3,7 @@ import type { SectionLocalDraft } from "@/lib/admin/content-local-draft";
 import { sanitizeGoalSectionForPublish } from "@/lib/cms/goal-section-content";
 import { sanitizeBeforeOptOutForPublish, stripBeforeOptOutFieldsFromRecord } from "@/lib/cms/before-opt-out-content";
 import { sanitizeResearchLibraryForPublish } from "@/lib/cms/research-library-content";
-import { MISSION_SLIDE_LABELS } from "@/lib/cms/mission-slides";
+import { normalizeMissionTimeline } from "@/lib/cms/mission-slides";
 import { sanitizeMentalHealthForPublish } from "@/lib/cms/site-ctas";
 import { normalizeEditorNavLinks } from "@/lib/cms/navigation";
 import { normalizeYouTubeUrl } from "@/lib/youtube";
@@ -70,10 +70,7 @@ function buildSavePayload(
   }
 
   if (sectionId === "timeline" && draft.timeline) {
-    payload.timeline = draft.timeline.map((slide, index) => ({
-      ...slide,
-      era: MISSION_SLIDE_LABELS[index] ?? slide.era,
-    }));
+    payload.timeline = normalizeMissionTimeline(draft.timeline);
   }
 
   if (sectionId === "learning_apps" && draft.softwareReviews) {

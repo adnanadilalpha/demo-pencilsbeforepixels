@@ -1,4 +1,15 @@
 import { getPageLabel } from "@/lib/admin/page-labels";
+import { filterAudiencePageViews } from "@/lib/analytics/audience";
+import {
+  getVisitorDedupKey,
+  countActiveUsers,
+  countUniqueSessions,
+  countUniqueVisitors,
+} from "@/lib/analytics/identity";
+import {
+  averageStoredCoordinates,
+  geocodeCityLocation,
+} from "@/lib/analytics/geocode-city";
 import {
   ANALYTICS_EVENT_LABELS,
   type AnalyticsEventName,
@@ -21,9 +32,14 @@ export type PageViewRow = {
   path: string;
   duration_seconds: number | null;
   is_bounce: boolean;
+  is_internal?: boolean;
+  view_count?: number;
+  last_seen_at?: string | null;
   country_code?: string | null;
   region?: string | null;
   city?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
   created_at: string;
 };
 
@@ -33,6 +49,7 @@ export type AnalyticsEventRecord = {
   visitor_id?: string | null;
   visitor_key?: string | null;
   session_id: string;
+  is_internal?: boolean;
   country_code?: string | null;
   region?: string | null;
   city?: string | null;
@@ -183,35 +200,19 @@ function metricValue(
   views: PageViewRow[],
   metric: AnalyticsMetric,
 ): number {
+  if (metric === "users") {
+    return countUniqueVisitors(views);
+  }
+
   if (metric === "sessions") {
     return countUniqueSessions(views);
   }
 
-  return views.length;
+  return views.reduce((sum, view) => sum + (view.view_count ?? 1), 0);
 }
 
-function countUniqueSessions(views: PageViewRow[]): number {
-  return new Set(views.map((view) => view.session_id)).size;
-}
-
-function getVisitorDedupKey(row: {
-  visitor_id?: string | null;
-  visitor_key?: string | null;
-  session_id: string;
-}): string {
-  if (row.visitor_id) return `v:${row.visitor_id}`;
-  if (row.visitor_key) return `k:${row.visitor_key}`;
-  return `s:${row.session_id}`;
-}
-
-function countUniqueVisitors(views: PageViewRow[]): number {
-  const ids = new Set<string>();
-
-  for (const view of views) {
-    ids.add(getVisitorDedupKey(view));
-  }
-
-  return ids.size;
+function filterAudienceEvents(events: AnalyticsEventRecord[]): AnalyticsEventRecord[] {
+  return events.filter((event) => !event.is_internal);
 }
 
 function computeAvgSessionDuration(views: PageViewRow[]): number {
@@ -263,19 +264,32 @@ export function buildPopularPages(
   views: PageViewRow[],
   limit = 5,
 ): PopularPageRow[] {
-  const counts = new Map<string, number>();
+  const grouped = new Map<
+    string,
+    { visitors: Set<string>; pageLoads: number }
+  >();
 
   for (const view of views) {
-    counts.set(view.path, (counts.get(view.path) ?? 0) + 1);
+    const entry = grouped.get(view.path) ?? {
+      visitors: new Set<string>(),
+      pageLoads: 0,
+    };
+    entry.visitors.add(getVisitorDedupKey(view));
+    entry.pageLoads += view.view_count ?? 1;
+    grouped.set(view.path, entry);
   }
 
-  return [...counts.entries()]
-    .sort(([, a], [, b]) => b - a)
+  return [...grouped.entries()]
+    .sort(
+      ([, a], [, b]) =>
+        b.visitors.size - a.visitors.size || b.pageLoads - a.pageLoads,
+    )
     .slice(0, limit)
-    .map(([path, pageViews]) => ({
+    .map(([path, entry]) => ({
       path,
       label: getPageLabel(path),
-      views: pageViews,
+      visitors: entry.visitors.size,
+      pageLoads: entry.pageLoads,
     }));
 }
 
@@ -293,36 +307,156 @@ function formatCountryLabel(countryCode: string | null | undefined): string {
   }
 }
 
-export function buildVisitorLocations(
-  views: PageViewRow[],
-  limit = 6,
-): VisitorLocationRow[] {
-  const grouped = new Map<string, { visitors: Set<string>; detail?: string }>();
+function formatRegionLabel(
+  countryCode: string,
+  region: string | null | undefined,
+): string | null {
+  const value = region?.trim();
+  if (!value) return null;
 
-  for (const view of views) {
-    const country = view.country_code?.trim().toUpperCase();
-    if (!country || country === "ZZ") continue;
-
-    const entry = grouped.get(country) ?? { visitors: new Set<string>() };
-    entry.visitors.add(getVisitorDedupKey(view));
-
-    if (view.city || view.region) {
-      entry.detail = [view.city, view.region].filter(Boolean).join(", ");
+  if (countryCode === "US" && value.length === 2) {
+    try {
+      return (
+        new Intl.DisplayNames(["en"], { type: "region" }).of(`US-${value}`) ??
+        value
+      );
+    } catch {
+      return value;
     }
-
-    grouped.set(country, entry);
   }
 
-  return [...grouped.entries()]
+  return value;
+}
+
+function buildLocationKey(view: PageViewRow): string | null {
+  const countryCode = view.country_code?.trim().toUpperCase();
+  if (!countryCode || countryCode === "ZZ") return null;
+
+  const region = view.region?.trim() ?? "";
+  const city = view.city?.trim() ?? "";
+
+  return [countryCode, region, city].join("|");
+}
+
+function formatLocationLabel(input: {
+  countryCode: string;
+  region?: string | null;
+  city?: string | null;
+}): { label: string; detail?: string } {
+  const countryLabel = formatCountryLabel(input.countryCode);
+  const regionLabel = formatRegionLabel(input.countryCode, input.region);
+  const city = input.city?.trim();
+
+  if (city && regionLabel) {
+    return {
+      label: `${city}, ${regionLabel}`,
+      detail: countryLabel,
+    };
+  }
+
+  if (city) {
+    return {
+      label: city,
+      detail: countryLabel,
+    };
+  }
+
+  if (regionLabel) {
+    return {
+      label: regionLabel,
+      detail: countryLabel,
+    };
+  }
+
+  return { label: countryLabel };
+}
+
+export async function buildVisitorLocations(
+  views: PageViewRow[],
+  limit = 12,
+): Promise<VisitorLocationRow[]> {
+  const grouped = new Map<
+    string,
+    {
+      countryCode: string;
+      region: string | null;
+      city: string | null;
+      visitors: Set<string>;
+      views: number;
+      coordinates: Array<{ latitude?: number | null; longitude?: number | null }>;
+    }
+  >();
+
+  for (const view of views) {
+    const key = buildLocationKey(view);
+    if (!key) continue;
+
+    const countryCode = view.country_code!.trim().toUpperCase();
+    const region = view.region?.trim() ?? null;
+    const city = view.city?.trim() ?? null;
+    const entry =
+      grouped.get(key) ??
+      {
+        countryCode,
+        region,
+        city,
+        visitors: new Set<string>(),
+        views: 0,
+        coordinates: [],
+      };
+
+    entry.visitors.add(getVisitorDedupKey(view));
+    entry.views += 1;
+    entry.coordinates.push({
+      latitude: view.latitude,
+      longitude: view.longitude,
+    });
+    grouped.set(key, entry);
+  }
+
+  const ranked = [...grouped.entries()]
     .map(([key, entry]) => ({
       key,
-      label:
-        key === "LOCAL" ? "Local testing" : formatCountryLabel(key),
-      detail: entry.detail,
+      entry,
       visitors: entry.visitors.size,
+      views: entry.views,
     }))
-    .sort((a, b) => b.visitors - a.visitors)
+    .sort((a, b) => b.visitors - a.visitors || b.views - a.views)
     .slice(0, limit);
+
+  const rows = await Promise.all(
+    ranked.map(async ({ key, entry, visitors, views }) => {
+      const { label, detail } = formatLocationLabel({
+        countryCode: entry.countryCode,
+        region: entry.region,
+        city: entry.city,
+      });
+
+      let coordinates = averageStoredCoordinates(entry.coordinates);
+      if (!coordinates) {
+        coordinates = await geocodeCityLocation({
+          countryCode: entry.countryCode,
+          region: entry.region,
+          city: entry.city,
+        });
+      }
+
+      return {
+        key,
+        label,
+        detail,
+        visitors,
+        views,
+        countryCode: entry.countryCode,
+        region: entry.region,
+        city: entry.city,
+        latitude: coordinates?.latitude ?? null,
+        longitude: coordinates?.longitude ?? null,
+      };
+    }),
+  );
+
+  return rows;
 }
 
 export function buildTopEvents(
@@ -386,36 +520,56 @@ export function computeBounceRate(views: PageViewRow[]): number {
   return Math.round((bounces / sessions.size) * 100);
 }
 
-export function buildAnalyticsSummary(
+export async function buildAnalyticsSummary(
   allViews: PageViewRow[],
   range: AnalyticsRange,
   allEvents: AnalyticsEventRecord[] = [],
   reference = new Date(),
-): {
+): Promise<{
+  activeUsers: AnalyticsStatCard;
   totalVisitors: AnalyticsStatCard;
   uniqueSessions: AnalyticsStatCard;
+  pageViews: AnalyticsStatCard;
   avgTimeOnSite: AnalyticsStatCard;
   bounceRate: AnalyticsStatCard;
   visitorsOverTime: AnalyticsTimePoint[];
   popularPages: PopularPageRow[];
   visitorLocations: VisitorLocationRow[];
   topEvents: AnalyticsEventRow[];
-} {
-  const currentViews = filterViewsByRange(allViews, range, reference);
-  const currentEvents = filterEventsByRange(allEvents, range, reference);
+}> {
+  const audienceViews = filterAudiencePageViews(allViews);
+  const audienceEvents = filterAudienceEvents(allEvents);
+  const currentViews = filterViewsByRange(audienceViews, range, reference);
+  const currentEvents = filterEventsByRange(audienceEvents, range, reference);
   const currentStart = getRangeStart(range, reference);
   const previousStart = getPreviousRangeStart(range, reference);
-  const previousViews = filterViewsBetween(allViews, previousStart, currentStart);
+  const previousViews = filterViewsBetween(audienceViews, previousStart, currentStart);
 
+  const activeUsers = countActiveUsers(audienceViews, reference.getTime());
   const totalVisitors = countUniqueVisitors(currentViews);
   const previousVisitors = countUniqueVisitors(previousViews);
   const uniqueSessions = countUniqueSessions(currentViews);
   const previousSessions = countUniqueSessions(previousViews);
+  const totalPageViews = currentViews.reduce(
+    (sum, view) => sum + (view.view_count ?? 1),
+    0,
+  );
+  const previousPageViews = previousViews.reduce(
+    (sum, view) => sum + (view.view_count ?? 1),
+    0,
+  );
   const sessionTrend = formatPercentChange(uniqueSessions, previousSessions);
   const visitorTrend = formatPercentChange(totalVisitors, previousVisitors);
+  const pageViewTrend = formatPercentChange(totalPageViews, previousPageViews);
   const avgDuration = computeAvgSessionDuration(currentViews);
+  const visitorLocations = await buildVisitorLocations(currentViews);
 
   return {
+    activeUsers: {
+      label: "Active Users",
+      value: formatCount(activeUsers),
+      trend: "Last 30 minutes",
+    },
     totalVisitors: {
       label: "Unique Visitors",
       value: formatCount(totalVisitors),
@@ -423,10 +577,16 @@ export function buildAnalyticsSummary(
       trendPositive: totalVisitors >= previousVisitors,
     },
     uniqueSessions: {
-      label: "Unique Sessions",
+      label: "Sessions",
       value: formatCount(uniqueSessions),
       trend: `${sessionTrend} vs prior period`,
       trendPositive: uniqueSessions >= previousSessions,
+    },
+    pageViews: {
+      label: "Page Loads",
+      value: formatCount(totalPageViews),
+      trend: `${pageViewTrend} vs prior period`,
+      trendPositive: totalPageViews >= previousPageViews,
     },
     avgTimeOnSite: {
       label: "Avg. Time on Site",
@@ -436,9 +596,9 @@ export function buildAnalyticsSummary(
       label: "Bounce Rate",
       value: `${computeBounceRate(currentViews)}%`,
     },
-    visitorsOverTime: buildVisitorsOverTime(currentViews, range, "sessions"),
+    visitorsOverTime: buildVisitorsOverTime(currentViews, range, "users"),
     popularPages: buildPopularPages(currentViews),
-    visitorLocations: buildVisitorLocations(currentViews),
+    visitorLocations,
     topEvents: buildTopEvents(currentEvents),
   };
 }
@@ -452,14 +612,14 @@ function filterEventsByRange(
   return events.filter((event) => new Date(event.created_at) >= start);
 }
 
-export function buildAnalyticsForFilters(
+export async function buildAnalyticsForFilters(
   allViews: PageViewRow[],
   range: AnalyticsRange,
   metric: AnalyticsMetric,
   allEvents: AnalyticsEventRecord[] = [],
   reference = new Date(),
 ) {
-  const summary = buildAnalyticsSummary(allViews, range, allEvents, reference);
+  const summary = await buildAnalyticsSummary(allViews, range, allEvents, reference);
 
   return {
     ...summary,

@@ -2,7 +2,6 @@
 
 import {
   getOrRefreshSession,
-  PAGE_VIEW_DEDUPE_MS,
   touchSession,
 } from "@/lib/analytics/client-session";
 import { canTrackAnalytics } from "@/lib/analytics/track-client";
@@ -11,48 +10,57 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef } from "react";
 
 const VIEW_KEY = "pbp.analytics.view";
-const LAST_TRACK_KEY = "pbp.analytics.last-track";
+const SESSION_VIEWS_KEY = "pbp.analytics.session-views";
 
-type LastTrack = {
-  path: string;
-  at: number;
-};
+type SessionViewMap = Record<string, Record<string, string>>;
 
-function readLastTrack(): LastTrack | null {
+function readSessionViewMap(): SessionViewMap {
   try {
-    const raw = sessionStorage.getItem(LAST_TRACK_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as LastTrack;
-    if (typeof parsed.path === "string" && typeof parsed.at === "number") {
-      return parsed;
-    }
+    const raw = sessionStorage.getItem(SESSION_VIEWS_KEY);
+    if (!raw) return {};
+    return JSON.parse(raw) as SessionViewMap;
   } catch {
-    // ignore
+    return {};
   }
-  return null;
 }
 
-function writeLastTrack(track: LastTrack) {
-  sessionStorage.setItem(LAST_TRACK_KEY, JSON.stringify(track));
+function getSessionViewId(sessionId: string, path: string): string | null {
+  return readSessionViewMap()[sessionId]?.[path] ?? null;
 }
 
-function shouldSkipDuplicate(path: string, now: number) {
-  const last = readLastTrack();
-  return last?.path === path && now - last.at < PAGE_VIEW_DEDUPE_MS;
+function setSessionViewId(sessionId: string, path: string, viewId: string) {
+  const map = readSessionViewMap();
+  map[sessionId] = { ...(map[sessionId] ?? {}), [path]: viewId };
+  sessionStorage.setItem(SESSION_VIEWS_KEY, JSON.stringify(map));
 }
 
-async function trackPageView(path: string) {
-  if (!canTrackAnalytics()) return;
+async function patchPageView(
+  viewId: string,
+  options: { durationSeconds?: number; isBounce?: boolean } = {},
+) {
+  await fetch("/api/analytics/page-view", {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      viewId,
+      durationSeconds: options.durationSeconds,
+      isBounce: options.isBounce,
+    }),
+    keepalive: true,
+  });
 
-  const session = getOrRefreshSession();
-  if (!session.id) return;
+  touchSession();
+}
+
+async function trackPageView(path: string, sessionId: string) {
+  if (!canTrackAnalytics()) return null;
 
   const response = await fetch("/api/analytics/page-view", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      sessionId: session.id,
-      visitorId: session.visitorId || null,
+      sessionId,
+      visitorId: getOrRefreshSession().visitorId || null,
       path,
       pageTitle: document.title,
       referrer: document.referrer || null,
@@ -60,39 +68,20 @@ async function trackPageView(path: string) {
     keepalive: true,
   });
 
-  if (!response.ok) return;
+  if (!response.ok) return null;
 
-  const payload = (await response.json()) as { id?: string; skipped?: boolean };
-  if (payload.skipped) return;
+  const payload = (await response.json()) as {
+    id?: string;
+    skipped?: boolean;
+    deduped?: boolean;
+  };
 
-  if (payload.id) {
-    sessionStorage.setItem(VIEW_KEY, payload.id);
-  }
+  if (payload.skipped || !payload.id) return null;
 
-  writeLastTrack({ path, at: Date.now() });
+  sessionStorage.setItem(VIEW_KEY, payload.id);
+  setSessionViewId(sessionId, path, payload.id);
   touchSession();
-}
-
-async function updateDuration(startedAt: number, isBounce: boolean) {
-  if (!canTrackAnalytics()) return;
-
-  const viewId = sessionStorage.getItem(VIEW_KEY);
-  if (!viewId) return;
-
-  const durationSeconds = Math.max(1, Math.round((Date.now() - startedAt) / 1000));
-
-  await fetch("/api/analytics/page-view", {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      viewId,
-      durationSeconds,
-      isBounce,
-    }),
-    keepalive: true,
-  });
-
-  touchSession();
+  return payload.id;
 }
 
 export function PageViewTracker() {
@@ -106,33 +95,53 @@ export function PageViewTracker() {
     }
 
     const path = normalizeAnalyticsPath(pathname);
+    const session = getOrRefreshSession();
     const now = Date.now();
-
-    if (shouldSkipDuplicate(path, now)) {
-      return;
-    }
 
     if (trackingRef.current === path) {
       return;
     }
     trackingRef.current = path;
 
+    const existingViewId = getSessionViewId(session.id, path);
+    const previousViewId = sessionStorage.getItem(VIEW_KEY);
     const previousStartedAt = startedAtRef.current;
-    const hasPreviousView = sessionStorage.getItem(VIEW_KEY);
 
-    if (hasPreviousView) {
-      void updateDuration(previousStartedAt, false);
+    if (previousViewId && previousViewId !== existingViewId) {
+      void patchPageView(previousViewId, {
+        durationSeconds: Math.max(1, Math.round((now - previousStartedAt) / 1000)),
+        isBounce: false,
+      });
     }
 
     startedAtRef.current = now;
-    void trackPageView(path).finally(() => {
-      if (trackingRef.current === path) {
-        trackingRef.current = null;
-      }
-    });
+
+    if (existingViewId) {
+      sessionStorage.setItem(VIEW_KEY, existingViewId);
+      void patchPageView(existingViewId, { isBounce: false }).finally(() => {
+        if (trackingRef.current === path) {
+          trackingRef.current = null;
+        }
+      });
+    } else {
+      void trackPageView(path, session.id).finally(() => {
+        if (trackingRef.current === path) {
+          trackingRef.current = null;
+        }
+      });
+    }
 
     const handlePageHide = () => {
-      void updateDuration(startedAtRef.current, true);
+      const viewId = sessionStorage.getItem(VIEW_KEY);
+      if (!viewId) return;
+
+      void patchPageView(viewId, {
+        durationSeconds: Math.max(
+          1,
+          Math.round((Date.now() - startedAtRef.current) / 1000),
+        ),
+        isBounce: true,
+      });
     };
 
     window.addEventListener("pagehide", handlePageHide);
