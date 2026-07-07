@@ -118,7 +118,7 @@ function TimelineSlideMedia({
   return (
     <div
       ref={mediaRef}
-      className={`timeline-slide-media relative h-[min(38vh,280px)] w-full max-w-xl shrink-0 overflow-hidden rounded-sm shadow-[0_28px_90px_rgba(10,22,40,0.22)] sm:h-[min(42vh,320px)] lg:h-[min(72vh,560px)] lg:max-w-none lg:flex-1 ${
+      className={`timeline-slide-media relative w-full shrink-0 overflow-hidden rounded-sm shadow-[0_28px_90px_rgba(10,22,40,0.22)] h-[min(30dvh,210px)] sm:h-[min(34dvh,240px)] lg:h-[min(72vh,560px)] lg:max-w-none lg:flex-1 ${
         isLight ? "ring-1 ring-white/15" : "ring-1 ring-navy-800/10"
       }`}
     >
@@ -128,7 +128,7 @@ function TimelineSlideMedia({
           alt={stripRichTextToPlain(slide.title) || `Mission slide ${index + 1}`}
           fill
           className="object-cover object-center"
-          sizes="(max-width: 1024px) 50vw, 42vw"
+          sizes="(max-width: 1024px) 100vw, 42vw"
           priority={index === 0}
         />
       ) : (
@@ -214,6 +214,7 @@ export function TimelineSection() {
   const viewportHeightRef = useRef(0);
   const lastMeasureWidthRef = useRef<number | null>(null);
   const pendingScrollYRef = useRef<number | undefined>(undefined);
+  const isMobileLayoutRef = useRef(false);
 
   const [wrapperHeight, setWrapperHeight] = useState(0);
 
@@ -238,6 +239,7 @@ export function TimelineSection() {
 
     viewportHeightRef.current = viewportHeight;
     lastMeasureWidthRef.current = width;
+    isMobileLayoutRef.current = width < 1024;
 
     const { totalHeight, scrollDistance } = getTimelineMetrics(
       slideCount,
@@ -329,13 +331,13 @@ export function TimelineSection() {
       }
     }
 
-    const useMotion = !reducedMotionRef.current;
+    const useMotion = !reducedMotionRef.current && !isMobileLayoutRef.current;
 
     for (let index = 0; index < currentSlideCount; index += 1) {
       const motion = useMotion
         ? getSlideMotion(slideFloat, index)
         : {
-            opacity: index === roundedIndex ? 1 : 0.35,
+            opacity: index === roundedIndex ? 1 : isMobileLayoutRef.current ? 0 : 0.35,
             textY: 0,
             textX: 0,
             imageScale: 1,
@@ -526,7 +528,7 @@ export function TimelineSection() {
             return (
               <article
                 key={`${index}-${slide.number}`}
-                className={`flex h-full min-h-0 shrink-0 flex-col items-stretch gap-5 py-8 max-lg:justify-start max-lg:gap-5 max-lg:pb-6 max-lg:pt-[calc(var(--header-height)+4.75rem)] lg:flex-row lg:items-center lg:gap-12 lg:py-0 ${sectionPaddingX} ${
+                className={`h-full min-h-0 shrink-0 max-lg:grid max-lg:grid-rows-[minmax(0,1fr)_auto] max-lg:gap-4 max-lg:pb-[calc(2.75rem+env(safe-area-inset-bottom,0px))] max-lg:pt-[calc(var(--header-height)+3.5rem)] lg:flex lg:flex-row lg:items-center lg:gap-12 lg:py-0 ${sectionPaddingX} ${
                   isLight ? RICH_TEXT_LINKS_LIGHT_CLASS : ""
                 }`}
                 style={{
@@ -538,19 +540,19 @@ export function TimelineSection() {
                   ref={(node) => {
                     copyRefs.current[index] = node;
                   }}
-                  className={`timeline-slide-copy flex min-h-0 w-full flex-1 flex-col justify-center gap-3 max-lg:max-w-none max-lg:justify-start max-lg:gap-3 lg:gap-6 ${
+                  className={`timeline-slide-copy flex min-h-0 w-full flex-col justify-center gap-2.5 max-lg:justify-start max-lg:gap-2.5 max-lg:overflow-y-auto max-lg:overscroll-y-contain max-lg:pr-1 lg:flex-1 lg:gap-6 ${
                     slide.indentContent ? "pl-0 max-lg:pl-0 sm:pl-6 lg:pl-32" : ""
                   }`}
                 >
                   <p
-                    className={`text-fluid-timeline-number font-sans font-bold leading-none max-lg:text-[2.75rem] lg:text-[96px] ${
+                    className={`text-fluid-timeline-number font-sans font-bold leading-none max-lg:text-[2.5rem] lg:text-[96px] ${
                       isLight ? "text-slate-50/70" : "text-hero-dark"
                     }`}
                   >
                     {slide.number}
                   </p>
                   <h2
-                    className={`text-fluid-display-lg font-display leading-display lg:text-[56px] ${
+                    className={`text-fluid-display-lg font-display leading-[1.05] max-lg:text-[clamp(1.75rem,7vw,2.35rem)] lg:leading-display lg:text-[56px] ${
                       isLight ? "text-slate-50" : "text-hero-dark"
                     }`}
                   >
@@ -561,7 +563,7 @@ export function TimelineSection() {
                     />
                   </h2>
                   <p
-                    className={`max-w-xl text-base leading-[1.55] max-lg:leading-[1.5] lg:text-2xl lg:leading-[1.4] ${
+                    className={`max-w-xl text-[0.95rem] leading-[1.5] sm:text-base max-lg:max-w-none lg:text-2xl lg:leading-[1.4] ${
                       isLight ? "text-slate-200" : "text-hero-dark"
                     }`}
                   >
@@ -586,7 +588,7 @@ export function TimelineSection() {
         </div>
 
         <div
-          className={`pointer-events-none absolute inset-x-0 z-20 max-lg:top-[calc(var(--header-height)+0.75rem)] lg:top-24 ${sectionPaddingX}`}
+          className={`pointer-events-none absolute inset-x-0 z-20 max-lg:top-[calc(var(--header-height)+0.5rem)] lg:top-24 ${sectionPaddingX}`}
           aria-hidden
         >
           <p

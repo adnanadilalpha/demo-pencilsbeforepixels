@@ -190,6 +190,14 @@ input.font-agustina-signature {
   will-change: transform;
 }
 
+@media (max-width: 1023px) {
+  .timeline-slide-copy,
+  .timeline-slide-media {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
+
 .hero-enter {
   animation: hero-fade-up 1s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
