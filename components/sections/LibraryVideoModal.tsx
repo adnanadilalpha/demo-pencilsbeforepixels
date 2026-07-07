@@ -9,6 +9,7 @@ import {
 } from "@/lib/cms/library-video";
 import type { LibraryItem } from "@/lib/cms/types";
 import { lockBodyScroll, unlockBodyScroll } from "@/lib/modal/body-scroll-lock";
+import { stripRichTextToPlain } from "@/lib/cms/rich-text";
 import { disableYouTubeCaptions, youTubeEmbedUrl } from "@/lib/youtube";
 import { cn } from "@/lib/utils";
 
@@ -57,7 +58,12 @@ function VideoPlayer({
     return (
       <iframe
         ref={iframeRef}
-        src={youTubeEmbedUrl(source.videoId, true, origin || undefined)}
+        src={youTubeEmbedUrl(
+          source.videoId,
+          true,
+          origin || undefined,
+          source.startSeconds,
+        )}
         title={title}
         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
         referrerPolicy="strict-origin-when-cross-origin"
@@ -153,11 +159,11 @@ export function LibraryVideoModal({
               id={titleId}
               className="truncate font-display text-lg text-white sm:text-xl"
             >
-              {item.title}
+              {stripRichTextToPlain(item.title)}
             </h2>
             {item.subtitle ? (
               <p className="truncate text-xs uppercase tracking-wide text-white/60 sm:text-sm lg:text-base">
-                {item.subtitle}
+                {stripRichTextToPlain(item.subtitle)}
               </p>
             ) : null}
           </div>

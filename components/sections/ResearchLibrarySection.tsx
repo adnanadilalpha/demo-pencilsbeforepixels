@@ -18,6 +18,7 @@ import {
 import { useSection, useSiteContent } from "@/lib/cms/hooks";
 import { resolvePublicLibraryCategories } from "@/lib/cms/fallback-data";
 import { isLibraryVideoPlayable } from "@/lib/cms/library-video";
+import { stripRichTextToPlain } from "@/lib/cms/rich-text";
 import type { LibraryCategory, LibraryItem } from "@/lib/cms/types";
 import { cn } from "@/lib/utils";
 import { LibraryVideoModal } from "@/components/sections/LibraryVideoModal";
@@ -268,10 +269,10 @@ function LibraryCard({
       />
       <div className="flex flex-col gap-2">
         <h3 className="font-display text-lg leading-snug text-[#18263a] sm:text-xl sm:leading-display">
-          {item.title}
+          {stripRichTextToPlain(item.title)}
         </h3>
         <p className="text-xs uppercase leading-relaxed text-body-muted break-words sm:text-sm lg:text-base">
-          {item.subtitle}
+          {stripRichTextToPlain(item.subtitle)}
         </p>
         {item.kind === "book" && item.viewUrl ? (
           <a

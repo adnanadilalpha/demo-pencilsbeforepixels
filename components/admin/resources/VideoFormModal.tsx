@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { adminInputClass } from "@/components/admin/admin-styles";
-import { RichTextEditor } from "@/components/admin/content/RichTextEditor";
 import {
   AdminModal,
   AdminModalActions,
@@ -14,7 +13,8 @@ import type {
   VideoInput,
   VideoSource,
 } from "@/lib/admin/resources/types";
-import { parseYouTubeVideoId } from "@/lib/youtube";
+import { stripRichTextToPlain } from "@/lib/cms/rich-text";
+import { normalizeYouTubeUrl, parseYouTubeVideoId } from "@/lib/youtube";
 import { cn } from "@/lib/utils";
 
 type VideoFormModalProps = {
@@ -54,8 +54,8 @@ export function VideoFormModal({
     setForm(
       initial
         ? {
-            title: initial.title,
-            description: initial.description ?? "",
+            title: stripRichTextToPlain(initial.title),
+            description: stripRichTextToPlain(initial.description ?? ""),
             source: initial.source,
             youtubeUrl: initial.youtubeUrl,
             youtubeId: initial.youtubeId,
@@ -101,9 +101,11 @@ export function VideoFormModal({
     setError(null);
 
     const payload = {
-      title: form.title,
-      description: form.description,
+      title: form.title.trim(),
+      description: form.description.trim(),
       youtubeId,
+      youtubeUrl:
+        form.source === "youtube" ? normalizeYouTubeUrl(form.youtubeUrl) : null,
       videoMediaId,
       thumbnailMediaId: form.thumbnailMediaId,
       visible: form.visible,
@@ -191,7 +193,7 @@ export function VideoFormModal({
                   youtubeUrl: event.target.value,
                 }))
               }
-              placeholder="https://youtube.com/watch?v=…"
+              placeholder="https://youtube.com/watch?v=… or youtube.com/live/…"
               className={adminInputClass}
             />
           </AdminModalField>
@@ -211,27 +213,32 @@ export function VideoFormModal({
           />
         )}
 
-        <RichTextEditor
-          label="Title"
-          value={form.title}
-          placeholder="Video title"
-          compact
-          onChange={(value) =>
-            setForm((current) => ({ ...current, title: value }))
-          }
-        />
+        <AdminModalField label="Title">
+          <input
+            type="text"
+            value={form.title}
+            onChange={(event) =>
+              setForm((current) => ({ ...current, title: event.target.value }))
+            }
+            placeholder="Video title"
+            className={adminInputClass}
+          />
+        </AdminModalField>
 
-        <RichTextEditor
-          label="Description"
-          value={form.description}
-          placeholder="Brief description…"
-          onChange={(value) =>
-            setForm((current) => ({
-              ...current,
-              description: value,
-            }))
-          }
-        />
+        <AdminModalField label="Description">
+          <textarea
+            value={form.description}
+            onChange={(event) =>
+              setForm((current) => ({
+                ...current,
+                description: event.target.value,
+              }))
+            }
+            placeholder="Brief description…"
+            rows={3}
+            className={adminInputClass}
+          />
+        </AdminModalField>
 
         <FileUploadField
           label="Custom thumbnail (optional)"

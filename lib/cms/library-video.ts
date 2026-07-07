@@ -1,8 +1,11 @@
 import type { LibraryItem } from "@/lib/cms/types";
-import { youTubeUrlToId } from "@/lib/youtube";
+import {
+  parseYouTubeStartSeconds,
+  youTubeUrlToId,
+} from "@/lib/youtube";
 
 export type LibraryVideoSource =
-  | { type: "youtube"; videoId: string }
+  | { type: "youtube"; videoId: string; startSeconds?: number }
   | { type: "upload"; url: string };
 
 export function getLibraryVideoSource(
@@ -17,7 +20,12 @@ export function getLibraryVideoSource(
   if (item.youtubeUrl) {
     const videoId = youTubeUrlToId(item.youtubeUrl);
     if (videoId) {
-      return { type: "youtube", videoId };
+      const startSeconds = parseYouTubeStartSeconds(item.youtubeUrl);
+      return {
+        type: "youtube",
+        videoId,
+        ...(startSeconds && startSeconds > 0 ? { startSeconds } : {}),
+      };
     }
   }
 

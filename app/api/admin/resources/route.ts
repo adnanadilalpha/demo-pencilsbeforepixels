@@ -158,13 +158,15 @@ export async function POST(request: Request) {
         title: string;
         description: string;
         youtubeId: string | null;
+        youtubeUrl?: string | null;
         videoMediaId: string | null;
         thumbnailMediaId: string | null;
         visible: boolean;
       };
 
       const externalUrl = input.youtubeId
-        ? `https://www.youtube.com/watch?v=${input.youtubeId}`
+        ? input.youtubeUrl?.trim() ||
+          `https://www.youtube.com/watch?v=${input.youtubeId}`
         : null;
 
       const { data, error } = await supabase
@@ -250,8 +252,12 @@ export async function PATCH(request: Request) {
         }
         if ("youtubeId" in body.patch) {
           const youtubeId = body.patch.youtubeId as string | null;
+          const youtubeUrl =
+            typeof body.patch.youtubeUrl === "string"
+              ? body.patch.youtubeUrl.trim()
+              : "";
           patch.external_url = youtubeId
-            ? `https://www.youtube.com/watch?v=${youtubeId}`
+            ? youtubeUrl || `https://www.youtube.com/watch?v=${youtubeId}`
             : null;
           if (youtubeId) {
             patch.video_media_id = null;

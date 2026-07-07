@@ -5,6 +5,7 @@ import { Trash2 } from "lucide-react";
 import { ToggleField } from "@/components/admin/content/ToggleField";
 import { UploadedVideoPoster } from "@/components/sections/UploadedVideoPoster";
 import type { AdminVideo } from "@/lib/admin/resources/types";
+import { stripRichTextToPlain } from "@/lib/cms/rich-text";
 type VideosTabProps = {
   items: AdminVideo[];
   onEdit: (item: AdminVideo) => void;
@@ -84,7 +85,7 @@ export function VideosTab({
                 onClick={() => onEdit(video)}
                 className="text-left text-sm font-semibold leading-snug text-navy-800"
               >
-                {video.title}
+                {stripRichTextToPlain(video.title)}
               </button>
 
               <div className="flex items-center gap-2 border-t border-navy-800/6 pt-3">

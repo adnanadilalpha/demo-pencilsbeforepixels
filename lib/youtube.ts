@@ -1,3 +1,38 @@
+function isValidYouTubeVideoId(id: string | undefined | null): id is string {
+  return Boolean(id && /^[a-zA-Z0-9_-]{11}$/.test(id));
+}
+
+function parseYouTubeTimeValue(value: string): number | null {
+  if (/^\d+$/.test(value)) return Number(value);
+
+  const secondsOnly = value.match(/^(\d+)s$/i);
+  if (secondsOnly) return Number(secondsOnly[1]);
+
+  let total = 0;
+  const hours = value.match(/(\d+)h/i);
+  const minutes = value.match(/(\d+)m/i);
+  const seconds = value.match(/(\d+)s/i);
+
+  if (hours) total += Number(hours[1]) * 3600;
+  if (minutes) total += Number(minutes[1]) * 60;
+  if (seconds) total += Number(seconds[1]);
+
+  return total > 0 ? total : null;
+}
+
+export function parseYouTubeStartSeconds(input: string): number | null {
+  const trimmed = input.trim();
+  if (!trimmed) return null;
+
+  try {
+    const url = new URL(trimmed);
+    const raw = url.searchParams.get("t") ?? url.searchParams.get("start");
+    return raw ? parseYouTubeTimeValue(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
 export function parseYouTubeVideoId(input: string): string | null {
   const trimmed = input.trim();
   if (!trimmed) return null;
@@ -12,20 +47,28 @@ export function parseYouTubeVideoId(input: string): string | null {
 
     if (host === "youtu.be") {
       const id = url.pathname.split("/").filter(Boolean)[0];
-      return id && /^[a-zA-Z0-9_-]{11}$/.test(id) ? id : null;
+      return isValidYouTubeVideoId(id) ? id : null;
     }
 
     if (host.includes("youtube.com") || host.includes("youtube-nocookie.com")) {
       const fromQuery = url.searchParams.get("v");
-      if (fromQuery && /^[a-zA-Z0-9_-]{11}$/.test(fromQuery)) {
+      if (isValidYouTubeVideoId(fromQuery)) {
         return fromQuery;
       }
 
-      const embedMatch = url.pathname.match(/\/embed\/([a-zA-Z0-9_-]{11})/);
-      if (embedMatch) return embedMatch[1];
+      const pathPatterns = [
+        /\/embed\/([a-zA-Z0-9_-]{11})/,
+        /\/shorts\/([a-zA-Z0-9_-]{11})/,
+        /\/live\/([a-zA-Z0-9_-]{11})/,
+        /\/v\/([a-zA-Z0-9_-]{11})/,
+      ];
 
-      const shortsMatch = url.pathname.match(/\/shorts\/([a-zA-Z0-9_-]{11})/);
-      if (shortsMatch) return shortsMatch[1];
+      for (const pattern of pathPatterns) {
+        const match = url.pathname.match(pattern);
+        if (isValidYouTubeVideoId(match?.[1])) {
+          return match[1];
+        }
+      }
     }
   } catch {
     return null;
@@ -40,7 +83,9 @@ export function normalizeYouTubeUrl(input: string): string {
 
   const videoId = parseYouTubeVideoId(trimmed);
   if (videoId) {
-    return `https://www.youtube.com/watch?v=${videoId}`;
+    const start = parseYouTubeStartSeconds(trimmed);
+    const base = `https://www.youtube.com/watch?v=${videoId}`;
+    return start && start > 0 ? `${base}&t=${start}` : base;
   }
 
   return trimmed;
@@ -74,10 +119,14 @@ export function youTubeEmbedUrl(
   videoId: string,
   autoplay = true,
   origin?: string,
+  startSeconds?: number | null,
 ): string {
   const params = youTubeEmbedParams(autoplay);
   if (origin) {
     params.set("origin", origin);
+  }
+  if (startSeconds && startSeconds > 0) {
+    params.set("start", String(startSeconds));
   }
 
   return `https://www.youtube-nocookie.com/embed/${videoId}?${params.toString()}`;
