@@ -1,4 +1,5 @@
 import { createDefaultGoalFindings } from "./goal-section-content";
+import { DEFAULT_SHARE_CARD_IMAGE } from "./how-can-i-help-content";
 import { resolvePrivacyPolicyUrl, resolveTermsOfServiceUrl } from "./settings-urls";
 import { DEFAULT_SOCIAL_LINKS } from "@/lib/site/social-links";
 import { researchChartsData } from "@/lib/research/data";
@@ -119,6 +120,8 @@ export function buildFallbackSiteContent(): SiteContent {
             eyebrow: "Spread the word",
             body: "The movement grows one conversation at a time. Share Pencils Before Pixels with a friend, a neighbor, or another parent who feels the same pull to protect focus over screens.",
             highlights: [],
+            image: DEFAULT_SHARE_CARD_IMAGE,
+            imageAlt: "Pencils Before Pixels yard sign",
             ctaHref: "https://pencilsbeforepixels.org",
           },
           {

@@ -1,10 +1,12 @@
 "use client";
 
 import { adminInputClass, adminLabelClass } from "@/components/admin/admin-styles";
+import { MediaField } from "@/components/admin/content/MediaField";
 import { RichTextEditor } from "@/components/admin/content/RichTextEditor";
 import {
+  DEFAULT_SHARE_CARD_IMAGE,
   HOW_CAN_I_HELP_KINDS,
-  normalizeHowCanIHelpContent,
+  mergeHowCanIHelpSectionContent,
   type HowCanIHelpContent,
   type HowCanIHelpItem,
   type HowCanIHelpKind,
@@ -30,26 +32,32 @@ const CARD_META: Record<
     showHighlights: boolean;
     showCta: boolean;
     showShareUrl?: boolean;
+    showShareImage?: boolean;
+    highlightsLabel?: string;
+    highlightsPlaceholder?: string;
   }
 > = {
   share: {
     title: "Share card (featured)",
-    hint: "Built-in share buttons (copy link, native share, X, Facebook, email) are added automatically. Set the website URL that gets shared below.",
+    hint: "On the site: story text and share buttons sit on the left; the yard-sign image appears on the right. Share buttons use the URL below — it is not shown as a link box on the page.",
     showHighlights: false,
     showCta: false,
     showShareUrl: true,
+    showShareImage: true,
   },
   speak: {
     title: "Speak at board meetings",
-    hint: "Add the meeting-dates link as the CTA. Highlight chips are optional \u2014 leave empty to hide them.",
-    showHighlights: true,
+    hint: "Add the meeting-dates link as the CTA button. It opens in a new tab on the live site.",
+    showHighlights: false,
     showCta: true,
   },
   attend: {
     title: "Attend a presentation",
-    hint: "Use highlights for the event dates (e.g. \u201cSeptember 10\u201d, \u201cOctober 4\u201d).",
+    hint: "Event dates appear as calendar tiles at the bottom of this card (e.g. September 10, October 4).",
     showHighlights: true,
-    showCta: true,
+    showCta: false,
+    highlightsLabel: "Event dates (comma separated, up to 3)",
+    highlightsPlaceholder: "September 10, October 4",
   },
   opt_out: {
     title: "Opt Out form",
@@ -59,17 +67,29 @@ const CARD_META: Record<
   },
 };
 
+function Subheading({ children }: { children: string }) {
+  return (
+    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-navy-800/55">
+      {children}
+    </p>
+  );
+}
+
 export function HowCanIHelpEditor({ value, onChange }: HowCanIHelpEditorProps) {
-  const normalized = normalizeHowCanIHelpContent(value);
+  const normalized = mergeHowCanIHelpSectionContent(
+    value as unknown as Record<string, unknown>,
+  );
   const items = normalized.items;
 
   const updateItem = (index: number, patch: Partial<HowCanIHelpItem>) => {
-    onChange({
-      ...normalized,
-      items: items.map((item, itemIndex) =>
-        itemIndex === index ? { ...item, ...patch } : item,
-      ),
-    });
+    onChange(
+      mergeHowCanIHelpSectionContent({
+        ...normalized,
+        items: items.map((item, itemIndex) =>
+          itemIndex === index ? { ...item, ...patch } : item,
+        ),
+      } as unknown as Record<string, unknown>),
+    );
   };
 
   return (
@@ -77,8 +97,8 @@ export function HowCanIHelpEditor({ value, onChange }: HowCanIHelpEditorProps) {
       <div>
         <label className={adminLabelClass}>Cards</label>
         <p className="mt-1 text-sm text-body-muted">
-          Four fixed cards, each with its own layout and actions. Edit the story
-          text, the small chip highlights, and the button/link where available.
+          Four fixed cards with their own layout on the homepage. Edit the story
+          text, share image, event dates, and button links below.
         </p>
       </div>
 
@@ -119,20 +139,50 @@ export function HowCanIHelpEditor({ value, onChange }: HowCanIHelpEditorProps) {
                   onChange={(body) => updateItem(index, { body })}
                 />
 
+                {meta.showShareImage ? (
+                  <div className="flex flex-col gap-4 rounded-[10px] border border-navy-800/8 bg-white/70 p-4">
+                    <Subheading>Share image (right side)</Subheading>
+                    <MediaField
+                      label="Yard sign / share image"
+                      value={item.image ?? DEFAULT_SHARE_CARD_IMAGE}
+                      folder="how-can-i-help"
+                      filename="share-yard-sign.png"
+                      altText={item.imageAlt ?? "Pencils Before Pixels yard sign"}
+                      onChange={(image) => updateItem(index, { image })}
+                    />
+                    <Field
+                      label="Image alt text"
+                      value={item.imageAlt ?? ""}
+                      placeholder="Pencils Before Pixels yard sign"
+                      onChange={(imageAlt) => updateItem(index, { imageAlt })}
+                    />
+                  </div>
+                ) : null}
+
                 {meta.showShareUrl ? (
-                  <Field
-                    label="Website URL to share"
-                    value={item.ctaHref ?? ""}
-                    placeholder="https://pencilsbeforepixels.org"
-                    onChange={(ctaHref) => updateItem(index, { ctaHref })}
-                  />
+                  <div className="flex flex-col gap-4 rounded-[10px] border border-navy-800/8 bg-white/70 p-4">
+                    <Subheading>Share actions (left side, below text)</Subheading>
+                    <Field
+                      label="Website URL used by share buttons"
+                      value={item.ctaHref ?? ""}
+                      placeholder="https://pencilsbeforepixels.org"
+                      onChange={(ctaHref) => updateItem(index, { ctaHref })}
+                    />
+                    <p className="text-xs text-body-muted">
+                      Powers native share, X, Facebook, and email. Visitors do
+                      not see this URL on the page.
+                    </p>
+                  </div>
                 ) : null}
 
                 {meta.showHighlights ? (
                   <Field
-                    label="Highlight chips (comma separated, up to 3)"
+                    label={
+                      meta.highlightsLabel ??
+                      "Highlight chips (comma separated, up to 3)"
+                    }
                     value={item.highlights.join(", ")}
-                    placeholder="September 10, October 4"
+                    placeholder={meta.highlightsPlaceholder ?? "September 10, October 4"}
                     onChange={(raw) =>
                       updateItem(index, {
                         highlights: raw

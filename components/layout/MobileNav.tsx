@@ -11,7 +11,7 @@ type MobileNavProps = {
   activeHash: string;
   onClose: () => void;
   isNavLinkActive: (href: string, pathname: string, activeHash: string) => boolean;
-  onHashNavClick?: (
+  onNavClick?: (
     event: React.MouseEvent<HTMLAnchorElement>,
     href: string,
     label?: string,
@@ -24,7 +24,7 @@ export function MobileNav({
   activeHash,
   onClose,
   isNavLinkActive,
-  onHashNavClick,
+  onNavClick,
 }: MobileNavProps) {
   const { navigation } = useSiteContent();
   const navLinks = navigation.header;
@@ -76,8 +76,7 @@ export function MobileNav({
                 key={link.href}
                 href={href}
                 onClick={(event) => {
-                  onHashNavClick?.(event, href, link.label);
-                  onClose();
+                  onNavClick?.(event, href, link.label);
                 }}
                 className={`group flex items-start gap-4 border-l-[2.5px] py-4 pl-5 pr-2 transition-colors ${
                   isActive

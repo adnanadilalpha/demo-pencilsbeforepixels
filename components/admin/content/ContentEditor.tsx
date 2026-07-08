@@ -64,7 +64,7 @@ import {
   mergeBeforeOptOutSectionContent,
   normalizeBeforeOptOutContent,
 } from "@/lib/cms/before-opt-out-content";
-import { normalizeHowCanIHelpContent } from "@/lib/cms/how-can-i-help-content";
+import { mergeHowCanIHelpSectionContent } from "@/lib/cms/how-can-i-help-content";
 import type {
   ExpertQuote,
   OptOutStep,
@@ -162,7 +162,7 @@ function buildFormValues(
         letterPreviewImage: state.optOutLetterPreviewImage,
       };
     } else if (sectionId === "how_can_i_help") {
-      base = normalizeHowCanIHelpContent(sectionContent);
+      base = mergeHowCanIHelpSectionContent(sectionContent);
     } else {
       base = { ...sectionContent };
     }
@@ -180,7 +180,7 @@ function buildFormValues(
       : sectionId === "before_opt_out"
         ? mergeBeforeOptOutSectionContent({ ...base, ...localContent })
         : sectionId === "how_can_i_help"
-          ? normalizeHowCanIHelpContent({ ...base, ...localContent })
+          ? mergeHowCanIHelpSectionContent({ ...base, ...localContent })
           : { ...base, ...localContent }
     : base;
 
@@ -864,13 +864,15 @@ export function ContentEditor({
                   {activeSection.id === "how_can_i_help" ? (
                     <div className="mt-8 border-t border-navy-800/8 pt-8">
                       <HowCanIHelpEditor
-                        value={normalizeHowCanIHelpContent(formValues)}
+                        value={mergeHowCanIHelpSectionContent(formValues)}
                         onChange={(content) => {
                           markSectionDirty("how_can_i_help");
                           userEditedRef.current = true;
                           setFormValues((current) => ({
                             ...current,
-                            ...content,
+                            headline: content.headline,
+                            intro: content.intro,
+                            items: content.items,
                           }));
                         }}
                       />

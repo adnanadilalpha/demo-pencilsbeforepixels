@@ -49,6 +49,7 @@ import {
   normalizeGoalSectionContent,
   sanitizeGoalSectionForPublish,
 } from "@/lib/cms/goal-section-content";
+import { mergeHowCanIHelpSectionContent } from "@/lib/cms/how-can-i-help-content";
 import {
   normalizeLibraryCategory,
   normalizeResearchLibraryCategories,
@@ -688,6 +689,10 @@ export async function fetchContentEditorState(): Promise<ContentEditorState> {
       sections["homepage.goal"],
     );
   }
+
+  sections["homepage.how_can_i_help"] = mergeHowCanIHelpSectionContent(
+    sections["homepage.how_can_i_help"],
+  ) as unknown as Record<string, unknown>;
 
   if (sections["homepage.research_library"]) {
     sections["homepage.research_library"] = {

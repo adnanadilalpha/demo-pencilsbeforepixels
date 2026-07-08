@@ -12,7 +12,15 @@ import {
   sectionPaddingX,
 } from "@/components/ui/Container";
 import { isFixedHeaderRoute } from "@/lib/legal/constants";
-import { handleNavLinkClick, parseNavHref, resolveNavHref } from "@/lib/navigation";
+import {
+  buildHashNavUrl,
+  handleNavLinkClick,
+  hashToSectionId,
+  navigateToHomeSection,
+  parseNavHref,
+  resolveNavHref,
+  scrollToSectionSmooth,
+} from "@/lib/navigation";
 import { useSiteContent } from "@/lib/cms/hooks";
 import { ANALYTICS_EVENTS } from "@/lib/analytics/event-types";
 import { trackAnalyticsEvent } from "@/lib/analytics/track-client";
@@ -79,6 +87,10 @@ export function Header() {
   const [isScrolled, setIsScrolled] = useState(isFixedHeaderPage);
   const [activeHash, setActiveHash] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
+  const [pendingSectionScroll, setPendingSectionScroll] = useState<{
+    path: string;
+    hash: string;
+  } | null>(null);
   const lenis = useLenis();
 
   const handleHashNavClick = (
@@ -98,6 +110,38 @@ export function Header() {
       setActiveHash,
       router,
     );
+  };
+
+  const handleMobileNavClick = (
+    event: React.MouseEvent<HTMLAnchorElement>,
+    href: string,
+    label?: string,
+  ) => {
+    void trackAnalyticsEvent(ANALYTICS_EVENTS.NAV_CLICK, {
+      label,
+      metadata: { href },
+    });
+
+    const { path, hash } = parseNavHref(href);
+
+    // Close the menu first so the scroll-lock is released before we move.
+    setMenuOpen(false);
+
+    // Plain route links: let <Link> handle navigation after the menu closes.
+    if (!hash) return;
+
+    event.preventDefault();
+
+    if (pathname === path) {
+      // Same page: defer the scroll until the scroll-lock cleanup has run
+      // (see the pending-scroll effect below), otherwise closing the menu
+      // snaps the page back to its original position.
+      setPendingSectionScroll({ path, hash });
+      return;
+    }
+
+    // Cross-page: remember the section and navigate home to scroll on arrival.
+    navigateToHomeSection(hashToSectionId(hash), router);
   };
 
   useEffect(() => {
@@ -154,6 +198,21 @@ export function Header() {
       window.scrollTo(0, scrollY);
     };
   }, [menuOpen]);
+
+  // Runs after the scroll-lock effect above releases the body, so the section
+  // scroll from a mobile nav tap is not undone by the lock's scroll restore.
+  useEffect(() => {
+    if (menuOpen || !pendingSectionScroll) return;
+
+    const { path, hash } = pendingSectionScroll;
+    setPendingSectionScroll(null);
+
+    requestAnimationFrame(() => {
+      scrollToSectionSmooth(hash, lenis);
+      window.history.pushState(null, "", buildHashNavUrl(path, hash));
+      setActiveHash(hash);
+    });
+  }, [menuOpen, pendingSectionScroll, lenis]);
 
   useEffect(() => {
     setMenuOpen(false);
@@ -258,7 +317,7 @@ export function Header() {
         activeHash={activeHash}
         onClose={() => setMenuOpen(false)}
         isNavLinkActive={isNavLinkActive}
-        onHashNavClick={handleHashNavClick}
+        onNavClick={handleMobileNavClick}
       />
     </>
   );

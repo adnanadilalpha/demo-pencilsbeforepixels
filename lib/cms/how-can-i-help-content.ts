@@ -1,3 +1,5 @@
+import { mergeSectionWithFallback } from "./section-fields";
+
 export const HOW_CAN_I_HELP_ITEM_COUNT = 4;
 
 /** Each card has a fixed personality that drives its icon, accent, and actions. */
@@ -10,11 +12,16 @@ export const HOW_CAN_I_HELP_KINDS: HowCanIHelpKind[] = [
   "opt_out",
 ];
 
+export const DEFAULT_SHARE_CARD_IMAGE =
+  "/images/how-can-i-help/share-yard-sign.png";
+
 export type HowCanIHelpItem = {
   kind: HowCanIHelpKind;
   eyebrow: string;
   body: string;
   highlights: string[];
+  image?: string;
+  imageAlt?: string;
   ctaLabel?: string;
   ctaHref?: string;
 };
@@ -35,6 +42,8 @@ export const DEFAULT_HOW_CAN_I_HELP: HowCanIHelpContent = {
       eyebrow: "Spread the word",
       body: "The movement grows one conversation at a time. Share Pencils Before Pixels with a friend, a neighbor, or another parent who feels the same pull to protect focus over screens.",
       highlights: [],
+      image: DEFAULT_SHARE_CARD_IMAGE,
+      imageAlt: "Pencils Before Pixels yard sign",
       ctaHref: "https://pencilsbeforepixels.org",
     },
     {
@@ -88,7 +97,7 @@ function normalizeItem(
 ): HowCanIHelpItem {
   const record = asRecord(value);
 
-  return {
+  const base: HowCanIHelpItem = {
     kind: fallback.kind,
     eyebrow: readString(record.eyebrow) || fallback.eyebrow,
     body: readString(record.body) || fallback.body,
@@ -96,6 +105,22 @@ function normalizeItem(
     ctaLabel: readString(record.ctaLabel) || fallback.ctaLabel || undefined,
     ctaHref: readString(record.ctaHref) || fallback.ctaHref || undefined,
   };
+
+  if (fallback.kind === "share") {
+    return {
+      ...base,
+      image:
+        readString(record.image) ||
+        fallback.image ||
+        DEFAULT_SHARE_CARD_IMAGE,
+      imageAlt:
+        readString(record.imageAlt) ||
+        fallback.imageAlt ||
+        "Pencils Before Pixels yard sign",
+    };
+  }
+
+  return base;
 }
 
 function normalizeItems(value: unknown): HowCanIHelpItem[] {
@@ -105,6 +130,16 @@ function normalizeItems(value: unknown): HowCanIHelpItem[] {
   return Array.from({ length: HOW_CAN_I_HELP_ITEM_COUNT }, (_, index) =>
     normalizeItem(source[index], defaults[index]),
   );
+}
+
+export function mergeHowCanIHelpSectionContent(
+  stored: Record<string, unknown> | null | undefined,
+): HowCanIHelpContent {
+  const merged = mergeSectionWithFallback(
+    "homepage.how_can_i_help",
+    stored ?? undefined,
+  );
+  return normalizeHowCanIHelpContent(merged);
 }
 
 export function normalizeHowCanIHelpContent(value: unknown): HowCanIHelpContent {
@@ -128,13 +163,24 @@ export function sanitizeHowCanIHelpForPublish(
     ...content,
     headline: normalized.headline,
     intro: normalized.intro,
-    items: normalized.items.map((item) => ({
-      kind: item.kind,
-      eyebrow: item.eyebrow,
-      body: item.body,
-      highlights: item.highlights,
-      ...(item.ctaLabel ? { ctaLabel: item.ctaLabel } : {}),
-      ...(item.ctaHref ? { ctaHref: item.ctaHref } : {}),
-    })),
+    items: normalized.items.map((item) => {
+      const payload: Record<string, unknown> = {
+        kind: item.kind,
+        eyebrow: item.eyebrow,
+        body: item.body,
+        highlights: item.highlights,
+      };
+
+      if (item.kind === "share") {
+        payload.image = item.image || DEFAULT_SHARE_CARD_IMAGE;
+        payload.imageAlt = item.imageAlt || "Pencils Before Pixels yard sign";
+        if (item.ctaHref) payload.ctaHref = item.ctaHref;
+        return payload;
+      }
+
+      if (item.ctaLabel) payload.ctaLabel = item.ctaLabel;
+      if (item.ctaHref) payload.ctaHref = item.ctaHref;
+      return payload;
+    }),
   };
 }

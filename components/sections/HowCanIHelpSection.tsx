@@ -4,8 +4,6 @@ import { useEffect, useState } from "react";
 import {
   ArrowUpRight,
   CalendarDays,
-  Check,
-  Copy,
   FileSignature,
   Mail,
   Megaphone,
@@ -15,12 +13,14 @@ import {
 import { RichTextContent } from "@/components/cms/RichTextContent";
 import { useOptOut } from "@/components/opt-out/OptOutProvider";
 import { Button } from "@/components/ui/Button";
+import { ContentImage } from "@/components/ui/ContentImage";
 import { Container, sectionSubtextClass } from "@/components/ui/Container";
 import { DisplayHeading } from "@/components/ui/DisplayHeading";
 import { ScrollReveal } from "@/components/motion/ScrollReveal";
 import { ANALYTICS_EVENTS } from "@/lib/analytics/event-types";
 import { trackAnalyticsEvent } from "@/lib/analytics/track-client";
 import {
+  DEFAULT_SHARE_CARD_IMAGE,
   normalizeHowCanIHelpContent,
   type HowCanIHelpItem,
   type HowCanIHelpKind,
@@ -83,8 +83,7 @@ function HighlightChips({
   );
 }
 
-function ShareActions({ shareUrl }: { shareUrl: string }) {
-  const [copied, setCopied] = useState(false);
+function ShareButtons({ shareUrl }: { shareUrl: string }) {
   const [canNativeShare, setCanNativeShare] = useState(false);
 
   useEffect(() => {
@@ -92,17 +91,6 @@ function ShareActions({ shareUrl }: { shareUrl: string }) {
       typeof navigator !== "undefined" && typeof navigator.share === "function",
     );
   }, []);
-
-  const copyLink = async () => {
-    try {
-      await navigator.clipboard.writeText(shareUrl);
-      setCopied(true);
-      trackShare("copy");
-      window.setTimeout(() => setCopied(false), 2200);
-    } catch {
-      // clipboard unavailable — ignore
-    }
-  };
 
   const nativeShare = async () => {
     try {
@@ -143,60 +131,31 @@ function ShareActions({ shareUrl }: { shareUrl: string }) {
   ];
 
   return (
-    <div className="flex w-full flex-col gap-4 rounded-2xl bg-white/[0.06] p-5 ring-1 ring-white/12 sm:p-6 lg:w-[24rem]">
-      <div className="rounded-xl bg-navy-800/40 px-3.5 py-3 ring-1 ring-white/10">
-        <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-slate-400">
-          Your link
-        </p>
-        <p className="mt-1 break-all font-mono text-sm leading-snug text-slate-100">
-          {shareUrl.replace(/^https?:\/\//, "")}
-        </p>
-      </div>
+    <div className="flex flex-wrap items-center gap-2.5">
+      {canNativeShare ? (
+        <button
+          type="button"
+          onClick={nativeShare}
+          aria-label="Share"
+          className="inline-flex size-10 items-center justify-center rounded-full bg-white/10 text-slate-100 ring-1 ring-white/15 transition-colors hover:bg-white/20"
+        >
+          <Share2 className="size-4" aria-hidden />
+        </button>
+      ) : null}
 
-      <button
-        type="button"
-        onClick={copyLink}
-        className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-gold-500 px-5 py-2.5 text-sm font-semibold text-slate-100 transition-colors hover:bg-gold-500/90"
-      >
-        {copied ? (
-          <>
-            <Check className="size-4" aria-hidden />
-            Link copied
-          </>
-        ) : (
-          <>
-            <Copy className="size-4" aria-hidden />
-            Copy link
-          </>
-        )}
-      </button>
-
-      <div className="flex flex-wrap items-center gap-2.5">
-        {canNativeShare ? (
-          <button
-            type="button"
-            onClick={nativeShare}
-            aria-label="Share"
-            className="inline-flex size-10 items-center justify-center rounded-full bg-white/10 text-slate-100 ring-1 ring-white/15 transition-colors hover:bg-white/20"
-          >
-            <Share2 className="size-4" aria-hidden />
-          </button>
-        ) : null}
-
-        {socialLinks.map((link) => (
-          <a
-            key={link.key}
-            href={link.href}
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label={link.label}
-            onClick={() => trackShare(link.key)}
-            className="inline-flex size-10 items-center justify-center rounded-full bg-white/10 text-slate-100 ring-1 ring-white/15 transition-colors hover:bg-white/20"
-          >
-            {link.node}
-          </a>
-        ))}
-      </div>
+      {socialLinks.map((link) => (
+        <a
+          key={link.key}
+          href={link.href}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label={link.label}
+          onClick={() => trackShare(link.key)}
+          className="inline-flex size-10 items-center justify-center rounded-full bg-white/10 text-slate-100 ring-1 ring-white/15 transition-colors hover:bg-white/20"
+        >
+          {link.node}
+        </a>
+      ))}
     </div>
   );
 }
@@ -420,9 +379,19 @@ function ShareHero({
             linkTone="light"
             className="text-pretty font-sans text-lg leading-[1.55] text-slate-100 sm:text-xl"
           />
+          <ShareButtons shareUrl={shareUrl} />
         </div>
 
-        <ShareActions shareUrl={shareUrl} />
+        <div className="w-full overflow-hidden rounded-2xl bg-white shadow-[0_16px_48px_rgba(10,22,40,0.2)] ring-1 ring-white/25 lg:w-[min(100%,22rem)] lg:shrink-0">
+          <ContentImage
+            src={item.image?.trim() || DEFAULT_SHARE_CARD_IMAGE}
+            alt={item.imageAlt?.trim() || "Pencils Before Pixels yard sign"}
+            width={880}
+            height={660}
+            sizes="(max-width: 1024px) 100vw, 22rem"
+            className="h-auto w-full object-cover"
+          />
+        </div>
       </div>
     </ScrollReveal>
   );

@@ -192,7 +192,7 @@ export const homepageSections: EditorSection[] = [
         label: "",
         type: "text",
         placeholder:
-          "Ways supporters can help. Appears below Device Opt Out on the homepage.",
+          "Ways supporters can help. Appears below Device Opt Out. The share card uses a yard-sign image on the right and share buttons below the text.",
       },
       { key: "headline", label: "Headline", type: "richText" },
       { key: "intro", label: "Intro", type: "richText" },
