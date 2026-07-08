@@ -150,21 +150,15 @@ function applyPaginationTheme(
   slides: TimelineSlide[],
   refs: {
     missionLabel: HTMLParagraphElement | null;
-    progressTrack: HTMLDivElement | null;
-    progressFill: HTMLDivElement | null;
     dots: (HTMLSpanElement | null)[];
   },
 ) {
   const colors = getPaginationColors(slides[index] ?? slides[0]);
   const mutedClass = `font-sans text-xs font-medium uppercase tracking-[0.14em] max-lg:leading-tight lg:text-base lg:tracking-[0.24em] ${colors.muted}`;
-  const trackClass = `mt-2 h-px w-full overflow-hidden lg:mt-4 ${colors.track}`;
-  const fillClass = `h-full origin-left ${colors.fill}`;
   const dotBase =
     "h-[0.375rem] w-[0.375rem] rounded-full transition-[background-color] duration-500";
 
   if (refs.missionLabel) refs.missionLabel.className = mutedClass;
-  if (refs.progressTrack) refs.progressTrack.className = trackClass;
-  if (refs.progressFill) refs.progressFill.className = fillClass;
 
   refs.dots.forEach((dot, dotIndex) => {
     if (!dot) return;
@@ -187,8 +181,6 @@ export function TimelineSection() {
   const wrapperRef = useRef<HTMLElement>(null);
   const pinRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
-  const progressFillRef = useRef<HTMLDivElement>(null);
-  const progressTrackRef = useRef<HTMLDivElement>(null);
   const missionLabelRef = useRef<HTMLParagraphElement>(null);
   const copyRefs = useRef<(HTMLDivElement | null)[]>([]);
   const mediaRefs = useRef<(HTMLDivElement | null)[]>([]);
@@ -309,26 +301,27 @@ export function TimelineSection() {
     progressRef.current = progress;
     track.style.transform = `translate3d(-${translatePercent}%, 0, 0)`;
 
-    if (progressFillRef.current) {
-      progressFillRef.current.style.transform = `scaleX(${progress})`;
-    }
-
     const roundedIndex = Math.min(
       currentMaxIndex,
       Math.max(0, Math.round(slideFloat)),
     );
 
-    if (roundedIndex !== activeIndexRef.current) {
-      activeIndexRef.current = roundedIndex;
-      if (paginationIndexRef.current !== roundedIndex) {
-        paginationIndexRef.current = roundedIndex;
-        applyPaginationTheme(roundedIndex, timelineSlidesRef.current, {
-          missionLabel: missionLabelRef.current,
-          progressTrack: progressTrackRef.current,
-          progressFill: progressFillRef.current,
-          dots: dotRefs.current,
-        });
-      }
+    // The label sits at the viewport's left edge, which stays over the current
+    // slide until the next one has fully scrolled in. Switch its theme on that
+    // boundary (floor) so the color doesn't flip early at the midpoint.
+    const themeIndex = Math.min(
+      currentMaxIndex,
+      Math.max(0, Math.floor(slideFloat + 1e-6)),
+    );
+
+    activeIndexRef.current = roundedIndex;
+
+    if (paginationIndexRef.current !== themeIndex) {
+      paginationIndexRef.current = themeIndex;
+      applyPaginationTheme(themeIndex, timelineSlidesRef.current, {
+        missionLabel: missionLabelRef.current,
+        dots: dotRefs.current,
+      });
     }
 
     const useMotion = !reducedMotionRef.current && !isMobileLayoutRef.current;
@@ -399,8 +392,6 @@ export function TimelineSection() {
     syncProgress(lenisScrollRef.current || window.scrollY);
     applyPaginationTheme(clampedIndex, timelineSlidesRef.current, {
       missionLabel: missionLabelRef.current,
-      progressTrack: progressTrackRef.current,
-      progressFill: progressFillRef.current,
       dots: dotRefs.current,
     });
     paginationIndexRef.current = clampedIndex;
@@ -528,7 +519,7 @@ export function TimelineSection() {
             return (
               <article
                 key={`${index}-${slide.number}`}
-                className={`h-full min-h-0 shrink-0 max-lg:grid max-lg:grid-rows-[minmax(0,1fr)_auto] max-lg:gap-4 max-lg:pb-[calc(2.75rem+env(safe-area-inset-bottom,0px))] max-lg:pt-[calc(var(--header-height)+3.5rem)] lg:flex lg:flex-row lg:items-center lg:gap-12 lg:py-0 ${sectionPaddingX} ${
+                className={`h-full min-h-0 shrink-0 max-lg:grid max-lg:grid-rows-[minmax(0,1fr)_auto] max-lg:gap-4 max-lg:pb-[calc(2.75rem+env(safe-area-inset-bottom,0px))] max-lg:pt-[calc(var(--header-height)+4rem)] sm:max-lg:pt-[calc(var(--header-height)+4.75rem)] lg:flex lg:flex-row lg:items-center lg:gap-12 lg:py-0 ${sectionPaddingX} ${
                   isLight ? RICH_TEXT_LINKS_LIGHT_CLASS : ""
                 }`}
                 style={{
@@ -584,7 +575,7 @@ export function TimelineSection() {
         </div>
 
         <div
-          className={`pointer-events-none absolute inset-x-0 z-20 max-lg:top-[calc(var(--header-height)+0.5rem)] lg:top-24 ${sectionPaddingX}`}
+          className={`pointer-events-none absolute inset-x-0 z-20 top-[calc(var(--header-height)+1.5rem)] sm:top-[calc(var(--header-height)+2rem)] lg:top-[calc(var(--header-height)+2.5rem)] ${sectionPaddingX}`}
           aria-hidden
         >
           <p
@@ -593,15 +584,6 @@ export function TimelineSection() {
           >
             Our Journey
           </p>
-          <div
-            ref={progressTrackRef}
-            className="mt-2 h-px w-full overflow-hidden bg-navy-800/15 lg:mt-4"
-          >
-            <div
-              ref={progressFillRef}
-              className="h-full origin-left bg-gold-500"
-            />
-          </div>
         </div>
 
         <div
