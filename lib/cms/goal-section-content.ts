@@ -1,6 +1,6 @@
 import { whatToDoPoints } from "./what-to-do-points";
 
-export const WHAT_TO_DO_FINDINGS_COUNT = 10;
+export const WHAT_TO_DO_FINDINGS_COUNT = 8;
 
 export type GoalFinding = {
   headline: string;
@@ -16,7 +16,7 @@ export type GoalSectionContent = {
 const GOAL_SECTION_DEFAULTS = {
   tagline: "Focus over distraction and cognitive friction over swiping.",
   body:
-    "Ten findings from national assessments and international studies — grouped so you can follow the story from U.S. classrooms to OECD nations and back to early childhood.",
+    "Eight findings from national assessments and international studies — grouped so you can follow the story from U.S. classrooms to OECD nations and back to early childhood.",
 };
 
 function getFallbackSection(): Record<string, unknown> {
@@ -62,7 +62,9 @@ export function splitLegacyGoalPoint(point: string): GoalFinding {
 }
 
 export function createDefaultGoalFindings(): GoalFinding[] {
-  return whatToDoPoints.map(splitLegacyGoalPoint);
+  return whatToDoPoints
+    .slice(0, WHAT_TO_DO_FINDINGS_COUNT)
+    .map(splitLegacyGoalPoint);
 }
 
 function padFindings(findings: GoalFinding[]): GoalFinding[] {

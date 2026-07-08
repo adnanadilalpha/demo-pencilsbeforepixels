@@ -38,7 +38,9 @@ export function WhatToDoFindingsEditor({
   return (
     <div className="flex flex-col gap-4">
       <div>
-        <label className={adminLabelClass}>10 Facts (10 items)</label>
+        <label className={adminLabelClass}>
+          {WHAT_TO_DO_FINDINGS_COUNT} Facts ({WHAT_TO_DO_FINDINGS_COUNT} items)
+        </label>
         <p className="mt-1 text-sm text-body-muted">
           Edit the bold headline and body copy for each fact separately.
         </p>

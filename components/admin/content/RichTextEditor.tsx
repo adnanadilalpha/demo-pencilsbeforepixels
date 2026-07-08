@@ -4,8 +4,6 @@ import { adminLabelClass } from "@/components/admin/admin-styles";
 import { normalizeRichTextOutput } from "@/lib/cms/rich-text";
 import { cn } from "@/lib/utils";
 import Placeholder from "@tiptap/extension-placeholder";
-import Underline from "@tiptap/extension-underline";
-import Link from "@tiptap/extension-link";
 import { EditorContent, useEditor, type Editor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { Link2, Redo2, Undo2 } from "lucide-react";
@@ -115,15 +113,14 @@ export function RichTextEditor({
         codeBlock: false,
         horizontalRule: false,
         hardBreak: false,
-      }),
-      Underline,
-      Link.configure({
-        openOnClick: false,
-        autolink: false,
-        linkOnPaste: true,
-        HTMLAttributes: {
-          class: "rich-text-editor__link",
-          rel: "noopener noreferrer",
+        link: {
+          openOnClick: false,
+          autolink: false,
+          linkOnPaste: true,
+          HTMLAttributes: {
+            class: "rich-text-editor__link",
+            rel: "noopener noreferrer",
+          },
         },
       }),
       Placeholder.configure({

@@ -17,6 +17,7 @@ export type SectionKey =
   | "homepage.research_library"
   | "homepage.before_opt_out"
   | "homepage.device_opt_out"
+  | "homepage.how_can_i_help"
   | "homepage.footer"
   | "evidence.research_tab"
   | "evidence.nebraska"

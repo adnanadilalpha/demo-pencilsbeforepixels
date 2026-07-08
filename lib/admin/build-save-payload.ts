@@ -1,7 +1,11 @@
 import type { ContentSavePayload } from "@/lib/admin/content-editor-types";
 import type { SectionLocalDraft } from "@/lib/admin/content-local-draft";
 import { sanitizeGoalSectionForPublish } from "@/lib/cms/goal-section-content";
-import { sanitizeBeforeOptOutForPublish, stripBeforeOptOutFieldsFromRecord } from "@/lib/cms/before-opt-out-content";
+import {
+  sanitizeBeforeOptOutForPublish,
+  stripBeforeOptOutFieldsFromRecord,
+} from "@/lib/cms/before-opt-out-content";
+import { sanitizeHowCanIHelpForPublish } from "@/lib/cms/how-can-i-help-content";
 import { sanitizeResearchLibraryForPublish } from "@/lib/cms/research-library-content";
 import { normalizeMissionTimeline } from "@/lib/cms/mission-slides";
 import { sanitizeMentalHealthForPublish } from "@/lib/cms/site-ctas";
@@ -58,6 +62,10 @@ function buildSavePayload(
   if (sectionId === "device_opt_out") {
     content = stripBeforeOptOutFieldsFromRecord(content);
     delete content.secondaryCta;
+  }
+
+  if (sectionId === "how_can_i_help") {
+    content = sanitizeHowCanIHelpForPublish(content);
   }
 
   const payload: ContentSavePayload = {

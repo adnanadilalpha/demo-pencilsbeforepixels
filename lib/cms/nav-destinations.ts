@@ -1,4 +1,4 @@
-export type NavDestinationId = "research" | "nebraska" | "opt_out";
+export type NavDestinationId = "research" | "nebraska" | "opt_out" | "how_can_i_help";
 
 export type NavDestination = {
   id: NavDestinationId;
@@ -8,7 +8,7 @@ export type NavDestination = {
   matchHrefs: string[];
 };
 
-/** Fixed routes for the three main nav items — labels are editable in admin. */
+/** Fixed routes for the main nav items — labels are editable in admin. */
 export const NAV_DESTINATIONS: NavDestination[] = [
   {
     id: "research",
@@ -30,6 +30,13 @@ export const NAV_DESTINATIONS: NavDestination[] = [
     headerHref: "#opt-out",
     footerHref: "/#opt-out",
     matchHrefs: ["#opt-out", "/#opt-out", "/opt-out"],
+  },
+  {
+    id: "how_can_i_help",
+    defaultLabel: "How Can I Help",
+    headerHref: "#how-can-i-help",
+    footerHref: "/#how-can-i-help",
+    matchHrefs: ["#how-can-i-help", "/#how-can-i-help"],
   },
 ];
 

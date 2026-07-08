@@ -68,7 +68,7 @@ export function buildFallbackSiteContent(): SiteContent {
         tagline:
           "Focus over distraction and cognitive friction over swiping.",
         body:
-          "Ten findings from national assessments and international studies — grouped so you can follow the story from U.S. classrooms to OECD nations and back to early childhood.",
+          "Eight findings from national assessments and international studies — grouped so you can follow the story from U.S. classrooms to OECD nations and back to early childhood.",
         findings: createDefaultGoalFindings(),
       },
       "homepage.learning_apps": {
@@ -108,6 +108,43 @@ export function buildFallbackSiteContent(): SiteContent {
         body: "Parents should have access to clear information and the ability to make informed decisions regarding classroom technology.",
         primaryCta: "Sign Opt Out Letter",
         secondaryCta: { label: "Explore Nebraska Data", href: "/nebraska-data" },
+      },
+      "homepage.how_can_i_help": {
+        headline: "How Can I Help",
+        intro:
+          "Change in the classroom starts with parents who show up. Here are four ways to lend your voice \u2014 pick one and take the first step today.",
+        items: [
+          {
+            kind: "share",
+            eyebrow: "Spread the word",
+            body: "The movement grows one conversation at a time. Share Pencils Before Pixels with a friend, a neighbor, or another parent who feels the same pull to protect focus over screens.",
+            highlights: [],
+            ctaHref: "https://pencilsbeforepixels.org",
+          },
+          {
+            kind: "speak",
+            eyebrow: "Use your 2.5 minutes",
+            body: 'Pencils Before Pixels has spoken at Westside School Board meetings since early 2026. Join us and share your "screens in school" perspective. You get 2.5 minutes at the podium \u2014 we write our speeches, then read them aloud. There is power in numbers, and board members need to hear you.',
+            highlights: [],
+            ctaLabel: "View meeting dates",
+            ctaHref:
+              "https://www.westside66.org/our-district/board-of-education/board-of-education-meeting-dates",
+          },
+          {
+            kind: "attend",
+            eyebrow: "Save the date",
+            body: "Come to a Pencils Before Pixels public presentation. Hear the research, meet other parents, and leave with practical next steps for your family.",
+            highlights: ["September 10", "October 4"],
+          },
+          {
+            kind: "opt_out",
+            eyebrow: "Make it official",
+            body: 'Complete the "1 to 1 Device Opt Out" form and submit it to your school principal. It is the clearest way to put your decision on the record.',
+            highlights: [],
+            ctaLabel: "Open Opt Out Form",
+            ctaHref: "#opt-out",
+          },
+        ],
       },
       "homepage.footer": {
         newsletterLabel: "Newsletter",

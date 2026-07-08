@@ -562,17 +562,13 @@ export function TimelineSection() {
                       linkTone={isLight ? "light" : "default"}
                     />
                   </h2>
-                  <p
+                  <RichTextContent
+                    content={slide.description}
+                    linkTone={isLight ? "light" : "default"}
                     className={`max-w-xl text-[0.95rem] leading-[1.5] sm:text-base max-lg:max-w-none lg:text-2xl lg:leading-[1.4] ${
                       isLight ? "text-slate-200" : "text-hero-dark"
                     }`}
-                  >
-                    <RichTextContent
-                      content={slide.description}
-                      inline
-                      linkTone={isLight ? "light" : "default"}
-                    />
-                  </p>
+                  />
                 </div>
 
                 <TimelineSlideMedia
@@ -595,7 +591,7 @@ export function TimelineSection() {
             ref={missionLabelRef}
             className="font-sans text-xs font-medium uppercase tracking-[0.14em] text-navy-800/55 max-lg:leading-tight lg:text-base lg:tracking-[0.24em]"
           >
-            Our Mission
+            Our Journey
           </p>
           <div
             ref={progressTrackRef}

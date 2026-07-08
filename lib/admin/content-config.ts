@@ -63,7 +63,7 @@ export const homepageSections: EditorSection[] = [
   },
   {
     id: "timeline",
-    label: "Our Mission",
+    label: "Our Journey",
     page: "homepage",
     fields: [
       {
@@ -77,7 +77,7 @@ export const homepageSections: EditorSection[] = [
   },
   {
     id: "goal",
-    label: "10 Facts",
+    label: "8 Facts",
     page: "homepage",
     sectionKey: "homepage.goal",
     fields: [
@@ -179,6 +179,23 @@ export const homepageSections: EditorSection[] = [
         mediaFolder: "opt-out",
         mediaFilename: "letter.png",
       },
+    ],
+  },
+  {
+    id: "how_can_i_help",
+    label: "How Can I Help",
+    page: "homepage",
+    sectionKey: "homepage.how_can_i_help",
+    fields: [
+      {
+        key: "_note",
+        label: "",
+        type: "text",
+        placeholder:
+          "Ways supporters can help. Appears below Device Opt Out on the homepage.",
+      },
+      { key: "headline", label: "Headline", type: "richText" },
+      { key: "intro", label: "Intro", type: "richText" },
     ],
   },
   {

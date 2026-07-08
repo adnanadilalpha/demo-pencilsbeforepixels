@@ -47,6 +47,7 @@ import { LibraryItemsEditor } from "@/components/admin/content/LibraryItemsEdito
 import { MentalHealthLegendEditor } from "@/components/admin/content/MentalHealthLegendEditor";
 import { NavigationEditor } from "@/components/admin/content/NavigationEditor";
 import { BeforeOptOutEditor } from "@/components/admin/content/BeforeOptOutEditor";
+import { HowCanIHelpEditor } from "@/components/admin/content/HowCanIHelpEditor";
 import { OptOutStepsEditor } from "@/components/admin/content/OptOutStepsEditor";
 import { SocialLinksEditor } from "@/components/admin/settings/SocialLinksEditor";
 import { SiteSettingsEditor } from "@/components/admin/content/SiteSettingsEditor";
@@ -63,6 +64,7 @@ import {
   mergeBeforeOptOutSectionContent,
   normalizeBeforeOptOutContent,
 } from "@/lib/cms/before-opt-out-content";
+import { normalizeHowCanIHelpContent } from "@/lib/cms/how-can-i-help-content";
 import type {
   ExpertQuote,
   OptOutStep,
@@ -159,6 +161,8 @@ function buildFormValues(
         ...sectionContent,
         letterPreviewImage: state.optOutLetterPreviewImage,
       };
+    } else if (sectionId === "how_can_i_help") {
+      base = normalizeHowCanIHelpContent(sectionContent);
     } else {
       base = { ...sectionContent };
     }
@@ -175,7 +179,9 @@ function buildFormValues(
       ? normalizeGoalSectionContent({ ...base, ...localContent })
       : sectionId === "before_opt_out"
         ? mergeBeforeOptOutSectionContent({ ...base, ...localContent })
-        : { ...base, ...localContent }
+        : sectionId === "how_can_i_help"
+          ? normalizeHowCanIHelpContent({ ...base, ...localContent })
+          : { ...base, ...localContent }
     : base;
 
   if (sectionId === "evidence_research") {
@@ -851,6 +857,22 @@ export function ContentEditor({
                       <OptOutStepsEditor
                         steps={optOutSteps}
                         onChange={setOptOutSteps}
+                      />
+                    </div>
+                  ) : null}
+
+                  {activeSection.id === "how_can_i_help" ? (
+                    <div className="mt-8 border-t border-navy-800/8 pt-8">
+                      <HowCanIHelpEditor
+                        value={normalizeHowCanIHelpContent(formValues)}
+                        onChange={(content) => {
+                          markSectionDirty("how_can_i_help");
+                          userEditedRef.current = true;
+                          setFormValues((current) => ({
+                            ...current,
+                            ...content,
+                          }));
+                        }}
                       />
                     </div>
                   ) : null}

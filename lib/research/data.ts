@@ -170,19 +170,23 @@ export const researchChartsData: ResearchChartsData = {
     statPills: [
       {
         value: "~9% lower",
-        label: "chance of meeting grade level per hour/day of screen time — Gr.3 Reading & Math",
+        label:
+          "Chance of meeting grade level per hour/day of screen time — gr.3 Reading & Math",
       },
       {
         value: "~10% lower",
-        label: "chance of meeting grade level per hour/day of screen time — Gr.6 Math",
+        label:
+          "Chance of meeting grade level per hour/day of screen time — gr.6 Math",
       },
       {
         value: "~23% lower",
-        label: "chance of meeting Gr.3 reading standard — children who play any video games vs. none",
+        label:
+          "Chance of meeting gr.3 Reading standard — children who play any video games vs. none",
       },
       {
         value: "5,400+",
-        label: "children tracked from toddlerhood to elementary school, 2008–2023",
+        label:
+          "Children tracked from toddlerhood to elementary school, 2008–2023",
       },
     ],
     howToRead:

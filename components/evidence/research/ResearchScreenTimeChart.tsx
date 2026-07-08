@@ -5,7 +5,6 @@ import {
   chartTooltipTitle,
   researchBodyText,
   researchChartAxisLabelMutedDark,
-  researchChartCaptionMutedDark,
   researchChartCategoryLabelDark,
   researchChartTickMutedDark,
 } from "@/components/charts/chart-theme";
@@ -347,7 +346,7 @@ export function ResearchScreenTimeChart({ data }: ResearchScreenTimeChartProps) 
             <p className="text-sm font-semibold text-navy-800 md:text-base">
               {pill.value}
             </p>
-            <p className={`mt-1 leading-snug ${researchChartCaptionMutedDark}`}>
+            <p className="mt-1 text-xs leading-snug tracking-wide text-navy-800/60 lg:text-sm">
               {pill.label}
             </p>
           </div>

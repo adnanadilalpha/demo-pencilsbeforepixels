@@ -18,7 +18,7 @@ import { ANALYTICS_EVENTS } from "@/lib/analytics/event-types";
 import { trackAnalyticsEvent } from "@/lib/analytics/track-client";
 
 const SCROLL_THRESHOLD = 48;
-const SECTION_IDS = ["resources", "opt-out"] as const;
+const SECTION_IDS = ["resources", "opt-out", "how-can-i-help"] as const;
 
 function getActiveSectionHash(): string {
   const triggerY = window.innerHeight * 0.35;

@@ -6,20 +6,40 @@ import {
   PrivacyPolicyContent,
   privacyToc,
 } from "@/components/legal/PrivacyPolicyContent";
+import { JsonLd } from "@/components/seo/JsonLd";
 import { PageFrame } from "@/components/ui/Container";
 import { LEGAL_DATES } from "@/lib/legal/constants";
+import { buildBreadcrumbJsonLd, buildWebPageJsonLd } from "@/lib/seo/json-ld";
+import { buildPageMetadata } from "@/lib/seo/metadata";
 
-export const metadata: Metadata = {
-  title: "Privacy Policy | Pencils Before Pixels",
-  description:
-    "Learn what information Pencils Before Pixels collects, why we collect it, and how we use it.",
-};
+const TITLE = "Privacy Policy";
+const DESCRIPTION =
+  "Learn what information Pencils Before Pixels collects, why we collect it, and how we use it.";
+
+export const metadata: Metadata = buildPageMetadata({
+  title: TITLE,
+  description: DESCRIPTION,
+  path: "/privacy",
+});
 
 export default function PrivacyPolicyPage() {
   const dates = LEGAL_DATES.privacy;
 
   return (
     <div className="flex min-h-dvh flex-col overflow-x-clip bg-paper-50">
+      <JsonLd
+        data={[
+          buildWebPageJsonLd({
+            name: TITLE,
+            description: DESCRIPTION,
+            path: "/privacy",
+          }),
+          buildBreadcrumbJsonLd([
+            { name: "Home", path: "/" },
+            { name: TITLE, path: "/privacy" },
+          ]),
+        ]}
+      />
       <Header />
       <main className="flex-1 overflow-x-clip bg-paper-50 pt-(--header-height)">
         <PageFrame className="pb-16 sm:pb-20 lg:pb-24">
