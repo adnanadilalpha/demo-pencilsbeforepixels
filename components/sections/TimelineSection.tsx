@@ -209,6 +209,49 @@ export function TimelineSection() {
   const isMobileLayoutRef = useRef(false);
 
   const [wrapperHeight, setWrapperHeight] = useState(0);
+  const [isMobileLayout, setIsMobileLayout] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return window.innerWidth < 1024;
+  });
+
+  const resetPinnedStyles = useCallback(() => {
+    const pin = pinRef.current;
+    const track = trackRef.current;
+
+    if (pin) {
+      pin.style.position = "";
+      pin.style.top = "";
+      pin.style.left = "";
+      pin.style.right = "";
+      pin.style.width = "";
+      pin.style.height = "";
+      pin.style.zIndex = "";
+    }
+
+    if (track) {
+      track.style.transform = "";
+      track.style.willChange = "";
+    }
+
+    for (let index = 0; index < copyRefs.current.length; index += 1) {
+      setMotionVars(copyRefs.current[index], {
+        opacity: 1,
+        textY: 0,
+        textX: 0,
+        imageScale: 1,
+        imageX: 0,
+        imageY: 0,
+      });
+      setMediaVars(mediaRefs.current[index], {
+        opacity: 1,
+        textY: 0,
+        textX: 0,
+        imageScale: 1,
+        imageX: 0,
+        imageY: 0,
+      });
+    }
+  }, []);
 
   timelineSlidesRef.current = timelineSlides;
   slideCountRef.current = slideCount;
@@ -231,7 +274,20 @@ export function TimelineSection() {
 
     viewportHeightRef.current = viewportHeight;
     lastMeasureWidthRef.current = width;
-    isMobileLayoutRef.current = width < 1024;
+    const mobile = width < 1024;
+    isMobileLayoutRef.current = mobile;
+    setIsMobileLayout(mobile);
+
+    if (mobile) {
+      metricsRef.current = {
+        scrollDistance: 0,
+        wrapperHeight: 0,
+        viewportHeight,
+      };
+      setWrapperHeight(0);
+      resetPinnedStyles();
+      return;
+    }
 
     const { totalHeight, scrollDistance } = getTimelineMetrics(
       slideCount,
@@ -244,7 +300,7 @@ export function TimelineSection() {
       viewportHeight,
     };
     setWrapperHeight(totalHeight);
-  }, [slideCount]);
+  }, [resetPinnedStyles, slideCount]);
 
   const applyPinStyles = useCallback((scrollY: number) => {
     const pin = pinRef.current;
@@ -278,6 +334,11 @@ export function TimelineSection() {
   }, []);
 
   const applyFrame = useCallback((scrollY: number) => {
+    if (isMobileLayoutRef.current) {
+      resetPinnedStyles();
+      return;
+    }
+
     const track = trackRef.current;
     const { scrollDistance } = metricsRef.current;
     const currentMaxIndex = maxIndexRef.current;
@@ -353,7 +414,7 @@ export function TimelineSection() {
       dot.style.width = proximity > 0.72 ? "1.25rem" : "0.375rem";
       dot.style.height = proximity > 0.72 ? "0.375rem" : "0.375rem";
     }
-  }, [applyPinStyles]);
+  }, [applyPinStyles, resetPinnedStyles]);
 
   const syncProgress = useCallback(
     (scrollY = window.scrollY) => {
@@ -383,22 +444,49 @@ export function TimelineSection() {
     mediaRefs.current.length = slideCount;
     dotRefs.current.length = slideCount;
 
+    reducedMotionRef.current = prefersReducedMotion();
+    measure();
+
+    if (isMobileLayoutRef.current) {
+      resetPinnedStyles();
+      return;
+    }
+
     const clampedIndex = Math.min(activeIndexRef.current, maxIndex);
     activeIndexRef.current = clampedIndex;
     paginationIndexRef.current = -1;
 
-    reducedMotionRef.current = prefersReducedMotion();
-    measure();
     syncProgress(lenisScrollRef.current || window.scrollY);
     applyPaginationTheme(clampedIndex, timelineSlidesRef.current, {
       missionLabel: missionLabelRef.current,
       dots: dotRefs.current,
     });
     paginationIndexRef.current = clampedIndex;
-  }, [measure, maxIndex, slideCount, syncProgress, timelineSignature]);
+  }, [
+    measure,
+    maxIndex,
+    resetPinnedStyles,
+    slideCount,
+    syncProgress,
+    timelineSignature,
+  ]);
 
   useEffect(() => {
+    if (isMobileLayout) {
+      resetPinnedStyles();
+
+      const onResize = () => {
+        measure();
+      };
+
+      window.addEventListener("resize", onResize);
+      return () => {
+        window.removeEventListener("resize", onResize);
+      };
+    }
+
     const remeasure = () => {
+      if (isMobileLayoutRef.current) return;
       measure();
       scheduleSync(lenisScrollRef.current || window.scrollY);
     };
@@ -417,7 +505,6 @@ export function TimelineSection() {
     window.addEventListener("resize", remeasure);
     window.addEventListener("load", remeasure);
     window.visualViewport?.addEventListener("resize", remeasure);
-    window.visualViewport?.addEventListener("scroll", remeasure);
     document.addEventListener("visibilitychange", onVisibilityChange);
     window.addEventListener("app:scroll-lock-change", remeasure);
 
@@ -433,7 +520,6 @@ export function TimelineSection() {
       window.removeEventListener("resize", remeasure);
       window.removeEventListener("load", remeasure);
       window.visualViewport?.removeEventListener("resize", remeasure);
-      window.visualViewport?.removeEventListener("scroll", remeasure);
       document.removeEventListener("visibilitychange", onVisibilityChange);
       window.removeEventListener("app:scroll-lock-change", remeasure);
       resizeObserver?.disconnect();
@@ -442,20 +528,12 @@ export function TimelineSection() {
         window.cancelAnimationFrame(rafRef.current);
       }
 
-      const pin = pinRef.current;
-      if (pin) {
-        pin.style.position = "";
-        pin.style.top = "";
-        pin.style.left = "";
-        pin.style.right = "";
-        pin.style.width = "";
-        pin.style.height = "";
-        pin.style.zIndex = "";
-      }
+      resetPinnedStyles();
     };
-  }, [measure, scheduleSync]);
+  }, [isMobileLayout, measure, resetPinnedStyles, scheduleSync]);
 
   useLenis((lenis) => {
+    if (isMobileLayoutRef.current) return;
     lenisRef.current = lenis;
     lenisScrollRef.current = lenis.scroll;
     scheduleSync(lenis.scroll);
@@ -501,17 +579,36 @@ export function TimelineSection() {
       id="mission"
       ref={wrapperRef}
       className="relative isolate w-full max-w-full overflow-x-clip"
-      style={wrapperHeight > 0 ? { height: wrapperHeight } : undefined}
+      style={!isMobileLayout && wrapperHeight > 0 ? { height: wrapperHeight } : undefined}
       aria-label="Our mission"
     >
       <div
         ref={pinRef}
-        className="w-full touch-pan-y overflow-hidden"
+        className={isMobileLayout ? "relative w-full" : "w-full touch-pan-y overflow-hidden"}
       >
         <div
+          className={`pointer-events-none absolute inset-x-0 z-20 ${sectionPaddingX} ${
+            isMobileLayout
+              ? "top-[calc(var(--header-height)+0.375rem)]"
+              : "top-[calc(var(--header-height)+1.5rem)] sm:top-[calc(var(--header-height)+2rem)] lg:top-[calc(var(--header-height)+2.5rem)]"
+          }`}
+        >
+          <p
+            ref={missionLabelRef}
+            className="font-sans text-xs font-medium uppercase tracking-[0.14em] text-navy-800/55 max-lg:leading-tight lg:text-base lg:tracking-[0.24em]"
+          >
+            Our Journey
+          </p>
+        </div>
+
+        <div
           ref={trackRef}
-          className="flex h-full will-change-transform"
-          style={{ width: `${slideCount * 100}%` }}
+          className={isMobileLayout ? "flex w-full flex-col" : "flex h-full will-change-transform"}
+          style={
+            isMobileLayout
+              ? undefined
+              : { width: `${slideCount * 100}%` }
+          }
         >
           {timelineSlides.map((slide, index) => {
             const isLight = slide.textColor === "light";
@@ -519,11 +616,19 @@ export function TimelineSection() {
             return (
               <article
                 key={`${index}-${slide.number}`}
-                className={`h-full min-h-0 shrink-0 max-lg:grid max-lg:grid-rows-[minmax(0,1fr)_auto] max-lg:gap-4 max-lg:pb-[calc(2.75rem+env(safe-area-inset-bottom,0px))] max-lg:pt-[calc(var(--header-height)+4rem)] sm:max-lg:pt-[calc(var(--header-height)+4.75rem)] lg:flex lg:flex-row lg:items-center lg:gap-12 lg:py-0 ${sectionPaddingX} ${
-                  isLight ? RICH_TEXT_LINKS_LIGHT_CLASS : ""
-                }`}
+                className={`min-h-0 shrink-0 ${
+                  isMobileLayout
+                    ? `flex flex-col gap-5 ${sectionPaddingX} ${
+                        index === 0
+                          ? "pb-10 pt-[calc(var(--header-height)+1.5rem)] sm:pb-12"
+                          : "py-10 sm:py-12"
+                      } sm:gap-6 ${
+                        index < slideCount - 1 ? "border-b border-navy-800/8" : ""
+                      }`
+                    : `h-full max-lg:grid max-lg:grid-rows-[minmax(0,1fr)_auto] max-lg:gap-4 max-lg:pb-[calc(2.75rem+env(safe-area-inset-bottom,0px))] max-lg:pt-[calc(var(--header-height)+4rem)] sm:max-lg:pt-[calc(var(--header-height)+4.75rem)] lg:flex lg:flex-row lg:items-center lg:gap-12 lg:py-0 ${sectionPaddingX}`
+                } ${isLight ? RICH_TEXT_LINKS_LIGHT_CLASS : ""}`}
                 style={{
-                  width: `${slideShare}%`,
+                  width: isMobileLayout ? "100%" : `${slideShare}%`,
                   backgroundColor: slide.background,
                 }}
               >
@@ -531,8 +636,16 @@ export function TimelineSection() {
                   ref={(node) => {
                     copyRefs.current[index] = node;
                   }}
-                  className={`timeline-slide-copy flex min-h-0 w-full flex-col justify-center gap-2.5 max-lg:justify-start max-lg:gap-2.5 max-lg:overflow-y-auto max-lg:overscroll-y-contain max-lg:pr-1 lg:flex-1 lg:gap-6 ${
-                    slide.indentContent ? "pl-0 max-lg:pl-0 sm:pl-6 lg:pl-32" : ""
+                  className={`timeline-slide-copy flex w-full flex-col gap-2.5 ${
+                    isMobileLayout
+                      ? ""
+                      : "min-h-0 justify-center max-lg:justify-start max-lg:overflow-y-auto max-lg:overscroll-y-contain max-lg:pr-1 lg:flex-1 lg:gap-6"
+                  } ${
+                    slide.indentContent
+                      ? isMobileLayout
+                        ? "sm:pl-4"
+                        : "pl-0 max-lg:pl-0 sm:pl-6 lg:pl-32"
+                      : ""
                   }`}
                 >
                   <p
@@ -575,18 +688,6 @@ export function TimelineSection() {
         </div>
 
         <div
-          className={`pointer-events-none absolute inset-x-0 z-20 top-[calc(var(--header-height)+1.5rem)] sm:top-[calc(var(--header-height)+2rem)] lg:top-[calc(var(--header-height)+2.5rem)] ${sectionPaddingX}`}
-          aria-hidden
-        >
-          <p
-            ref={missionLabelRef}
-            className="font-sans text-xs font-medium uppercase tracking-[0.14em] text-navy-800/55 max-lg:leading-tight lg:text-base lg:tracking-[0.24em]"
-          >
-            Our Journey
-          </p>
-        </div>
-
-        <div
           className="pointer-events-none absolute inset-y-0 left-0 z-10 hidden w-16 bg-linear-to-r from-black/10 to-transparent sm:w-24 lg:block"
           aria-hidden
         />
@@ -596,7 +697,9 @@ export function TimelineSection() {
         />
 
         <div
-          className={`pointer-events-none absolute inset-x-0 bottom-6 z-20 flex items-center justify-end gap-2.5 max-lg:bottom-5 sm:bottom-8 ${sectionPaddingX}`}
+          className={`pointer-events-none absolute inset-x-0 bottom-6 z-20 flex items-center justify-end gap-2.5 max-lg:bottom-5 sm:bottom-8 ${sectionPaddingX} ${
+            isMobileLayout ? "hidden" : ""
+          }`}
           aria-hidden
         >
           {timelineSlides.map((slide, index) => (

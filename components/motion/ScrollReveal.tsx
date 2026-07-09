@@ -8,7 +8,7 @@ import {
   type ReactNode,
 } from "react";
 import { cn } from "@/lib/utils";
-import { prefersReducedMotion } from "@/lib/motion";
+import { prefersNativeScroll, prefersReducedMotion } from "@/lib/motion";
 import {
   HOME_SECTION_REVEAL_EVENT,
   type HomeSectionRevealDetail,
@@ -47,7 +47,7 @@ export function ScrollReveal({
     const element = ref.current;
     if (!element) return;
 
-    if (prefersReducedMotion()) {
+    if (prefersReducedMotion() || prefersNativeScroll()) {
       setVisible(true);
       return;
     }
