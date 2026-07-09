@@ -30,6 +30,7 @@ import {
 } from "@/lib/timeline-motion";
 import { isValidMediaSrc } from "@/lib/media/src";
 import { getSectionElement, scrollToSectionSmooth } from "@/lib/navigation";
+import { useBelowLg } from "@/lib/use-media-query";
 
 function getAbsoluteTop(element: HTMLElement) {
   return element.getBoundingClientRect().top + window.scrollY;
@@ -208,11 +209,10 @@ export function TimelineSection() {
   const pendingScrollYRef = useRef<number | undefined>(undefined);
   const isMobileLayoutRef = useRef(false);
 
+  const isMobileLayout = useBelowLg();
+  isMobileLayoutRef.current = isMobileLayout;
+
   const [wrapperHeight, setWrapperHeight] = useState(0);
-  const [isMobileLayout, setIsMobileLayout] = useState(() => {
-    if (typeof window === "undefined") return false;
-    return window.innerWidth < 1024;
-  });
 
   const resetPinnedStyles = useCallback(() => {
     const pin = pinRef.current;
@@ -231,6 +231,13 @@ export function TimelineSection() {
     if (track) {
       track.style.transform = "";
       track.style.willChange = "";
+      track.style.width = "";
+
+      for (const child of track.children) {
+        if (child instanceof HTMLElement) {
+          child.style.width = "";
+        }
+      }
     }
 
     for (let index = 0; index < copyRefs.current.length; index += 1) {
@@ -276,7 +283,16 @@ export function TimelineSection() {
     lastMeasureWidthRef.current = width;
     const mobile = width < 1024;
     isMobileLayoutRef.current = mobile;
-    setIsMobileLayout(mobile);
+
+    const track = trackRef.current;
+    if (track) {
+      track.style.width = mobile ? "" : `${slideCountRef.current * 100}%`;
+
+      for (const child of track.children) {
+        if (!(child instanceof HTMLElement)) continue;
+        child.style.width = mobile ? "" : `${slideShareRef.current}%`;
+      }
+    }
 
     if (mobile) {
       metricsRef.current = {
@@ -463,6 +479,7 @@ export function TimelineSection() {
     });
     paginationIndexRef.current = clampedIndex;
   }, [
+    isMobileLayout,
     measure,
     maxIndex,
     resetPinnedStyles,
@@ -579,19 +596,15 @@ export function TimelineSection() {
       id="mission"
       ref={wrapperRef}
       className="relative isolate w-full max-w-full overflow-x-clip"
-      style={!isMobileLayout && wrapperHeight > 0 ? { height: wrapperHeight } : undefined}
+      style={wrapperHeight > 0 ? { height: wrapperHeight } : undefined}
       aria-label="Our mission"
     >
       <div
         ref={pinRef}
-        className={isMobileLayout ? "relative w-full" : "w-full touch-pan-y overflow-hidden"}
+        className="relative w-full lg:touch-pan-y lg:overflow-hidden"
       >
         <div
-          className={`pointer-events-none absolute inset-x-0 z-20 ${sectionPaddingX} ${
-            isMobileLayout
-              ? "top-[calc(var(--header-height)+0.375rem)]"
-              : "top-[calc(var(--header-height)+1.5rem)] sm:top-[calc(var(--header-height)+2rem)] lg:top-[calc(var(--header-height)+2.5rem)]"
-          }`}
+          className={`pointer-events-none absolute inset-x-0 z-20 top-[calc(var(--header-height)+0.375rem)] lg:top-[calc(var(--header-height)+1.5rem)] xl:top-[calc(var(--header-height)+2.5rem)] ${sectionPaddingX}`}
         >
           <p
             ref={missionLabelRef}
@@ -603,12 +616,7 @@ export function TimelineSection() {
 
         <div
           ref={trackRef}
-          className={isMobileLayout ? "flex w-full flex-col" : "flex h-full will-change-transform"}
-          style={
-            isMobileLayout
-              ? undefined
-              : { width: `${slideCount * 100}%` }
-          }
+          className="flex w-full flex-col lg:h-full lg:flex-row lg:will-change-transform"
         >
           {timelineSlides.map((slide, index) => {
             const isLight = slide.textColor === "light";
@@ -616,19 +624,16 @@ export function TimelineSection() {
             return (
               <article
                 key={`${index}-${slide.number}`}
-                className={`min-h-0 shrink-0 ${
-                  isMobileLayout
-                    ? `flex flex-col gap-5 ${sectionPaddingX} ${
-                        index === 0
-                          ? "pb-10 pt-[calc(var(--header-height)+1.5rem)] sm:pb-12"
-                          : "py-10 sm:py-12"
-                      } sm:gap-6 ${
-                        index < slideCount - 1 ? "border-b border-navy-800/8" : ""
-                      }`
-                    : `h-full max-lg:grid max-lg:grid-rows-[minmax(0,1fr)_auto] max-lg:gap-4 max-lg:pb-[calc(2.75rem+env(safe-area-inset-bottom,0px))] max-lg:pt-[calc(var(--header-height)+4rem)] sm:max-lg:pt-[calc(var(--header-height)+4.75rem)] lg:flex lg:flex-row lg:items-center lg:gap-12 lg:py-0 ${sectionPaddingX}`
+                className={`min-h-0 w-full shrink-0 flex flex-col gap-5 sm:gap-6 ${sectionPaddingX} lg:h-full lg:flex-row lg:items-center lg:gap-12 lg:py-0 ${
+                  index === 0
+                    ? "pb-10 pt-[calc(var(--header-height)+1.5rem)] sm:pb-12 lg:pt-0 lg:pb-0"
+                    : "py-10 sm:py-12 lg:py-0"
+                } ${
+                  index < slideCount - 1
+                    ? "border-b border-navy-800/8 lg:border-b-0"
+                    : ""
                 } ${isLight ? RICH_TEXT_LINKS_LIGHT_CLASS : ""}`}
                 style={{
-                  width: isMobileLayout ? "100%" : `${slideShare}%`,
                   backgroundColor: slide.background,
                 }}
               >
@@ -636,16 +641,8 @@ export function TimelineSection() {
                   ref={(node) => {
                     copyRefs.current[index] = node;
                   }}
-                  className={`timeline-slide-copy flex w-full flex-col gap-2.5 ${
-                    isMobileLayout
-                      ? ""
-                      : "min-h-0 justify-center max-lg:justify-start max-lg:overflow-y-auto max-lg:overscroll-y-contain max-lg:pr-1 lg:flex-1 lg:gap-6"
-                  } ${
-                    slide.indentContent
-                      ? isMobileLayout
-                        ? "sm:pl-4"
-                        : "pl-0 max-lg:pl-0 sm:pl-6 lg:pl-32"
-                      : ""
+                  className={`timeline-slide-copy flex w-full flex-col gap-2.5 lg:min-h-0 lg:flex-1 lg:justify-center lg:gap-6 ${
+                    slide.indentContent ? "sm:pl-4 lg:pl-6 xl:pl-32" : ""
                   }`}
                 >
                   <p
@@ -697,9 +694,7 @@ export function TimelineSection() {
         />
 
         <div
-          className={`pointer-events-none absolute inset-x-0 bottom-6 z-20 flex items-center justify-end gap-2.5 max-lg:bottom-5 sm:bottom-8 ${sectionPaddingX} ${
-            isMobileLayout ? "hidden" : ""
-          }`}
+          className={`pointer-events-none absolute inset-x-0 bottom-6 z-20 hidden items-center justify-end gap-2.5 sm:bottom-8 lg:flex ${sectionPaddingX}`}
           aria-hidden
         >
           {timelineSlides.map((slide, index) => (
