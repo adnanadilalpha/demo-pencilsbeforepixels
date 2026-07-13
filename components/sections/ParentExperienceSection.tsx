@@ -9,28 +9,11 @@ import { isRichTextHtml, splitPlainTextParagraphs } from "@/lib/cms/rich-text";
 import { normalizeParentExperienceContent } from "@/lib/cms/parent-experience-content";
 import { useSection } from "@/lib/cms/hooks";
 
-function collectLetterParagraphs(lead: string, momentBodies: string[]): string[] {
-  const blocks: string[] = [];
-
-  if (lead.trim()) {
-    if (isRichTextHtml(lead)) {
-      blocks.push(lead.trim());
-    } else {
-      blocks.push(...splitPlainTextParagraphs(lead));
-    }
-  }
-
-  for (const body of momentBodies) {
-    const trimmed = body.trim();
-    if (!trimmed) continue;
-    if (isRichTextHtml(trimmed)) {
-      blocks.push(trimmed);
-    } else {
-      blocks.push(...splitPlainTextParagraphs(trimmed));
-    }
-  }
-
-  return blocks;
+function collectBlocks(source: string): string[] {
+  const trimmed = source.trim();
+  if (!trimmed) return [];
+  if (isRichTextHtml(trimmed)) return [trimmed];
+  return splitPlainTextParagraphs(trimmed);
 }
 
 export function ParentExperienceSection() {
@@ -46,19 +29,18 @@ export function ParentExperienceSection() {
     imageAlt,
   } = normalizeParentExperienceContent(section);
 
-  const letterBlocks = collectLetterParagraphs(
-    lead,
-    moments.map((moment) => moment.body),
-  );
+  const leadBlocks = collectBlocks(lead);
+  const letterBlocks = moments.flatMap((moment) => collectBlocks(moment.body));
 
-  if (letterBlocks.length === 0) return null;
+  if (leadBlocks.length === 0 && letterBlocks.length === 0) return null;
 
   const credit = [authorName, authorRole].filter(Boolean).join(", ");
+  const showDivider = leadBlocks.length > 0 && letterBlocks.length > 0;
 
   return (
     <section
       id="parent-experience"
-      className="w-full bg-[#faf8f2] py-16 max-lg:py-16 lg:py-24"
+      className="w-full overflow-x-clip bg-[#faf8f2] py-16 max-lg:py-16 lg:py-24"
     >
       <Container>
         <div className="flex w-full flex-col gap-10 max-lg:gap-10 lg:flex-row lg:items-start lg:gap-12 xl:gap-16">
@@ -72,16 +54,37 @@ export function ParentExperienceSection() {
               </DisplayHeading>
             </ScrollReveal>
 
-            <ScrollReveal delay={0.08} className="flex flex-col gap-5 sm:gap-6">
-              {letterBlocks.map((block, index) => (
-                <RichTextContent
-                  key={`${index}-${block.slice(0, 40)}`}
-                  content={block}
-                  splitPlainParagraphs={!isRichTextHtml(block)}
-                  className={`${sectionSubtextClass} max-w-none text-pretty text-navy-800/82`}
-                />
-              ))}
-            </ScrollReveal>
+            {leadBlocks.length > 0 ? (
+              <ScrollReveal delay={0.08} className="flex flex-col gap-5 sm:gap-6">
+                {leadBlocks.map((block, index) => (
+                  <RichTextContent
+                    key={`lead-${index}-${block.slice(0, 40)}`}
+                    content={block}
+                    splitPlainParagraphs={!isRichTextHtml(block)}
+                    className={`${sectionSubtextClass} max-w-none text-pretty text-navy-800/82`}
+                  />
+                ))}
+              </ScrollReveal>
+            ) : null}
+
+            {showDivider ? (
+              <ScrollReveal delay={0.1} aria-hidden>
+                <hr className="w-full border-0 border-t border-navy-800/20" />
+              </ScrollReveal>
+            ) : null}
+
+            {letterBlocks.length > 0 ? (
+              <ScrollReveal delay={0.12} className="flex flex-col gap-5 sm:gap-6">
+                {letterBlocks.map((block, index) => (
+                  <RichTextContent
+                    key={`letter-${index}-${block.slice(0, 40)}`}
+                    content={block}
+                    splitPlainParagraphs={!isRichTextHtml(block)}
+                    className={`${sectionSubtextClass} max-w-none text-pretty text-navy-800/82`}
+                  />
+                ))}
+              </ScrollReveal>
+            ) : null}
 
             <ScrollReveal delay={0.2} className="flex flex-col gap-4 sm:gap-5">
               <p className="text-pretty font-display text-[clamp(1.625rem,6vw,2.75rem)] leading-[1.12] text-navy-800">
