@@ -199,13 +199,10 @@ export const homepageSections: EditorSection[] = [
         label: "",
         type: "text",
         placeholder:
-          "Parent letter shown between Device Opt Out and How Can I Help. Portrait sits beside the story — same layout language as Device Opt Out.",
+          "Parent letter shown between Device Opt Out and How Can I Help. Reads as continuous prose beside the parent portrait — not a numbered list.",
       },
       { key: "headline", label: "Headline", type: "text" },
       { key: "lead", label: "Lead", type: "richText" },
-      { key: "closing", label: "Closing line", type: "text" },
-      { key: "authorName", label: "Author name", type: "text" },
-      { key: "authorRole", label: "Author role", type: "text" },
       {
         key: "image",
         label: "Portrait photo",
@@ -213,7 +210,6 @@ export const homepageSections: EditorSection[] = [
         mediaFolder: "parent-experience",
         mediaFilename: "jpb.png",
       },
-      { key: "imageAlt", label: "Photo alt text", type: "text" },
     ],
   },
   {

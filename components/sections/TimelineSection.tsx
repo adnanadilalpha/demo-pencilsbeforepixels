@@ -119,7 +119,7 @@ function TimelineSlideMedia({
   return (
     <div
       ref={mediaRef}
-      className={`timeline-slide-media relative w-full shrink-0 overflow-hidden rounded-sm shadow-[0_28px_90px_rgba(10,22,40,0.22)] h-[min(30dvh,210px)] sm:h-[min(34dvh,240px)] lg:h-[min(72vh,560px)] lg:max-w-none lg:flex-1 ${
+      className={`timeline-slide-media relative w-full shrink-0 overflow-hidden rounded-sm shadow-[0_28px_90px_rgba(10,22,40,0.22)] h-[min(30dvh,210px)] sm:h-[min(34dvh,240px)] lg:h-[min(58vh,480px)] lg:max-h-full lg:max-w-none lg:flex-1 ${
         isLight ? "ring-1 ring-white/15" : "ring-1 ring-navy-800/10"
       }`}
     >
@@ -623,10 +623,10 @@ export function TimelineSection() {
             return (
               <article
                 key={`${index}-${slide.number}`}
-                className={`min-h-0 w-full shrink-0 flex flex-col gap-5 sm:gap-6 ${sectionPaddingX} lg:h-full lg:flex-row lg:items-center lg:gap-12 lg:py-0 ${
+                className={`min-h-0 w-full shrink-0 flex flex-col gap-5 sm:gap-6 ${sectionPaddingX} lg:h-full lg:flex-row lg:items-center lg:gap-12 lg:overflow-hidden lg:pt-[calc(var(--header-height)+6.25rem)] lg:pb-14 xl:pt-[calc(var(--header-height)+7.25rem)] ${
                   index === 0
-                    ? "pb-10 pt-[calc(var(--header-height)+1.5rem)] sm:pb-12 lg:pt-0 lg:pb-0"
-                    : "py-10 sm:py-12 lg:py-0"
+                    ? "pb-10 pt-[calc(var(--header-height)+1.5rem)] sm:pb-12"
+                    : "py-10 sm:py-12"
                 } ${
                   index < slideCount - 1
                     ? "border-b border-navy-800/8 lg:border-b-0"
@@ -645,7 +645,7 @@ export function TimelineSection() {
                   }`}
                 >
                   <p
-                    className={`text-fluid-timeline-number font-sans font-bold leading-none max-lg:text-[2.5rem] lg:text-[96px] ${
+                    className={`text-fluid-timeline-number font-sans font-bold leading-none max-lg:text-[2.5rem] lg:text-[clamp(3.5rem,11vh,6rem)] ${
                       isLight ? "text-slate-50/70" : "text-hero-dark"
                     }`}
                   >

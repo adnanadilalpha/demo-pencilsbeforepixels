@@ -1,13 +1,14 @@
 "use client";
 
-import { adminInputClass, adminLabelClass } from "@/components/admin/admin-styles";
-import { RichTextEditor } from "@/components/admin/content/RichTextEditor";
 import {
-  PARENT_EXPERIENCE_MOMENT_COUNT,
-  type ParentExperienceContent,
-  type ParentExperienceMoment,
+  adminInputClass,
+  adminLabelClass,
+} from "@/components/admin/admin-styles";
+import { RichTextEditor } from "@/components/admin/content/RichTextEditor";
+import type {
+  ParentExperienceContent,
+  ParentExperienceMoment,
 } from "@/lib/cms/parent-experience-content";
-import { cn } from "@/lib/utils";
 
 type ParentExperienceEditorProps = {
   value: ParentExperienceContent;
@@ -18,74 +19,73 @@ export function ParentExperienceEditor({
   value,
   onChange,
 }: ParentExperienceEditorProps) {
-  const moments = Array.from(
-    { length: PARENT_EXPERIENCE_MOMENT_COUNT },
-    (_, index) =>
-      value.moments[index] ?? {
-        number: String(index + 1).padStart(2, "0"),
-        title: "",
-        body: "",
-      },
-  );
+  const moment: ParentExperienceMoment = value.moments[0] ?? {
+    number: "",
+    title: "",
+    body: "",
+  };
 
-  const updateMoment = (
-    index: number,
-    patch: Partial<ParentExperienceMoment>,
-  ) => {
+  const updateMoment = (patch: Partial<ParentExperienceMoment>) => {
     onChange({
       ...value,
-      moments: moments.map((moment, momentIndex) =>
-        momentIndex === index ? { ...moment, ...patch } : moment,
-      ),
+      moments: [
+        {
+          number: "",
+          title: moment.title,
+          body: moment.body,
+          ...patch,
+        },
+      ],
     });
   };
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="mt-6 flex flex-col gap-5 border-t border-navy-800/6 pt-4">
       <div>
-        <label className={adminLabelClass}>Story beats</label>
+        <label className={adminLabelClass}>Letter body</label>
         <p className="mt-1 text-sm text-body-muted">
-          Three short moments shown like the Device Opt Out steps, beside the
-          parent portrait.
+          Main letter text after the intro/lead. Renders as continuous prose —
+          no numbers.
         </p>
       </div>
 
-      <ol className="flex flex-col gap-4">
-        {moments.map((moment, index) => (
-          <li
-            key={moment.number || index}
-            className="rounded-[12px] border border-navy-800/10 bg-paper-50 p-4"
-          >
-            <div className="mb-3 flex items-center gap-3">
-              <span className="font-mono text-xs font-medium uppercase tracking-widest text-body-muted">
-                Moment {index + 1}
-              </span>
-              <input
-                type="text"
-                value={moment.number}
-                onChange={(event) =>
-                  updateMoment(index, { number: event.target.value })
-                }
-                className={cn(adminInputClass, "h-9 w-20 rounded-[10px] px-3")}
-                aria-label={`Moment ${index + 1} number`}
-              />
-            </div>
-            <div className="flex flex-col gap-3">
-              <RichTextEditor
-                label="Title (optional)"
-                value={moment.title}
-                compact
-                onChange={(next) => updateMoment(index, { title: next })}
-              />
-              <RichTextEditor
-                label="Body"
-                value={moment.body}
-                onChange={(next) => updateMoment(index, { body: next })}
-              />
-            </div>
-          </li>
-        ))}
-      </ol>
+      <RichTextEditor
+        label="Letter"
+        value={moment.body}
+        onChange={(next) => updateMoment({ body: next })}
+      />
+
+      <div>
+        <label htmlFor="parent-experience-closing" className={adminLabelClass}>
+          Closing line
+        </label>
+        <input
+          id="parent-experience-closing"
+          type="text"
+          value={value.closing}
+          onChange={(event) =>
+            onChange({ ...value, closing: event.target.value })
+          }
+          className={`${adminInputClass} mt-1.5`}
+          placeholder="Things are changing!"
+        />
+      </div>
+
+      <div>
+        <label htmlFor="parent-experience-author" className={adminLabelClass}>
+          Author name
+        </label>
+        <input
+          id="parent-experience-author"
+          type="text"
+          value={value.authorName}
+          onChange={(event) =>
+            onChange({ ...value, authorName: event.target.value })
+          }
+          className={`${adminInputClass} mt-1.5`}
+          placeholder="JPB"
+        />
+      </div>
     </div>
   );
 }
