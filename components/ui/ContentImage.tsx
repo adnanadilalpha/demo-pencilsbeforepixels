@@ -1,15 +1,15 @@
 "use client";
 
 import Image, { type ImageProps } from "next/image";
-import { isClientSiteCacheEnabled } from "@/lib/cache/client-state";
 import { isValidMediaSrc } from "@/lib/media/src";
 
 export type ContentImageProps = ImageProps;
 
 /**
  * Site image wrapper with sensible loading defaults.
- * Use `priority` only for above-the-fold / LCP candidates (hero, first mission slide).
+ * Use `priority` only for above-the-fold / LCP candidates (hero).
  * All other images lazy-load with low fetch priority so they do not compete for LCP.
+ * Always runs through next/image optimization unless explicitly opted out (e.g. SVG).
  */
 export function ContentImage({
   priority,
@@ -24,11 +24,10 @@ export function ContentImage({
   }
 
   const resolvedSrc = src as ImageProps["src"];
-  const bypassOptimization = unoptimized ?? !isClientSiteCacheEnabled();
 
   if (priority) {
     return (
-      <Image {...props} src={resolvedSrc} priority unoptimized={bypassOptimization} />
+      <Image {...props} src={resolvedSrc} priority unoptimized={unoptimized} />
     );
   }
 
@@ -38,7 +37,7 @@ export function ContentImage({
       src={resolvedSrc}
       loading={loading ?? "lazy"}
       fetchPriority={fetchPriority ?? "low"}
-      unoptimized={bypassOptimization}
+      unoptimized={unoptimized}
     />
   );
 }

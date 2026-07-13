@@ -137,6 +137,13 @@ export const homepageSections: EditorSection[] = [
     page: "homepage",
     sectionKey: "homepage.research_library",
     fields: [
+      {
+        key: "_note",
+        label: "",
+        type: "text",
+        placeholder:
+          "Homepage Resources section. Reorder categories below to change the live sidebar order.",
+      },
       { key: "headline", label: "Headline", type: "text" },
       { key: "body", label: "Body copy", type: "richText" },
     ],
@@ -182,6 +189,34 @@ export const homepageSections: EditorSection[] = [
     ],
   },
   {
+    id: "parent_experience",
+    label: "Parent Experience",
+    page: "homepage",
+    sectionKey: "homepage.parent_experience",
+    fields: [
+      {
+        key: "_note",
+        label: "",
+        type: "text",
+        placeholder:
+          "Parent letter shown between Device Opt Out and How Can I Help. Portrait sits beside the story — same layout language as Device Opt Out.",
+      },
+      { key: "headline", label: "Headline", type: "text" },
+      { key: "lead", label: "Lead", type: "richText" },
+      { key: "closing", label: "Closing line", type: "text" },
+      { key: "authorName", label: "Author name", type: "text" },
+      { key: "authorRole", label: "Author role", type: "text" },
+      {
+        key: "image",
+        label: "Portrait photo",
+        type: "image",
+        mediaFolder: "parent-experience",
+        mediaFilename: "jpb.png",
+      },
+      { key: "imageAlt", label: "Photo alt text", type: "text" },
+    ],
+  },
+  {
     id: "how_can_i_help",
     label: "How Can I Help",
     page: "homepage",
@@ -192,7 +227,7 @@ export const homepageSections: EditorSection[] = [
         label: "",
         type: "text",
         placeholder:
-          "Ways supporters can help. Appears below Device Opt Out. The share card uses a yard-sign image on the right and share buttons below the text.",
+          "Ways supporters can help. Appears below the Parent Experience letter. The share card uses a yard-sign image on the right and share buttons below the text.",
       },
       { key: "headline", label: "Headline", type: "richText" },
       { key: "intro", label: "Intro", type: "richText" },

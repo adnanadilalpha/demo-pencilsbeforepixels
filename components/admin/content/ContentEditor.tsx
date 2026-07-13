@@ -43,11 +43,13 @@ import { TimelineEditor } from "@/components/admin/content/TimelineEditor";
 import { WhatToDoFindingsEditor } from "@/components/admin/content/WhatToDoFindingsEditor";
 import type { MentalHealthLegendItem } from "@/lib/admin/cms-entity-types";
 import type { EditableLibraryItem } from "@/lib/admin/cms-entity-types";
+import { LibraryCategoriesOrderEditor } from "@/components/admin/content/LibraryCategoriesOrderEditor";
 import { LibraryItemsEditor } from "@/components/admin/content/LibraryItemsEditor";
 import { MentalHealthLegendEditor } from "@/components/admin/content/MentalHealthLegendEditor";
 import { NavigationEditor } from "@/components/admin/content/NavigationEditor";
 import { BeforeOptOutEditor } from "@/components/admin/content/BeforeOptOutEditor";
 import { HowCanIHelpEditor } from "@/components/admin/content/HowCanIHelpEditor";
+import { ParentExperienceEditor } from "@/components/admin/content/ParentExperienceEditor";
 import { OptOutStepsEditor } from "@/components/admin/content/OptOutStepsEditor";
 import { SocialLinksEditor } from "@/components/admin/settings/SocialLinksEditor";
 import { SiteSettingsEditor } from "@/components/admin/content/SiteSettingsEditor";
@@ -65,6 +67,11 @@ import {
   normalizeBeforeOptOutContent,
 } from "@/lib/cms/before-opt-out-content";
 import { mergeHowCanIHelpSectionContent } from "@/lib/cms/how-can-i-help-content";
+import {
+  mergeParentExperienceSectionContent,
+  normalizeParentExperienceContent,
+} from "@/lib/cms/parent-experience-content";
+import { normalizeResearchLibraryCategories } from "@/lib/cms/research-library-content";
 import type {
   ExpertQuote,
   OptOutStep,
@@ -163,6 +170,15 @@ function buildFormValues(
       };
     } else if (sectionId === "how_can_i_help") {
       base = mergeHowCanIHelpSectionContent(sectionContent);
+    } else if (sectionId === "parent_experience") {
+      base = mergeParentExperienceSectionContent(sectionContent);
+    } else if (sectionId === "research_library") {
+      base = {
+        ...sectionContent,
+        categories: normalizeResearchLibraryCategories(
+          sectionContent.categories,
+        ),
+      };
     } else {
       base = { ...sectionContent };
     }
@@ -181,7 +197,17 @@ function buildFormValues(
         ? mergeBeforeOptOutSectionContent({ ...base, ...localContent })
         : sectionId === "how_can_i_help"
           ? mergeHowCanIHelpSectionContent({ ...base, ...localContent })
-          : { ...base, ...localContent }
+          : sectionId === "parent_experience"
+            ? mergeParentExperienceSectionContent({ ...base, ...localContent })
+            : sectionId === "research_library"
+              ? {
+                  ...base,
+                  ...localContent,
+                  categories: normalizeResearchLibraryCategories(
+                    localContent.categories ?? base.categories,
+                  ),
+                }
+              : { ...base, ...localContent }
     : base;
 
   if (sectionId === "evidence_research") {
@@ -830,10 +856,26 @@ export function ContentEditor({
                   ) : null}
 
                   {activeSection.id === "research_library" ? (
-                    <LibraryItemsEditor
-                      items={libraryItems}
-                      onChange={setLibraryItems}
-                    />
+                    <>
+                      <LibraryCategoriesOrderEditor
+                        value={formValues.categories}
+                        onChange={(categories) => {
+                          markSectionDirty("research_library");
+                          userEditedRef.current = true;
+                          setFormValues((current) => ({
+                            ...current,
+                            categories,
+                          }));
+                        }}
+                      />
+                      <LibraryItemsEditor
+                        items={libraryItems}
+                        categories={normalizeResearchLibraryCategories(
+                          formValues.categories,
+                        )}
+                        onChange={setLibraryItems}
+                      />
+                    </>
                   ) : null}
 
                   {activeSection.id === "before_opt_out" ? (
@@ -857,6 +899,22 @@ export function ContentEditor({
                       <OptOutStepsEditor
                         steps={optOutSteps}
                         onChange={setOptOutSteps}
+                      />
+                    </div>
+                  ) : null}
+
+                  {activeSection.id === "parent_experience" ? (
+                    <div className="mt-8 border-t border-navy-800/8 pt-8">
+                      <ParentExperienceEditor
+                        value={normalizeParentExperienceContent(formValues)}
+                        onChange={(content) => {
+                          markSectionDirty("parent_experience");
+                          userEditedRef.current = true;
+                          setFormValues((current) => ({
+                            ...current,
+                            ...content,
+                          }));
+                        }}
                       />
                     </div>
                   ) : null}

@@ -79,6 +79,7 @@ export function HeroSection() {
             alt={backgroundAlt}
             fill
             priority
+            quality={75}
             className="object-cover object-center"
             sizes="100vw"
           />

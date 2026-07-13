@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { EditableLibraryItem } from "@/lib/admin/cms-entity-types";
 import { adminInputClass, adminLabelClass } from "@/components/admin/admin-styles";
 import { libraryCategories } from "@/lib/cms/fallback-data";
@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 
 type LibraryItemsEditorProps = {
   items: EditableLibraryItem[];
+  categories?: LibraryCategory[];
   onChange: (items: EditableLibraryItem[]) => void;
 };
 
@@ -22,12 +23,21 @@ const KIND_LABELS: Record<EditableLibraryItem["kind"], string> = {
 
 export function LibraryItemsEditor({
   items,
+  categories,
   onChange,
 }: LibraryItemsEditorProps) {
-  const activeCategories = libraryCategories;
+  const activeCategories = categories?.length
+    ? categories
+    : libraryCategories;
   const [activeCategory, setActiveCategory] = useState<LibraryCategory>(
-    activeCategories[0] ?? "Books",
+    activeCategories[0] ?? "Videos",
   );
+
+  useEffect(() => {
+    if (!activeCategories.includes(activeCategory)) {
+      setActiveCategory(activeCategories[0] ?? "Videos");
+    }
+  }, [activeCategories, activeCategory]);
 
   const categoryItems = useMemo(
     () => items.filter((item) => item.category === activeCategory),

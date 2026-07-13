@@ -52,7 +52,6 @@ export function BookCoverFrame({
             src={src}
             alt={alt}
             fill
-            unoptimized
             className={bookCoverImageClassName}
             sizes={sizes}
           />

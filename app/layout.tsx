@@ -13,17 +13,20 @@ import {
 import { buildSiteMetadata } from "@/lib/seo/metadata";
 import "./globals.css";
 
-export const dynamic = "force-dynamic";
+/** ISR: public pages revalidate hourly; admin saves call revalidatePath/Tag. */
+export const revalidate = 3600;
 
 const anton = Anton({
   weight: "400",
   subsets: ["latin"],
   variable: "--font-anton",
+  display: "swap",
 });
 
 const dmSans = DM_Sans({
   subsets: ["latin"],
   variable: "--font-dm-sans",
+  display: "swap",
 });
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -99,13 +102,6 @@ export default async function RootLayout({
             media="(prefers-color-scheme: dark)"
           />
         )}
-        <link
-          rel="preload"
-          href="/fonts/Agustina-Signature.otf"
-          as="font"
-          type="font/otf"
-          crossOrigin="anonymous"
-        />
       </head>
       <body className="flex min-h-full flex-col overflow-x-clip bg-paper-50">
         <AppProviders initialContent={siteContent}>

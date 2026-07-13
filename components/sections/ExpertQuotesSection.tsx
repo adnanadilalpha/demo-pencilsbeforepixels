@@ -68,7 +68,6 @@ export function ExpertQuotesSection() {
                         fill
                         className="object-cover"
                         sizes="(max-width: 1023px) 128px, 140px"
-                        unoptimized
                       />
                     </div>
                   ) : null}

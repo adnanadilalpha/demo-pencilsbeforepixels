@@ -350,8 +350,10 @@ function CategoryNavButton({
 export function ResearchLibrarySection() {
   const { libraryCategories, libraryContent, media } = useSiteContent();
   const section = useSection("homepage.research_library");
-  const [activeCategory, setActiveCategory] =
-    useState<LibraryCategory>("Books");
+  const visibleCategories = resolvePublicLibraryCategories(libraryCategories);
+  const [activeCategory, setActiveCategory] = useState<LibraryCategory>(
+    () => visibleCategories[0] ?? "Videos",
+  );
   const [activeVideo, setActiveVideo] = useState<LibraryItem | null>(null);
   const [activeDocument, setActiveDocument] = useState<LibraryItem | null>(null);
 
@@ -362,11 +364,9 @@ export function ResearchLibrarySection() {
     }
   };
 
-  const visibleCategories = resolvePublicLibraryCategories(libraryCategories);
-
   useEffect(() => {
     if (!visibleCategories.includes(activeCategory)) {
-      setActiveCategory(visibleCategories[0] ?? "Books");
+      setActiveCategory(visibleCategories[0] ?? "Videos");
     }
   }, [activeCategory, visibleCategories]);
 

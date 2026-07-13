@@ -6,6 +6,7 @@ import {
   stripBeforeOptOutFieldsFromRecord,
 } from "@/lib/cms/before-opt-out-content";
 import { sanitizeHowCanIHelpForPublish } from "@/lib/cms/how-can-i-help-content";
+import { sanitizeParentExperienceForPublish } from "@/lib/cms/parent-experience-content";
 import { sanitizeResearchLibraryForPublish } from "@/lib/cms/research-library-content";
 import { normalizeMissionTimeline } from "@/lib/cms/mission-slides";
 import { sanitizeMentalHealthForPublish } from "@/lib/cms/site-ctas";
@@ -62,6 +63,10 @@ function buildSavePayload(
   if (sectionId === "device_opt_out") {
     content = stripBeforeOptOutFieldsFromRecord(content);
     delete content.secondaryCta;
+  }
+
+  if (sectionId === "parent_experience") {
+    content = sanitizeParentExperienceForPublish(content);
   }
 
   if (sectionId === "how_can_i_help") {

@@ -1,4 +1,7 @@
-import { libraryCategories } from "./fallback-data";
+import {
+  libraryCategories,
+  resolvePublicLibraryCategories,
+} from "./fallback-data";
 import type { LibraryCategory } from "./types";
 
 export const WALLED_GARDEN_CATEGORY = "Walled Garden" as const;
@@ -14,28 +17,18 @@ export function normalizeLibraryCategory(
   const trimmed = category.trim();
   if (!trimmed) return null;
 
-  const canonical = trimmed;
-
   const allowed = new Set<LibraryCategory>(libraryCategories);
-  return allowed.has(canonical as LibraryCategory)
-    ? (canonical as LibraryCategory)
+  return allowed.has(trimmed as LibraryCategory)
+    ? (trimmed as LibraryCategory)
     : null;
 }
 
 export function normalizeResearchLibraryCategories(
   raw: unknown,
 ): LibraryCategory[] {
-  if (!Array.isArray(raw)) {
-    return [...libraryCategories];
-  }
-
-  const filtered = raw
-    .map((category) =>
-      typeof category === "string" ? normalizeLibraryCategory(category) : null,
-    )
-    .filter((category): category is LibraryCategory => category !== null);
-
-  return filtered.length > 0 ? filtered : [...libraryCategories];
+  return resolvePublicLibraryCategories(
+    Array.isArray(raw) ? (raw as LibraryCategory[]) : undefined,
+  );
 }
 
 export function sanitizeResearchLibraryForPublish(
@@ -43,6 +36,6 @@ export function sanitizeResearchLibraryForPublish(
 ): Record<string, unknown> {
   return {
     ...content,
-    categories: [...libraryCategories],
+    categories: normalizeResearchLibraryCategories(content.categories),
   };
 }

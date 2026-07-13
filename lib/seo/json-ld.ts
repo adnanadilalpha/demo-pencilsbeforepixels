@@ -106,12 +106,19 @@ export function buildDatasetJsonLd({
   description,
   path,
   siteName,
+  licensePath = "/terms",
 }: {
   name: string;
   description: string;
   path: string;
   siteName: string;
+  /** Path or absolute URL for the dataset license document. */
+  licensePath?: string;
 }) {
+  const licenseUrl = licensePath.startsWith("http")
+    ? licensePath
+    : absoluteUrl(licensePath);
+
   return {
     "@context": "https://schema.org",
     "@type": "Dataset",
@@ -119,6 +126,8 @@ export function buildDatasetJsonLd({
     description,
     url: absoluteUrl(path),
     inLanguage: "en-US",
+    license: licenseUrl,
+    isAccessibleForFree: true,
     creator: {
       "@type": "Organization",
       name: siteName,

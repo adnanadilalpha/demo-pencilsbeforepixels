@@ -1,5 +1,6 @@
 import { createDefaultGoalFindings } from "./goal-section-content";
 import { DEFAULT_SHARE_CARD_IMAGE } from "./how-can-i-help-content";
+import { DEFAULT_PARENT_EXPERIENCE } from "./parent-experience-content";
 import { resolvePrivacyPolicyUrl, resolveTermsOfServiceUrl } from "./settings-urls";
 import { DEFAULT_SOCIAL_LINKS } from "@/lib/site/social-links";
 import { researchChartsData } from "@/lib/research/data";
@@ -109,6 +110,18 @@ export function buildFallbackSiteContent(): SiteContent {
         body: "Parents should have access to clear information and the ability to make informed decisions regarding classroom technology.",
         primaryCta: "Sign Opt Out Letter",
         secondaryCta: { label: "Explore Nebraska Data", href: "/nebraska-data" },
+      },
+      "homepage.parent_experience": {
+        headline: DEFAULT_PARENT_EXPERIENCE.headline,
+        lead: DEFAULT_PARENT_EXPERIENCE.lead,
+        moments: DEFAULT_PARENT_EXPERIENCE.moments.map((moment) => ({
+          ...moment,
+        })),
+        closing: DEFAULT_PARENT_EXPERIENCE.closing,
+        authorName: DEFAULT_PARENT_EXPERIENCE.authorName,
+        authorRole: DEFAULT_PARENT_EXPERIENCE.authorRole,
+        image: DEFAULT_PARENT_EXPERIENCE.image,
+        imageAlt: DEFAULT_PARENT_EXPERIENCE.imageAlt,
       },
       "homepage.how_can_i_help": {
         headline: "How Can I Help",

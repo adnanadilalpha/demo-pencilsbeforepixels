@@ -83,12 +83,16 @@ export const mentalHealthLegend = [
 ] as const;
 
 export const libraryCategories: LibraryCategory[] = [
-  "Books",
-  "Walled Garden",
-  "Research Papers",
   "Videos",
+  "Walled Garden",
+  "Books",
+  "Research Papers",
 ];
 
+/**
+ * Public homepage category order.
+ * Respects CMS order when present; appends any missing default categories.
+ */
 export function resolvePublicLibraryCategories(
   categories: LibraryCategory[] | undefined,
 ): LibraryCategory[] {
@@ -109,16 +113,16 @@ export function resolvePublicLibraryCategories(
   const seen = new Set<LibraryCategory>();
   const merged: LibraryCategory[] = [];
 
-  for (const category of libraryCategories) {
+  for (const category of fromCms) {
+    if (seen.has(category)) continue;
     merged.push(category);
     seen.add(category);
   }
 
-  for (const category of fromCms) {
-    if (!seen.has(category)) {
-      merged.push(category);
-      seen.add(category);
-    }
+  for (const category of libraryCategories) {
+    if (seen.has(category)) continue;
+    merged.push(category);
+    seen.add(category);
   }
 
   return merged;

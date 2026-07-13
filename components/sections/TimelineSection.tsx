@@ -130,7 +130,6 @@ function TimelineSlideMedia({
           fill
           className="object-cover object-center"
           sizes="(max-width: 1024px) 100vw, 42vw"
-          priority={index === 0}
         />
       ) : (
         <div

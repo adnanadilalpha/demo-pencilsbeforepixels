@@ -64,5 +64,6 @@ export async function getMediaStorageCacheControl(folder: string): Promise<strin
     return "0";
   }
 
-  return "3600";
+  // Long-lived CDN cache for public site media; bust via unique object paths on upload.
+  return "31536000";
 }
