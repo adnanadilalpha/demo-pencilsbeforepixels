@@ -147,6 +147,7 @@ export function EvidenceExplorer({ bootstrap }: { bootstrap: EvidenceBootstrap }
   const [includeDistrictAvg, setIncludeDistrictAvg] = useState(
     defaults.includeDistrictAvg,
   );
+  const [showCombinedGender, setShowCombinedGender] = useState(true);
   const [selectedDistrictIds, setSelectedDistrictIds] = useState<string[]>(
     defaults.selectedDistrictIds,
   );
@@ -331,6 +332,7 @@ export function EvidenceExplorer({ bootstrap }: { bootstrap: EvidenceBootstrap }
     setStudentGroup(defaults.studentGroup);
     setIncludeState(defaults.includeState);
     setIncludeDistrictAvg(defaults.includeDistrictAvg);
+    setShowCombinedGender(true);
     setSelectedDistrictIds([]);
     setSelectedSchoolIds([]);
     setEquityHighlightIds([]);
@@ -349,15 +351,29 @@ export function EvidenceExplorer({ bootstrap }: { bootstrap: EvidenceBootstrap }
 
   const copy = tabCopy[tab];
   const linePanel = isLinePanel(panel) ? panel : null;
+  const displayLinePanel = useMemo(() => {
+    if (!linePanel) return null;
+    if (studentGroup !== "gender" || showCombinedGender) return linePanel;
+
+    return {
+      ...linePanel,
+      chart: {
+        ...linePanel.chart,
+        series: linePanel.chart.series.filter(
+          (entry) => !entry.label.includes("M+F Combined"),
+        ),
+      },
+    };
+  }, [linePanel, showCombinedGender, studentGroup]);
   const selectedSchools = useMemo(
     () =>
-      linePanel?.selectedDistricts ??
+      displayLinePanel?.selectedDistricts ??
       selectedSchoolIds.map((id, index) => ({
         id,
         name: formatSchoolDisplayName(id),
         color: colorForDistrictIndex(index),
       })),
-    [linePanel?.selectedDistricts, selectedSchoolIds],
+    [displayLinePanel?.selectedDistricts, selectedSchoolIds],
   );
   const isDistrict66 = tab === "district-66";
   const showStateReference =
@@ -365,12 +381,12 @@ export function EvidenceExplorer({ bootstrap }: { bootstrap: EvidenceBootstrap }
     includeState &&
     (studentGroup === "gender"
       ? Boolean(
-          linePanel?.chart.series.some((series) =>
+          displayLinePanel?.chart.series.some((series) =>
             series.label.toLowerCase().includes("state"),
           ),
         )
       : Boolean(
-          linePanel?.chart.series.some(
+          displayLinePanel?.chart.series.some(
             (series) => series.label === "State Average Benchmark",
           ),
         ));
@@ -694,14 +710,14 @@ export function EvidenceExplorer({ bootstrap }: { bootstrap: EvidenceBootstrap }
           <div className="flex min-w-0 flex-1 flex-col rounded-lg bg-slate-50 p-4 shadow-[0_1px_3px_rgba(10,22,40,0.10),0_1px_2px_rgba(10,22,40,0.06)] sm:p-6">
             <div className="mb-5 flex flex-col gap-3 sm:mb-7 sm:gap-4">
               <h2 className="text-lg leading-display text-[#18263a] lg:text-2xl">
-                {linePanel?.chart.title}
+                {displayLinePanel?.chart.title}
               </h2>
               <p className="text-sm leading-snug text-navy-800 lg:text-base lg:leading-4">
-                {linePanel?.subtitle}
+                {displayLinePanel?.subtitle}
               </p>
             </div>
-            {linePanel && (
-              <EvidenceLineChart chart={linePanel.chart} showTooltip />
+            {displayLinePanel && (
+              <EvidenceLineChart chart={displayLinePanel.chart} showTooltip />
             )}
           </div>
 
@@ -731,6 +747,11 @@ export function EvidenceExplorer({ bootstrap }: { bootstrap: EvidenceBootstrap }
                           marker="square"
                           title="M+F Combined"
                           subtitle="Weighted average"
+                          inactive={!showCombinedGender}
+                          actionLabel={showCombinedGender ? "Hide" : "Show"}
+                          onAction={() =>
+                            setShowCombinedGender((current) => !current)
+                          }
                         />
                       </>
                     ) : (
@@ -886,23 +907,41 @@ function LineStyleLegendItem({
   marker,
   title,
   subtitle,
+  inactive = false,
+  actionLabel,
+  onAction,
 }: {
   color?: string;
   dashArray?: string;
   marker: "circle" | "diamond" | "square";
   title: string;
   subtitle: string;
+  inactive?: boolean;
+  actionLabel?: string;
+  onAction?: () => void;
 }) {
   return (
-    <li>
+    <li className="flex items-start justify-between gap-3">
       <EvidenceLegendRow
         color={color}
         dashArray={dashArray}
         marker={marker}
         title={title}
         subtitle={subtitle}
-        className="gap-6"
+        inactive={inactive}
+        className="min-w-0 flex-1 gap-6"
       />
+      {actionLabel && onAction ? (
+        <button
+          type="button"
+          onClick={onAction}
+          aria-pressed={!inactive}
+          aria-label={`${actionLabel} ${title} lines`}
+          className="mt-0.5 shrink-0 rounded-full border border-navy-800/20 px-2.5 py-1 text-[11px] font-semibold leading-none text-navy-800 transition-colors hover:bg-navy-800/5"
+        >
+          {actionLabel}
+        </button>
+      ) : null}
     </li>
   );
 }

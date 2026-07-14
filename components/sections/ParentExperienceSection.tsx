@@ -22,7 +22,6 @@ export function ParentExperienceSection() {
     headline,
     lead,
     moments,
-    closing,
     authorName,
     authorRole,
     image,
@@ -85,12 +84,6 @@ export function ParentExperienceSection() {
                 ))}
               </ScrollReveal>
             ) : null}
-
-            <ScrollReveal delay={0.2} className="flex flex-col gap-4 sm:gap-5">
-              <p className="text-pretty font-display text-[clamp(1.625rem,6vw,2.75rem)] leading-[1.12] text-navy-800">
-                <RichTextContent content={closing} inline />
-              </p>
-            </ScrollReveal>
           </div>
 
           <ScrollReveal

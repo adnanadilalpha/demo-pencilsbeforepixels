@@ -56,22 +56,6 @@ export function ParentExperienceEditor({
       />
 
       <div>
-        <label htmlFor="parent-experience-closing" className={adminLabelClass}>
-          Closing line
-        </label>
-        <input
-          id="parent-experience-closing"
-          type="text"
-          value={value.closing}
-          onChange={(event) =>
-            onChange({ ...value, closing: event.target.value })
-          }
-          className={`${adminInputClass} mt-1.5`}
-          placeholder="Things are changing!"
-        />
-      </div>
-
-      <div>
         <label htmlFor="parent-experience-author" className={adminLabelClass}>
           Author name
         </label>

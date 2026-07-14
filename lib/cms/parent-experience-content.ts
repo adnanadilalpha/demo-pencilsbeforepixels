@@ -17,7 +17,6 @@ export type ParentExperienceContent = {
   headline: string;
   lead: string;
   moments: ParentExperienceMoment[];
-  closing: string;
   authorName: string;
   authorRole: string;
   image: string;
@@ -35,7 +34,6 @@ export const DEFAULT_PARENT_EXPERIENCE: ParentExperienceContent = {
       body: "",
     },
   ],
-  closing: "Things are changing!",
   authorName: "JPB",
   authorRole: "",
   image: DEFAULT_PARENT_EXPERIENCE_IMAGE,
@@ -101,8 +99,6 @@ export function normalizeParentExperienceContent(
     headline: readString(record.headline) || DEFAULT_PARENT_EXPERIENCE.headline,
     lead,
     moments: normalizeMoments(record.moments),
-    closing:
-      readPlainField(record.closing) || DEFAULT_PARENT_EXPERIENCE.closing,
     authorName:
       readPlainField(record.authorName) ||
       DEFAULT_PARENT_EXPERIENCE.authorName,
@@ -135,6 +131,7 @@ export function sanitizeParentExperienceForPublish(
   const normalized = normalizeParentExperienceContent(content);
   const next = { ...content };
   delete next.body;
+  delete next.closing;
 
   return {
     ...next,
@@ -146,7 +143,6 @@ export function sanitizeParentExperienceForPublish(
       title: moment.title,
       body: moment.body,
     })),
-    closing: normalized.closing,
     authorName: normalized.authorName,
     authorRole: normalized.authorRole,
     image: normalized.image,

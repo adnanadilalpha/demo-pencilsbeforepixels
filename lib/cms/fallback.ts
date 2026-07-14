@@ -117,7 +117,6 @@ export function buildFallbackSiteContent(): SiteContent {
         moments: DEFAULT_PARENT_EXPERIENCE.moments.map((moment) => ({
           ...moment,
         })),
-        closing: DEFAULT_PARENT_EXPERIENCE.closing,
         authorName: DEFAULT_PARENT_EXPERIENCE.authorName,
         authorRole: DEFAULT_PARENT_EXPERIENCE.authorRole,
         image: DEFAULT_PARENT_EXPERIENCE.image,
