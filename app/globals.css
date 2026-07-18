@@ -178,24 +178,11 @@ input.font-agustina-signature {
   animation: scroll-chevron 2.1s cubic-bezier(0.22, 1, 0.36, 1) infinite;
 }
 
-.timeline-slide-copy {
-  opacity: var(--timeline-copy-opacity, 1);
-  transform: translate3d(var(--timeline-copy-x, 0), var(--timeline-copy-y, 0), 0);
-  will-change: opacity, transform;
-}
-
+.timeline-slide-copy,
 .timeline-slide-media {
-  transform: translate3d(var(--timeline-media-x, 0), var(--timeline-media-y, 0), 0)
-    scale(var(--timeline-media-scale, 1));
-  will-change: transform;
-}
-
-@media (max-width: 1023px) {
-  .timeline-slide-copy,
-  .timeline-slide-media {
-    opacity: 1 !important;
-    transform: none !important;
-  }
+  opacity: 1 !important;
+  transform: none !important;
+  will-change: auto;
 }
 
 .hero-enter {

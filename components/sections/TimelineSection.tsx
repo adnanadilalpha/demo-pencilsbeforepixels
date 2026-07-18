@@ -30,7 +30,6 @@ import {
 } from "@/lib/timeline-motion";
 import { isValidMediaSrc } from "@/lib/media/src";
 import { getSectionElement, scrollToSectionSmooth } from "@/lib/navigation";
-import { useBelowLg } from "@/lib/use-media-query";
 
 function getAbsoluteTop(element: HTMLElement) {
   return element.getBoundingClientRect().top + window.scrollY;
@@ -119,7 +118,7 @@ function TimelineSlideMedia({
   return (
     <div
       ref={mediaRef}
-      className={`timeline-slide-media relative w-full shrink-0 overflow-hidden rounded-sm shadow-[0_28px_90px_rgba(10,22,40,0.22)] h-[min(30dvh,210px)] sm:h-[min(34dvh,240px)] lg:h-[min(58vh,480px)] lg:max-h-full lg:max-w-none lg:flex-1 ${
+      className={`timeline-slide-media relative w-full shrink-0 overflow-hidden rounded-sm shadow-[0_28px_90px_rgba(10,22,40,0.22)] h-[min(30dvh,210px)] sm:h-[min(36dvh,280px)] lg:h-[min(56vh,520px)] lg:max-h-[calc(100dvh-14rem)] lg:max-w-none lg:flex-1 ${
         isLight ? "ring-1 ring-white/15" : "ring-1 ring-navy-800/10"
       }`}
     >
@@ -129,7 +128,7 @@ function TimelineSlideMedia({
           alt={stripRichTextToPlain(slide.title) || `Mission slide ${index + 1}`}
           fill
           className="object-cover object-center"
-          sizes="(max-width: 1024px) 100vw, 42vw"
+          sizes="(max-width: 1023px) 100vw, 48vw"
         />
       ) : (
         <div
@@ -206,10 +205,11 @@ export function TimelineSection() {
   const viewportHeightRef = useRef(0);
   const lastMeasureWidthRef = useRef<number | null>(null);
   const pendingScrollYRef = useRef<number | undefined>(undefined);
-  const isMobileLayoutRef = useRef(false);
+  const isMobileLayoutRef = useRef(true);
 
-  const isMobileLayout = useBelowLg();
-  isMobileLayoutRef.current = isMobileLayout;
+  // Always vertical — no pinned horizontal scroll on any breakpoint.
+  const isMobileLayout = true;
+  isMobileLayoutRef.current = true;
 
   const [wrapperHeight, setWrapperHeight] = useState(0);
 
@@ -280,41 +280,25 @@ export function TimelineSection() {
 
     viewportHeightRef.current = viewportHeight;
     lastMeasureWidthRef.current = width;
-    const mobile = width < 1024;
-    isMobileLayoutRef.current = mobile;
+    isMobileLayoutRef.current = true;
 
     const track = trackRef.current;
     if (track) {
-      track.style.width = mobile ? "" : `${slideCountRef.current * 100}%`;
+      track.style.width = "";
 
       for (const child of track.children) {
         if (!(child instanceof HTMLElement)) continue;
-        child.style.width = mobile ? "" : `${slideShareRef.current}%`;
+        child.style.width = "";
       }
     }
 
-    if (mobile) {
-      metricsRef.current = {
-        scrollDistance: 0,
-        wrapperHeight: 0,
-        viewportHeight,
-      };
-      setWrapperHeight(0);
-      resetPinnedStyles();
-      return;
-    }
-
-    const { totalHeight, scrollDistance } = getTimelineMetrics(
-      slideCount,
-      viewportHeight,
-    );
-
     metricsRef.current = {
-      scrollDistance,
-      wrapperHeight: totalHeight,
+      scrollDistance: 0,
+      wrapperHeight: 0,
       viewportHeight,
     };
-    setWrapperHeight(totalHeight);
+    setWrapperHeight(0);
+    resetPinnedStyles();
   }, [resetPinnedStyles, slideCount]);
 
   const applyPinStyles = useCallback((scrollY: number) => {
@@ -598,39 +582,20 @@ export function TimelineSection() {
       style={wrapperHeight > 0 ? { height: wrapperHeight } : undefined}
       aria-label="Our mission"
     >
-      <div
-        ref={pinRef}
-        className="relative w-full lg:touch-pan-y lg:overflow-hidden"
-      >
-        <div
-          className={`pointer-events-none absolute inset-x-0 z-20 top-[calc(var(--header-height)+0.375rem)] lg:top-[calc(var(--header-height)+1.5rem)] xl:top-[calc(var(--header-height)+2.5rem)] ${sectionPaddingX}`}
-        >
-          <p
-            ref={missionLabelRef}
-            className="font-sans text-xs font-medium uppercase tracking-[0.14em] text-navy-800/55 max-lg:leading-tight lg:text-base lg:tracking-[0.24em]"
-          >
-            Our Journey
-          </p>
-        </div>
-
-        <div
-          ref={trackRef}
-          className="flex w-full flex-col lg:h-full lg:flex-row lg:will-change-transform"
-        >
+      <div ref={pinRef} className="relative w-full">
+        <div ref={trackRef} className="flex w-full flex-col">
           {timelineSlides.map((slide, index) => {
             const isLight = slide.textColor === "light";
 
             return (
               <article
                 key={`${index}-${slide.number}`}
-                className={`min-h-0 w-full shrink-0 flex flex-col gap-5 sm:gap-6 ${sectionPaddingX} lg:h-full lg:flex-row lg:items-center lg:gap-12 lg:overflow-hidden lg:pt-[calc(var(--header-height)+6.25rem)] lg:pb-14 xl:pt-[calc(var(--header-height)+7.25rem)] ${
+                className={`min-h-0 w-full shrink-0 flex flex-col gap-5 sm:gap-6 lg:box-border lg:min-h-dvh lg:flex-row lg:items-center lg:gap-12 lg:scroll-mt-[var(--header-height)] xl:gap-16 ${sectionPaddingX} ${
                   index === 0
-                    ? "pb-10 pt-[calc(var(--header-height)+1.5rem)] sm:pb-12"
-                    : "py-10 sm:py-12"
+                    ? "pb-10 pt-[calc(var(--header-height)+1.25rem)] sm:pb-12 lg:pb-20 lg:pt-[calc(var(--header-height)+2rem)]"
+                    : "py-10 sm:py-12 lg:py-20"
                 } ${
-                  index < slideCount - 1
-                    ? "border-b border-navy-800/8 lg:border-b-0"
-                    : ""
+                  index < slideCount - 1 ? "border-b border-navy-800/8" : ""
                 } ${isLight ? RICH_TEXT_LINKS_LIGHT_CLASS : ""}`}
                 style={{
                   backgroundColor: slide.background,
@@ -640,19 +605,28 @@ export function TimelineSection() {
                   ref={(node) => {
                     copyRefs.current[index] = node;
                   }}
-                  className={`timeline-slide-copy flex w-full flex-col gap-2.5 lg:min-h-0 lg:flex-1 lg:justify-center lg:gap-6 ${
-                    slide.indentContent ? "sm:pl-4 lg:pl-6 xl:pl-32" : ""
+                  className={`timeline-slide-copy flex w-full flex-col lg:min-w-0 lg:flex-1 ${
+                    slide.indentContent ? "sm:pl-4 lg:pl-6 xl:pl-12" : ""
                   }`}
                 >
+                  {index === 0 ? (
+                    <p
+                      ref={missionLabelRef}
+                      className="mb-4 font-sans text-xs font-medium uppercase tracking-[0.14em] text-navy-800/55 leading-tight sm:mb-5 sm:text-sm sm:tracking-[0.2em] lg:mb-8 lg:text-base lg:tracking-[0.24em]"
+                    >
+                      Our Journey
+                    </p>
+                  ) : null}
+
                   <p
-                    className={`text-fluid-timeline-number font-sans font-bold leading-none max-lg:text-[2.5rem] lg:text-[clamp(3.5rem,11vh,6rem)] ${
+                    className={`text-fluid-timeline-number font-sans font-bold leading-none text-[2.5rem] sm:text-[3.25rem] lg:text-[clamp(2.75rem,4.5vw,4rem)] ${
                       isLight ? "text-slate-50/70" : "text-hero-dark"
                     }`}
                   >
                     {slide.number}
                   </p>
                   <h2
-                    className={`text-fluid-display-lg font-display leading-[1.05] max-lg:text-[clamp(1.75rem,7vw,2.35rem)] lg:leading-display lg:text-[56px] ${
+                    className={`mt-2 text-fluid-display-lg font-display leading-[1.05] text-[clamp(1.75rem,7vw,2.35rem)] sm:mt-2.5 lg:mt-3 lg:text-[clamp(2.25rem,3.5vw,3.25rem)] lg:leading-display ${
                       isLight ? "text-slate-50" : "text-hero-dark"
                     }`}
                   >
@@ -665,7 +639,7 @@ export function TimelineSection() {
                   <RichTextContent
                     content={slide.description}
                     linkTone={isLight ? "light" : "default"}
-                    className={`max-w-xl text-[0.95rem] leading-[1.5] sm:text-base max-lg:max-w-none lg:text-2xl lg:leading-[1.4] ${
+                    className={`mt-4 max-w-3xl text-[0.95rem] leading-[1.55] sm:mt-5 sm:text-base lg:mt-6 lg:max-w-xl lg:text-xl lg:leading-[1.5] ${
                       isLight ? "text-slate-200" : "text-hero-dark"
                     }`}
                   />
@@ -681,30 +655,6 @@ export function TimelineSection() {
               </article>
             );
           })}
-        </div>
-
-        <div
-          className="pointer-events-none absolute inset-y-0 left-0 z-10 hidden w-16 bg-linear-to-r from-black/10 to-transparent sm:w-24 lg:block"
-          aria-hidden
-        />
-        <div
-          className="pointer-events-none absolute inset-y-0 right-0 z-10 hidden w-16 bg-linear-to-l from-black/10 to-transparent sm:w-24 lg:block"
-          aria-hidden
-        />
-
-        <div
-          className={`pointer-events-none absolute inset-x-0 bottom-6 z-20 hidden items-center justify-end gap-2.5 sm:bottom-8 lg:flex ${sectionPaddingX}`}
-          aria-hidden
-        >
-          {timelineSlides.map((slide, index) => (
-            <span
-              key={`${index}-${slide.number}`}
-              ref={(node) => {
-                dotRefs.current[index] = node;
-              }}
-              className="h-[0.375rem] w-[0.375rem] rounded-full bg-black/35 transition-[background-color] duration-500"
-            />
-          ))}
         </div>
       </div>
     </section>
