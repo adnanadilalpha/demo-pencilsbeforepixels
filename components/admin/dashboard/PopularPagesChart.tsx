@@ -45,7 +45,7 @@ export function PopularPagesChart({ pages }: PopularPagesChartProps) {
                     {formatCount(page.visitors)}
                   </p>
                   <p className="text-[11px] text-body-muted">
-                    {share}% users · {formatCount(page.pageLoads)} loads
+                    {share}% visitors · {formatCount(page.pageLoads)} views
                   </p>
                 </div>
               </div>

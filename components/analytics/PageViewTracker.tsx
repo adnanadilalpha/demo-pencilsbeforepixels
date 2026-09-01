@@ -1,38 +1,25 @@
 "use client";
 
 import {
+  appendViewDuration,
+  getSessionPathCount,
+  getSessionViewId,
+  getViewDurationTotal,
+  rememberSessionPath,
+  setSessionViewId,
+} from "@/lib/analytics/session-analytics-storage";
+import {
   getOrRefreshSession,
   touchSession,
 } from "@/lib/analytics/client-session";
 import { canTrackAnalytics } from "@/lib/analytics/track-client";
 import { normalizeAnalyticsPath } from "@/lib/analytics/normalize-path";
+import { VisibleTimer } from "@/lib/analytics/visible-timer";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef } from "react";
 
 const VIEW_KEY = "pbp.analytics.view";
-const SESSION_VIEWS_KEY = "pbp.analytics.session-views";
-
-type SessionViewMap = Record<string, Record<string, string>>;
-
-function readSessionViewMap(): SessionViewMap {
-  try {
-    const raw = sessionStorage.getItem(SESSION_VIEWS_KEY);
-    if (!raw) return {};
-    return JSON.parse(raw) as SessionViewMap;
-  } catch {
-    return {};
-  }
-}
-
-function getSessionViewId(sessionId: string, path: string): string | null {
-  return readSessionViewMap()[sessionId]?.[path] ?? null;
-}
-
-function setSessionViewId(sessionId: string, path: string, viewId: string) {
-  const map = readSessionViewMap();
-  map[sessionId] = { ...(map[sessionId] ?? {}), [path]: viewId };
-  sessionStorage.setItem(SESSION_VIEWS_KEY, JSON.stringify(map));
-}
+const HEARTBEAT_MS = 15_000;
 
 async function patchPageView(
   viewId: string,
@@ -78,16 +65,30 @@ async function trackPageView(path: string, sessionId: string) {
 
   if (payload.skipped || !payload.id) return null;
 
-  sessionStorage.setItem(VIEW_KEY, payload.id);
+  try {
+    sessionStorage.setItem(VIEW_KEY, payload.id);
+  } catch {
+    // ignore blocked storage
+  }
+
   setSessionViewId(sessionId, path, payload.id);
+  rememberSessionPath(sessionId, path);
   touchSession();
   return payload.id;
 }
 
+function readCurrentViewId(): string | null {
+  try {
+    return sessionStorage.getItem(VIEW_KEY);
+  } catch {
+    return null;
+  }
+}
+
 export function PageViewTracker() {
   const pathname = usePathname();
-  const startedAtRef = useRef(Date.now());
   const trackingRef = useRef<string | null>(null);
+  const timerRef = useRef(new VisibleTimer());
 
   useEffect(() => {
     if (!pathname || pathname.startsWith("/admin") || !canTrackAnalytics()) {
@@ -95,29 +96,52 @@ export function PageViewTracker() {
     }
 
     const path = normalizeAnalyticsPath(pathname);
-    const session = getOrRefreshSession();
-    const now = Date.now();
 
     if (trackingRef.current === path) {
       return;
     }
     trackingRef.current = path;
 
+    const session = getOrRefreshSession();
+
+    const flushDuration = async (
+      viewId: string,
+      options: { isBounce?: boolean; includeSegment?: boolean } = {},
+    ) => {
+      const includeSegment = options.includeSegment ?? true;
+      let total = 0;
+
+      if (includeSegment) {
+        const segment = timerRef.current.captureSegmentSeconds();
+        total = appendViewDuration(viewId, segment);
+      } else {
+        total = getViewDurationTotal(viewId);
+      }
+
+      if (total <= 0 && options.isBounce === undefined) return;
+
+      await patchPageView(viewId, {
+        durationSeconds: total > 0 ? total : undefined,
+        isBounce: options.isBounce,
+      });
+    };
+
     const existingViewId = getSessionViewId(session.id, path);
-    const previousViewId = sessionStorage.getItem(VIEW_KEY);
-    const previousStartedAt = startedAtRef.current;
+    const previousViewId = readCurrentViewId();
 
     if (previousViewId && previousViewId !== existingViewId) {
-      void patchPageView(previousViewId, {
-        durationSeconds: Math.max(1, Math.round((now - previousStartedAt) / 1000)),
-        isBounce: false,
-      });
+      void flushDuration(previousViewId, { isBounce: false });
     }
 
-    startedAtRef.current = now;
+    timerRef.current.reset();
 
     if (existingViewId) {
-      sessionStorage.setItem(VIEW_KEY, existingViewId);
+      try {
+        sessionStorage.setItem(VIEW_KEY, existingViewId);
+      } catch {
+        // ignore blocked storage
+      }
+      rememberSessionPath(session.id, path);
       void patchPageView(existingViewId, { isBounce: false }).finally(() => {
         if (trackingRef.current === path) {
           trackingRef.current = null;
@@ -131,22 +155,51 @@ export function PageViewTracker() {
       });
     }
 
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        timerRef.current.onVisible();
+        return;
+      }
+
+      timerRef.current.onHidden();
+      const viewId = readCurrentViewId();
+      if (!viewId) return;
+      void flushDuration(viewId);
+    };
+
     const handlePageHide = () => {
-      const viewId = sessionStorage.getItem(VIEW_KEY);
+      const viewId = readCurrentViewId();
       if (!viewId) return;
 
-      void patchPageView(viewId, {
-        durationSeconds: Math.max(
-          1,
-          Math.round((Date.now() - startedAtRef.current) / 1000),
-        ),
-        isBounce: true,
+      void flushDuration(viewId, {
+        isBounce: getSessionPathCount(session.id) <= 1,
       });
     };
 
+    const handlePageShow = (event: PageTransitionEvent) => {
+      if (event.persisted) {
+        timerRef.current.reset();
+      }
+    };
+
+    const heartbeat = window.setInterval(() => {
+      if (document.visibilityState !== "visible" || !document.hasFocus()) return;
+
+      const viewId = readCurrentViewId();
+      if (!viewId) return;
+
+      void flushDuration(viewId);
+    }, HEARTBEAT_MS);
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
     window.addEventListener("pagehide", handlePageHide);
+    window.addEventListener("pageshow", handlePageShow);
+
     return () => {
+      window.clearInterval(heartbeat);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
       window.removeEventListener("pagehide", handlePageHide);
+      window.removeEventListener("pageshow", handlePageShow);
     };
   }, [pathname]);
 

@@ -192,6 +192,13 @@ export function RichTextEditor({
           >
             <span className="underline">U</span>
           </ToolbarButton>
+          <ToolbarButton
+            title="Strikethrough"
+            active={editor.isActive("strike")}
+            onClick={() => editor.chain().focus().toggleStrike().run()}
+          >
+            <span className="line-through">S</span>
+          </ToolbarButton>
 
           <ToolbarDivider />
 

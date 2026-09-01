@@ -19,7 +19,7 @@ export function formatFileSize(bytes: number): string {
 
 export function formatPercentChange(current: number, previous: number): string {
   if (previous === 0) {
-    return current > 0 ? "+100%" : "0%";
+    return current > 0 ? "New" : "0%";
   }
 
   const change = ((current - previous) / previous) * 100;

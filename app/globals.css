@@ -571,6 +571,14 @@ input.font-agustina-signature {
   text-decoration: underline;
 }
 
+.rich-text-content s {
+  text-decoration: line-through;
+}
+
+.rich-text-editor .ProseMirror s {
+  text-decoration: line-through;
+}
+
 .rich-text-editor .ProseMirror a,
 .rich-text-editor__link {
   color: #1c4fd9;

@@ -1,5 +1,7 @@
 /** GA-style client identity: persistent visitor + 30-minute inactivity session timeout. */
 
+import { pruneSessionAnalyticsData } from "@/lib/analytics/session-analytics-storage";
+
 export const VISITOR_STORAGE_KEY = "pbp.analytics.visitor";
 export const SESSION_STORAGE_KEY = "pbp.analytics.session";
 export const SESSION_TIMEOUT_MS = 30 * 60 * 1000;
@@ -40,16 +42,24 @@ function readStoredSession(): StoredSession | null {
 }
 
 function writeStoredSession(session: StoredSession) {
-  localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session));
+  try {
+    localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session));
+  } catch {
+    // private mode / blocked storage
+  }
 }
 
 export function getVisitorId(): string {
-  const existing = localStorage.getItem(VISITOR_STORAGE_KEY);
-  if (existing) return existing;
+  try {
+    const existing = localStorage.getItem(VISITOR_STORAGE_KEY);
+    if (existing) return existing;
 
-  const visitorId = createId();
-  localStorage.setItem(VISITOR_STORAGE_KEY, visitorId);
-  return visitorId;
+    const visitorId = createId();
+    localStorage.setItem(VISITOR_STORAGE_KEY, visitorId);
+    return visitorId;
+  } catch {
+    return createId();
+  }
 }
 
 /** Returns the active session or starts a new one after 30 minutes of inactivity. */
@@ -65,6 +75,10 @@ export function getOrRefreshSession(now = Date.now()): StoredSession {
     const refreshed = { ...existing, lastActivityAt: now };
     writeStoredSession(refreshed);
     return refreshed;
+  }
+
+  if (existing?.id) {
+    pruneSessionAnalyticsData(existing.id);
   }
 
   const session: StoredSession = {

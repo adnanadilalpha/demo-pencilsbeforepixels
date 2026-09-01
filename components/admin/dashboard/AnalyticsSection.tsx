@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Radio, TrendingUp } from "lucide-react";
 import { AdminStatCard } from "@/components/admin/AdminStatCard";
 import { PopularPagesChart } from "@/components/admin/dashboard/PopularPagesChart";
@@ -23,9 +23,9 @@ const RANGE_OPTIONS: Array<{ value: AnalyticsRange; label: string }> = [
 ];
 
 const METRIC_OPTIONS: Array<{ value: AnalyticsMetric; label: string }> = [
-  { value: "users", label: "Users" },
+  { value: "users", label: "Visitors" },
   { value: "sessions", label: "Sessions" },
-  { value: "views", label: "Page loads" },
+  { value: "views", label: "Page views" },
 ];
 
 type AnalyticsSectionProps = {
@@ -85,6 +85,7 @@ export function AnalyticsSection({ initialAnalytics }: AnalyticsSectionProps) {
   const [range, setRange] = useState<AnalyticsRange>(initialAnalytics.range);
   const [metric, setMetric] = useState<AnalyticsMetric>(initialAnalytics.metric);
   const [isLoading, setIsLoading] = useState(false);
+  const hasMountedRef = useRef(false);
 
   const loadAnalytics = useCallback(async (nextRange: AnalyticsRange, nextMetric: AnalyticsMetric) => {
     setIsLoading(true);
@@ -108,31 +109,41 @@ export function AnalyticsSection({ initialAnalytics }: AnalyticsSectionProps) {
   }, []);
 
   useEffect(() => {
+    if (!hasMountedRef.current) {
+      hasMountedRef.current = true;
+      return;
+    }
+
     void loadAnalytics(range, metric);
   }, [range, metric, loadAnalytics]);
 
   useEffect(() => {
     const supabase = createClient();
+    let reloadTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const scheduleReload = () => {
+      if (reloadTimer) clearTimeout(reloadTimer);
+      reloadTimer = setTimeout(() => {
+        void loadAnalytics(range, metric);
+      }, 2000);
+    };
 
     const channel = supabase
       .channel("admin-analytics")
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "page_views" },
-        () => {
-          void loadAnalytics(range, metric);
-        },
+        scheduleReload,
       )
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "analytics_events" },
-        () => {
-          void loadAnalytics(range, metric);
-        },
+        scheduleReload,
       )
       .subscribe();
 
     return () => {
+      if (reloadTimer) clearTimeout(reloadTimer);
       void supabase.removeChannel(channel);
     };
   }, [range, metric, loadAnalytics]);
@@ -143,8 +154,8 @@ export function AnalyticsSection({ initialAnalytics }: AnalyticsSectionProps) {
         <div>
           <h2 className="text-sm font-semibold text-navy-800">Site analytics</h2>
           <p className="mt-1 text-sm text-body-muted">
-            Audience metrics are deduplicated by user and session. Page loads are
-            tracked separately and no longer inflate on refresh.
+            Audience metrics are deduplicated by visitor and session. Page views
+            count revisits within a session. Duration tracks visible time only.
           </p>
         </div>
 
@@ -210,24 +221,28 @@ export function AnalyticsSection({ initialAnalytics }: AnalyticsSectionProps) {
         <AdminStatCard
           label={analytics.avgTimeOnSite.label}
           value={analytics.avgTimeOnSite.value}
+          trend={analytics.avgTimeOnSite.trend}
+          showTrendIcon={false}
         />
         <AdminStatCard
           label={analytics.bounceRate.label}
           value={analytics.bounceRate.value}
+          trend={analytics.bounceRate.trend}
+          showTrendIcon={false}
         />
       </div>
 
       <div className="grid items-stretch gap-4 lg:grid-cols-2">
         <DashboardPanel
           title="Audience over time"
-          description="Deduped audience metrics. Refreshing the site does not add users or sessions."
+          description="Activity is bucketed by last visit date. Refreshing does not add new visitors or sessions."
         >
           <VisitorsChart data={analytics.visitorsOverTime} metric={metric} />
         </DashboardPanel>
 
         <DashboardPanel
           title="Top pages"
-          description="Ranked by unique users. Loads are shown separately."
+          description="Ranked by unique visitors. Views include revisits within a session."
         >
           <PopularPagesChart pages={analytics.popularPages} />
         </DashboardPanel>

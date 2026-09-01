@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { capPageViewDuration } from "@/lib/analytics/duration";
 import { isInternalAnalyticsRequest } from "@/lib/analytics/internal-traffic";
 import { normalizeAnalyticsPath } from "@/lib/analytics/normalize-path";
 import {
@@ -64,6 +65,16 @@ export async function POST(request: Request) {
   }
 
   if (sessionView?.id) {
+    const { data: existingRow, error: existingRowError } = await supabase
+      .from("page_views")
+      .select("view_count, is_internal")
+      .eq("id", sessionView.id)
+      .maybeSingle();
+
+    if (existingRowError) {
+      return NextResponse.json({ error: existingRowError.message }, { status: 500 });
+    }
+
     const { error: touchError } = await supabase
       .from("page_views")
       .update({
@@ -71,7 +82,8 @@ export async function POST(request: Request) {
         page_title: pageTitle ?? null,
         referrer: referrer ?? null,
         is_bounce: false,
-        is_internal: isInternal,
+        is_internal: Boolean(existingRow?.is_internal) || isInternal,
+        view_count: (existingRow?.view_count ?? 1) + 1,
       })
       .eq("id", sessionView.id);
 
@@ -97,7 +109,9 @@ export async function POST(request: Request) {
       latitude: context.latitude,
       longitude: context.longitude,
       duration_seconds:
-        typeof durationSeconds === "number" ? Math.round(durationSeconds) : null,
+        typeof durationSeconds === "number"
+          ? capPageViewDuration(durationSeconds)
+          : null,
       is_bounce: typeof isBounce === "boolean" ? isBounce : true,
       is_internal: isInternal,
       view_count: 1,
@@ -140,7 +154,20 @@ export async function PATCH(request: Request) {
   };
 
   if (typeof durationSeconds === "number") {
-    updates.duration_seconds = Math.round(durationSeconds);
+    const { data: existing, error: existingError } = await supabase
+      .from("page_views")
+      .select("duration_seconds")
+      .eq("id", viewId)
+      .maybeSingle();
+
+    if (existingError) {
+      return NextResponse.json({ error: existingError.message }, { status: 500 });
+    }
+
+    const incoming = capPageViewDuration(durationSeconds);
+    const previous =
+      typeof existing?.duration_seconds === "number" ? existing.duration_seconds : 0;
+    updates.duration_seconds = capPageViewDuration(Math.max(previous, incoming));
   }
 
   if (typeof isBounce === "boolean") {

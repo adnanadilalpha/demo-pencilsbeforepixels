@@ -1,11 +1,26 @@
 import { getOrRefreshSession } from "@/lib/analytics/client-session";
+import {
+  isClientLocalAnalyticsEnabled,
+  isLocalHostname,
+} from "@/lib/analytics/env";
 import type { AnalyticsEventName } from "@/lib/analytics/event-types";
+import { sendGoogleAnalyticsEvent } from "@/lib/analytics/google";
 import { normalizeAnalyticsPath } from "@/lib/analytics/normalize-path";
 
-/** Always send hits; the API decides whether to store them (GA-style). */
+/** Mirrors server-side shouldRecordAnalytics gating. */
 export function canTrackAnalytics(): boolean {
   if (typeof window === "undefined") return false;
-  return !window.location.pathname.startsWith("/admin");
+  if (window.location.pathname.startsWith("/admin")) return false;
+
+  if (isClientLocalAnalyticsEnabled()) {
+    return true;
+  }
+
+  if (process.env.NODE_ENV === "development") {
+    return false;
+  }
+
+  return !isLocalHostname(window.location.hostname);
 }
 
 export async function trackAnalyticsEvent(
@@ -23,6 +38,12 @@ export async function trackAnalyticsEvent(
   const path = normalizeAnalyticsPath(
     options.path ?? window.location.pathname,
   );
+
+  sendGoogleAnalyticsEvent(eventName, {
+    label: options.label,
+    path,
+    metadata: options.metadata,
+  });
 
   await fetch("/api/analytics/event", {
     method: "POST",

@@ -24,6 +24,17 @@ import type {
   VisitorLocationRow,
 } from "@/lib/admin/types";
 import { formatCount, formatDuration, formatPercentChange } from "@/lib/admin/format";
+import {
+  capSessionDuration,
+  getStoredPageViewDuration,
+  isEngagedSession,
+  type SessionEngagement,
+} from "@/lib/analytics/duration";
+import {
+  dedupePageViewRows,
+  getPageViewActivityDate,
+  getPageViewLoadCount,
+} from "@/lib/analytics/page-view-rows";
 
 export type PageViewRow = {
   session_id: string;
@@ -101,7 +112,7 @@ function filterViewsByRange(
   reference = new Date(),
 ): PageViewRow[] {
   const start = getRangeStart(range, reference);
-  return views.filter((view) => new Date(view.created_at) >= start);
+  return views.filter((view) => getPageViewActivityDate(view) >= start);
 }
 
 function filterViewsBetween(
@@ -110,8 +121,8 @@ function filterViewsBetween(
   end: Date,
 ): PageViewRow[] {
   return views.filter((view) => {
-    const created = new Date(view.created_at);
-    return created >= start && created < end;
+    const activity = getPageViewActivityDate(view);
+    return activity >= start && activity < end;
   });
 }
 
@@ -208,31 +219,56 @@ function metricValue(
     return countUniqueSessions(views);
   }
 
-  return views.reduce((sum, view) => sum + (view.view_count ?? 1), 0);
+  return views.reduce((sum, view) => sum + getPageViewLoadCount(view), 0);
 }
 
 function filterAudienceEvents(events: AnalyticsEventRecord[]): AnalyticsEventRecord[] {
   return events.filter((event) => !event.is_internal);
 }
 
-function computeAvgSessionDuration(views: PageViewRow[]): number {
-  const sessionTotals = new Map<string, number>();
+function buildSessionEngagement(views: PageViewRow[]): Map<string, SessionEngagement> {
+  const sessions = new Map<
+    string,
+    { paths: Set<string>; durationSeconds: number }
+  >();
 
   for (const view of views) {
-    if (typeof view.duration_seconds !== "number" || view.duration_seconds <= 0) {
-      continue;
+    const entry = sessions.get(view.session_id) ?? {
+      paths: new Set<string>(),
+      durationSeconds: 0,
+    };
+
+    entry.paths.add(view.path);
+
+    const duration = getStoredPageViewDuration(view);
+    if (duration > 0) {
+      entry.durationSeconds = capSessionDuration(entry.durationSeconds + duration);
     }
 
-    sessionTotals.set(
-      view.session_id,
-      (sessionTotals.get(view.session_id) ?? 0) + view.duration_seconds,
-    );
+    sessions.set(view.session_id, entry);
   }
 
-  const totals = [...sessionTotals.values()];
-  if (totals.length === 0) return 0;
+  return new Map(
+    [...sessions.entries()].map(([sessionId, entry]) => [
+      sessionId,
+      {
+        pathCount: entry.paths.size,
+        durationSeconds: entry.durationSeconds,
+      },
+    ]),
+  );
+}
 
-  return totals.reduce((sum, value) => sum + value, 0) / totals.length;
+function computeAvgSessionDuration(views: PageViewRow[]): number {
+  const sessions = buildSessionEngagement(views);
+  if (sessions.size === 0) return 0;
+
+  let total = 0;
+  for (const session of sessions.values()) {
+    total += session.durationSeconds;
+  }
+
+  return total / sessions.size;
 }
 
 export function buildVisitorsOverTime(
@@ -248,7 +284,7 @@ export function buildVisitorsOverTime(
   }
 
   for (const view of views) {
-    const key = bucketKey(new Date(view.created_at), range);
+    const key = bucketKey(getPageViewActivityDate(view), range);
     if (!grouped.has(key)) continue;
     grouped.get(key)?.push(view);
   }
@@ -275,7 +311,7 @@ export function buildPopularPages(
       pageLoads: 0,
     };
     entry.visitors.add(getVisitorDedupKey(view));
-    entry.pageLoads += view.view_count ?? 1;
+    entry.pageLoads += getPageViewLoadCount(view);
     grouped.set(view.path, entry);
   }
 
@@ -406,7 +442,7 @@ export async function buildVisitorLocations(
       };
 
     entry.visitors.add(getVisitorDedupKey(view));
-    entry.views += 1;
+    entry.views += getPageViewLoadCount(view);
     entry.coordinates.push({
       latitude: view.latitude,
       longitude: view.longitude,
@@ -497,27 +533,17 @@ export function buildTopEvents(
 }
 
 export function computeBounceRate(views: PageViewRow[]): number {
-  const sessions = new Map<string, { count: number; bounced: boolean }>();
-
-  for (const view of views) {
-    const existing = sessions.get(view.session_id) ?? { count: 0, bounced: true };
-    existing.count += 1;
-    if (!view.is_bounce) {
-      existing.bounced = false;
-    }
-    sessions.set(view.session_id, existing);
-  }
-
+  const sessions = buildSessionEngagement(views);
   if (sessions.size === 0) return 0;
 
-  let bounces = 0;
+  let unengagedSessions = 0;
   for (const session of sessions.values()) {
-    if (session.count === 1 && session.bounced) {
-      bounces += 1;
+    if (!isEngagedSession(session)) {
+      unengagedSessions += 1;
     }
   }
 
-  return Math.round((bounces / sessions.size) * 100);
+  return Math.round((unengagedSessions / sessions.size) * 100);
 }
 
 export async function buildAnalyticsSummary(
@@ -537,7 +563,7 @@ export async function buildAnalyticsSummary(
   visitorLocations: VisitorLocationRow[];
   topEvents: AnalyticsEventRow[];
 }> {
-  const audienceViews = filterAudiencePageViews(allViews);
+  const audienceViews = dedupePageViewRows(filterAudiencePageViews(allViews));
   const audienceEvents = filterAudienceEvents(allEvents);
   const currentViews = filterViewsByRange(audienceViews, range, reference);
   const currentEvents = filterEventsByRange(audienceEvents, range, reference);
@@ -551,11 +577,11 @@ export async function buildAnalyticsSummary(
   const uniqueSessions = countUniqueSessions(currentViews);
   const previousSessions = countUniqueSessions(previousViews);
   const totalPageViews = currentViews.reduce(
-    (sum, view) => sum + (view.view_count ?? 1),
+    (sum, view) => sum + getPageViewLoadCount(view),
     0,
   );
   const previousPageViews = previousViews.reduce(
-    (sum, view) => sum + (view.view_count ?? 1),
+    (sum, view) => sum + getPageViewLoadCount(view),
     0,
   );
   const sessionTrend = formatPercentChange(uniqueSessions, previousSessions);
@@ -583,18 +609,20 @@ export async function buildAnalyticsSummary(
       trendPositive: uniqueSessions >= previousSessions,
     },
     pageViews: {
-      label: "Page Loads",
+      label: "Page Views",
       value: formatCount(totalPageViews),
       trend: `${pageViewTrend} vs prior period`,
       trendPositive: totalPageViews >= previousPageViews,
     },
     avgTimeOnSite: {
-      label: "Avg. Time on Site",
+      label: "Avg. Session Duration",
       value: formatDuration(avgDuration),
+      trend: "Visible time per session",
     },
     bounceRate: {
       label: "Bounce Rate",
       value: `${computeBounceRate(currentViews)}%`,
+      trend: "Single page, under 10s",
     },
     visitorsOverTime: buildVisitorsOverTime(currentViews, range, "users"),
     popularPages: buildPopularPages(currentViews),
@@ -619,14 +647,12 @@ export async function buildAnalyticsForFilters(
   allEvents: AnalyticsEventRecord[] = [],
   reference = new Date(),
 ) {
+  const audienceViews = dedupePageViewRows(filterAudiencePageViews(allViews));
+  const currentViews = filterViewsByRange(audienceViews, range, reference);
   const summary = await buildAnalyticsSummary(allViews, range, allEvents, reference);
 
   return {
     ...summary,
-    visitorsOverTime: buildVisitorsOverTime(
-      filterViewsByRange(allViews, range, reference),
-      range,
-      metric,
-    ),
+    visitorsOverTime: buildVisitorsOverTime(currentViews, range, metric),
   };
 }

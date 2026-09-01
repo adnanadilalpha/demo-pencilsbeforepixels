@@ -110,7 +110,7 @@ export function PrivacyPolicyContent() {
         <LegalList
           items={[
             "Essential cookies that keep core features working",
-            "Analytics cookies that help us understand traffic and usage patterns in aggregate",
+            "Analytics cookies from Google Analytics and our first-party analytics that help us understand traffic and usage patterns in aggregate",
             "Preference cookies that remember choices you make, where applicable",
           ]}
         />
@@ -131,6 +131,7 @@ export function PrivacyPolicyContent() {
         </p>
         <LegalList
           items={[
+            "Google Analytics for website usage measurement (page views, engagement, and similar traffic insights)",
             "YouTube for embedded educational videos",
             "First-party analytics on our own infrastructure (usage and approximate location)",
             "Email and newsletter delivery services",
